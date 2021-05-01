@@ -32,6 +32,54 @@ def filetime_to_dt(ft):
 	return datetime.utcfromtimestamp((ft - EPOCH_AS_FILETIME) / HUNDREDS_OF_NANOSECONDS)
 
 
+class LapsAboutWindow(QDialog):
+	def __init__(self, *args, **kwargs):
+		super(LapsAboutWindow, self).__init__(*args, **kwargs)
+		self.InitUI()
+
+	def InitUI(self):
+		self.buttonBox = QDialogButtonBox(QDialogButtonBox.Ok)
+		self.buttonBox.accepted.connect(self.accept)
+
+		self.layout = QVBoxLayout(self)
+
+		labelAppName = QLabel(self)
+		labelAppName.setText(self.parentWidget().PRODUCT_NAME + " v" + self.parentWidget().PRODUCT_VERSION)
+		labelAppName.setStyleSheet("font-weight:bold")
+		labelAppName.setAlignment(Qt.AlignCenter)
+		self.layout.addWidget(labelAppName)
+
+		labelCopyright = QLabel(self)
+		labelCopyright.setText(
+			"<br>"
+			"© 2021 <a href='https://github.com/schorschii'>Georg Sieber</a>"
+			"<br>"
+			"<br>"
+			"GNU General Public License v3.0"
+			"<br>"
+			"<a href='"+self.parentWidget().PRODUCT_WEBSITE+"'>"+self.parentWidget().PRODUCT_WEBSITE+"</a>"
+			"<br>"
+		)
+		labelCopyright.setOpenExternalLinks(True)
+		labelCopyright.setAlignment(Qt.AlignCenter)
+		self.layout.addWidget(labelCopyright)
+
+		labelDescription = QLabel(self)
+		labelDescription.setText(
+			"""LAPS4LINUX GUI allows you to query local administrator passwords for workstations in you domain running the LAPS client from your LDAP (Active Directory) server.\n\n"""
+			"""The LAPS client periodically sets a new administrator password and saves it into the LDAP directory.\n\n"""
+			"""LAPS was originally developed by Microsoft, this is an inofficial Linux implementation."""
+		)
+		labelDescription.setStyleSheet("opacity:0.8")
+		labelDescription.setFixedWidth(650)
+		labelDescription.setWordWrap(True)
+		self.layout.addWidget(labelDescription)
+
+		self.layout.addWidget(self.buttonBox)
+
+		self.setLayout(self.layout)
+		self.setWindowTitle("About")
+
 class LapsMainWindow(QMainWindow):
 	PRODUCT_NAME      = "LAPS4LINUX"
 	PRODUCT_VERSION   = "0.1.0"
@@ -67,7 +115,7 @@ class LapsMainWindow(QMainWindow):
 
 		aboutAction = QAction('&About', self)
 		aboutAction.setShortcut('F1')
-		#aboutAction.triggered.connect(self.OnOpenAboutDialog)
+		aboutAction.triggered.connect(self.OnOpenAboutDialog)
 		editMenu.addAction(aboutAction)
 
 		# Statusbar
@@ -123,6 +171,10 @@ class LapsMainWindow(QMainWindow):
 
 	def OnQuit(self, e):
 		sys.exit()
+
+	def OnOpenAboutDialog(self, e):
+		dlg = LapsAboutWindow(self)
+		dlg.exec_()
 
 	def OnReturnSearch(self):
 		self.OnClickSearch(None)
