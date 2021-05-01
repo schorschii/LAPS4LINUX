@@ -82,7 +82,7 @@ class LapsAboutWindow(QDialog):
 
 class LapsMainWindow(QMainWindow):
 	PRODUCT_NAME      = "LAPS4LINUX"
-	PRODUCT_VERSION   = "0.1.0"
+	PRODUCT_VERSION   = "1.0.0"
 	PRODUCT_WEBSITE   = "https://georg-sieber.de"
 
 	cfgPath     = str(Path.home())+'/.laps-gui.json'
