@@ -146,7 +146,7 @@ class LapsMainWindow(QMainWindow):
 				print('expiration time: '+str(entry['ms-Mcs-AdmPwdExpirationTime']))
 				self.txtPassword.setText(str(entry['ms-Mcs-AdmPwd']))
 				self.txtPasswordExpires.setText(str(entry['ms-Mcs-AdmPwdExpirationTime']))
-				self.statusBar.showMessage('Found: '+str(entry['sAMAccountName'])+' ('+self.cfgServer+': '+self.cfgUsername+'@'+self.cfgDomain+')')
+				self.statusBar.showMessage('Found: '+str(entry['distinguishedName'])+' ('+self.cfgServer+': '+self.cfgUsername+'@'+self.cfgDomain+')')
 				self.tmpDn = str(entry['distinguishedName'])
 				self.btnSetExpirationTime.setEnabled(True)
 				try:
