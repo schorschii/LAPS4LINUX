@@ -134,7 +134,10 @@ class LapsMainWindow(QMainWindow):
 		computerName = utils.conv.escape_filter_chars(computerName)
 
 		# ask for credentials
-		if not self.checkCredentials(): return
+		self.btnSearchComputer.setEnabled(False)
+		if not self.checkCredentials():
+			self.btnSearchComputer.setEnabled(True)
+			return
 
 		try:
 			# connect to server and start query
@@ -149,6 +152,7 @@ class LapsMainWindow(QMainWindow):
 				self.statusBar.showMessage('Found: '+str(entry['distinguishedName'])+' ('+self.cfgServer+': '+self.cfgUsername+'@'+self.cfgDomain+')')
 				self.tmpDn = str(entry['distinguishedName'])
 				self.btnSetExpirationTime.setEnabled(True)
+				self.btnSearchComputer.setEnabled(True)
 				try:
 					self.txtPasswordExpires.setText( str(filetime_to_dt( int(str(entry['ms-Mcs-AdmPwdExpirationTime'])) )) )
 				except Exception as e: print(str(e))
@@ -157,16 +161,16 @@ class LapsMainWindow(QMainWindow):
 			# no result found
 			self.txtPassword.setText('')
 			self.txtPasswordExpires.setText('')
-			self.tmpDn = ''
-			self.btnSetExpirationTime.setEnabled(False)
 			self.statusBar.showMessage('No Result For: '+computerName+' ('+self.cfgServer+': '+self.cfgUsername+'@'+self.cfgDomain+')')
 		except Exception as e:
 			# display error
 			self.statusBar.showMessage(str(e))
 			self.cfgUsername = ''
 			self.cfgPassword = ''
-			self.tmpDn = ''
-			self.btnSetExpirationTime.setEnabled(False)
+
+		self.tmpDn = ''
+		self.btnSetExpirationTime.setEnabled(False)
+		self.btnSearchComputer.setEnabled(True)
 
 	def OnClickSetExpiry(self, e):
 		# check if dn of target computer object is known
@@ -185,7 +189,7 @@ class LapsMainWindow(QMainWindow):
 			c = Connection(s, user=self.cfgDomain+'\\'+self.cfgUsername, password=self.cfgPassword, authentication=NTLM, auto_bind=True)
 			c.modify(self.tmpDn, { 'ms-Mcs-AdmPwdExpirationTime': [(MODIFY_REPLACE, [str(newExpirationDateTime)])] })
 			if c.result['result'] == 0:
-				self.statusBar.showMessage('Expiration Date changed successfully: '+self.tmpDn+' ('+self.cfgServer+': '+self.cfgUsername+'@'+self.cfgDomain+')')
+				self.statusBar.showMessage('Expiration Date Changed Successfully: '+self.tmpDn+' ('+self.cfgServer+': '+self.cfgUsername+'@'+self.cfgDomain+')')
 		except Exception as e:
 			# display error
 			self.statusBar.showMessage(str(e))
