@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from ldap3 import ALL, Server, Connection, NTLM, extend, SUBTREE, utils, MODIFY_REPLACE
+from ldap3 import ALL, Server, Connection, NTLM, extend, SUBTREE, utils, MODIFY_REPLACE, Tls, SASL, KERBEROS
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
@@ -72,7 +72,7 @@ class LapsAboutWindow(QDialog):
 			"""LAPS was originally developed by Microsoft, this is an inofficial Linux implementation."""
 		)
 		labelDescription.setStyleSheet("opacity:0.8")
-		labelDescription.setFixedWidth(650)
+		labelDescription.setFixedWidth(450)
 		labelDescription.setWordWrap(True)
 		self.layout.addWidget(labelDescription)
 
@@ -82,16 +82,19 @@ class LapsAboutWindow(QDialog):
 		self.setWindowTitle("About")
 
 class LapsMainWindow(QMainWindow):
-	PRODUCT_NAME      = "LAPS4LINUX"
-	PRODUCT_VERSION   = "1.0.0"
-	PRODUCT_WEBSITE   = "https://georg-sieber.de"
+	PRODUCT_NAME      = 'LAPS4LINUX'
+	PRODUCT_VERSION   = '1.0.0'
+	PRODUCT_WEBSITE   = 'https://georg-sieber.de'
+
+	server      = None
+	connection  = None
 
 	cfgPath     = str(Path.home())+'/.laps-client.json'
-	cfgServer   = ""
-	cfgDomain   = ""
-	cfgUsername = ""
-	cfgPassword = ""
-	tmpDn       = ""
+	cfgServer   = ''
+	cfgDomain   = ''
+	cfgUsername = ''
+	cfgPassword = ''
+	tmpDn       = ''
 
 	def __init__(self):
 		super(LapsMainWindow, self).__init__()
@@ -164,11 +167,11 @@ class LapsMainWindow(QMainWindow):
 
 		# Window Settings
 		self.setMinimumSize(490, 350)
-		self.setWindowTitle(self.PRODUCT_NAME+" v"+self.PRODUCT_VERSION)
+		self.setWindowTitle(self.PRODUCT_NAME+' v'+self.PRODUCT_VERSION)
 
 		# Show Note
 		if not 'slub' in self.cfgDomain:
-			self.statusBar.showMessage("If you like LAPS4LINUX please consider making a donation to support further development ("+self.PRODUCT_WEBSITE+").")
+			self.statusBar.showMessage('If you like LAPS4LINUX please consider making a donation to support further development ('+self.PRODUCT_WEBSITE+').')
 
 	def OnQuit(self, e):
 		sys.exit()
@@ -188,16 +191,14 @@ class LapsMainWindow(QMainWindow):
 
 		# ask for credentials
 		self.btnSearchComputer.setEnabled(False)
-		if not self.checkCredentials():
+		if not self.checkCredentialsAndConnect():
 			self.btnSearchComputer.setEnabled(True)
 			return
 
 		try:
-			# connect to server and start query
-			s = Server(self.cfgServer, get_info=ALL)
-			c = Connection(s, user=self.cfgDomain+'\\'+self.cfgUsername, password=self.cfgPassword, authentication=NTLM, auto_bind=True)
-			c.search(search_base=self.createLdapBase(self.cfgDomain), search_filter='(&(objectCategory=computer)(ms-MCS-AdmPwd=*)(name='+computerName+'))',attributes=['ms-MCS-AdmPwd','ms-MCS-AdmPwdExpirationTime','SAMAccountname','distinguishedName'])
-			for entry in c.entries:
+			# start LDAP query
+			self.connection.search(search_base=self.createLdapBase(self.cfgDomain), search_filter='(&(objectCategory=computer)(ms-MCS-AdmPwd=*)(name='+computerName+'))',attributes=['ms-MCS-AdmPwd','ms-MCS-AdmPwdExpirationTime','SAMAccountname','distinguishedName'])
+			for entry in self.connection.entries:
 				# display result
 				print('expiration time: '+str(entry['ms-Mcs-AdmPwdExpirationTime']))
 				self.txtPassword.setText(str(entry['ms-Mcs-AdmPwd']))
@@ -218,8 +219,6 @@ class LapsMainWindow(QMainWindow):
 		except Exception as e:
 			# display error
 			self.statusBar.showMessage(str(e))
-			self.cfgUsername = ''
-			self.cfgPassword = ''
 
 		self.tmpDn = ''
 		self.btnSetExpirationTime.setEnabled(False)
@@ -230,44 +229,84 @@ class LapsMainWindow(QMainWindow):
 		if self.tmpDn.strip() == '': return
 
 		# ask for credentials
-		if not self.checkCredentials(): return
+		if not self.checkCredentialsAndConnect(): return
 
 		try:
 			# calc new time
 			newExpirationDateTime = dt_to_filetime( datetime.combine(self.cwNewExpirationTime.selectedDate().toPyDate(), datetime.min.time()) )
 			print('new expiration time: '+str(newExpirationDateTime))
 
-			# connect to server and start query
-			s = Server(self.cfgServer, get_info=ALL)
-			c = Connection(s, user=self.cfgDomain+'\\'+self.cfgUsername, password=self.cfgPassword, authentication=NTLM, auto_bind=True)
-			c.modify(self.tmpDn, { 'ms-Mcs-AdmPwdExpirationTime': [(MODIFY_REPLACE, [str(newExpirationDateTime)])] })
-			if c.result['result'] == 0:
+			# start LDAP query
+			self.connection.modify(self.tmpDn, { 'ms-Mcs-AdmPwdExpirationTime': [(MODIFY_REPLACE, [str(newExpirationDateTime)])] })
+			if self.connection.result['result'] == 0:
 				self.statusBar.showMessage('Expiration Date Changed Successfully: '+self.tmpDn+' ('+self.cfgServer+': '+self.cfgUsername+'@'+self.cfgDomain+')')
 		except Exception as e:
 			# display error
 			self.statusBar.showMessage(str(e))
 
-	def checkCredentials(self):
+	def checkCredentialsAndConnect(self):
+		if self.server != None and self.connection != None: return True
+
+		# ask for server address and domain name if not already set via config file
 		if self.cfgServer == "":
 			item, ok = QInputDialog.getText(self, '💻 Server Address', 'Please enter your LDAP server IP address or DNS name.')
-			if ok and item: self.cfgServer = item
+			if ok and item:
+				self.cfgServer = item
+				self.server = None
 			else: return False
 		if self.cfgDomain == "":
 			item, ok = QInputDialog.getText(self, '♕ Domain', 'Please enter your Domain name (e.g. example.com).')
-			if ok and item: self.cfgDomain = item
+			if ok and item:
+				self.cfgDomain = item
+				self.server = None
 			else: return False
+		self.SaveSettings()
+
+		# establish server connection
+		if self.server == None:
+			try:
+				self.server = Server(self.cfgServer, get_info=ALL)
+			except Exception as e:
+				self.showErrorDialog('Error connecting to LDAP server', str(e))
+				return False
+
+		# try to bind to server via Kerberos
+		try:
+			self.connection = Connection(self.server, authentication=SASL, sasl_mechanism=KERBEROS, auto_bind=True)
+			#self.connection.bind()
+			return True # return if connection created successfully
+		except Exception as e:
+			print('Unable to connect via Kerberos: '+str(e))
+
+		# ask for username and password for NTLM bind
 		if self.cfgUsername == "":
 			item, ok = QInputDialog.getText(self, '👤 Username', 'Please enter the username which should be used to connect to »'+self.cfgServer+'«.', QLineEdit.Normal, getpass.getuser())
-			if ok and item: self.cfgUsername = item
+			if ok and item:
+				self.cfgUsername = item
+				self.connection = None
 			else: return False
 		if self.cfgPassword == "":
 			item, ok = QInputDialog.getText(self, '🔑 Password for »'+self.cfgUsername+'«', 'Please enter the password which should be used to connect to »'+self.cfgServer+'«.', QLineEdit.Password)
-			if ok and item: self.cfgPassword = item
+			if ok and item:
+				self.cfgPassword = item
+				self.connection = None
 			else: return False
 		self.SaveSettings()
-		return True
+
+		# try to bind to server via NTLM
+		try:
+			self.connection = Connection(self.server, user=self.cfgDomain+'\\'+self.cfgUsername, password=self.cfgPassword, authentication=NTLM, auto_bind=True)
+			#self.connection.bind()
+		except Exception as e:
+			self.cfgUsername = ''
+			self.cfgPassword = ''
+			self.showErrorDialog('Error binding to LDAP server', str(e))
+			return False
+
+		return True # return if connection created successfully
 
 	def createLdapBase(self, domain):
+		# convert FQDN "example.com" to LDAP path notation "DC=example,DC=com"
 		search_base = ""
 		base = domain.split(".")
 		for b in base:
@@ -283,13 +322,7 @@ class LapsMainWindow(QMainWindow):
 				self.cfgDomain = cfgJson['domain']
 				self.cfgUsername = cfgJson['username']
 		except Exception as e:
-			print(str(e))
-			msg = QMessageBox()
-			msg.setIcon(QMessageBox.Critical)
-			msg.setWindowTitle('Error loading command file')
-			msg.setText(str(e))
-			msg.setStandardButtons(QMessageBox.Ok)
-			retval = msg.exec_()
+			self.showErrorDialog('Error loading command file', str(e))
 
 	def SaveSettings(self):
 		try:
@@ -300,13 +333,16 @@ class LapsMainWindow(QMainWindow):
 					'username': self.cfgUsername
 				}, json_file, indent=4)
 		except Exception as e:
-			print(str(e))
-			msg = QMessageBox()
-			msg.setIcon(QMessageBox.Critical)
-			msg.setWindowTitle('Error loading command file')
-			msg.setText(str(e))
-			msg.setStandardButtons(QMessageBox.Ok)
-			retval = msg.exec_()
+			self.showErrorDialog('Error saving command file', str(e))
+
+	def showErrorDialog(self, title, text):
+		print('Error: '+text)
+		msg = QMessageBox()
+		msg.setIcon(QMessageBox.Critical)
+		msg.setWindowTitle(title)
+		msg.setText(text)
+		msg.setStandardButtons(QMessageBox.Ok)
+		retval = msg.exec_()
 
 def main():
 	app = QApplication(sys.argv)

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from ldap3 import ALL, Server, Connection, NTLM, extend, SUBTREE, utils, MODIFY_REPLACE
+from ldap3 import ALL, Server, Connection, NTLM, extend, SUBTREE, utils, MODIFY_REPLACE, Tls, SASL, KERBEROS
 from pathlib import Path
 from os import path
 from datetime import datetime
@@ -33,16 +33,19 @@ def filetime_to_dt(ft):
 
 
 class LapsCli():
-	PRODUCT_NAME      = "LAPS4LINUX CLI"
-	PRODUCT_VERSION   = "1.0.0"
-	PRODUCT_WEBSITE   = "https://github.com/schorschii/laps4linux"
+	PRODUCT_NAME      = 'LAPS4LINUX CLI'
+	PRODUCT_VERSION   = '1.0.0'
+	PRODUCT_WEBSITE   = 'https://github.com/schorschii/laps4linux'
+
+	server      = None
+	connection  = None
 
 	cfgPath     = str(Path.home())+'/.laps-client.json'
-	cfgServer   = ""
-	cfgDomain   = ""
-	cfgUsername = ""
-	cfgPassword = ""
-	tmpDn       = ""
+	cfgServer   = ''
+	cfgDomain   = ''
+	cfgUsername = ''
+	cfgPassword = ''
+	tmpDn       = ''
 
 	def __init__(self, *args, **kwargs):
 		self.LoadSettings()
@@ -62,16 +65,14 @@ class LapsCli():
 		if not computerName == '*': computerName = utils.conv.escape_filter_chars(computerName)
 
 		# ask for credentials
-		if not self.checkCredentials(): return
+		if not self.checkCredentialsAndConnect(): return
 		print('Connection: '+self.cfgServer+': '+self.cfgUsername+'@'+self.cfgDomain)
 
 		try:
-			# connect to server and start query
+			# start LDAP query
 			count = 0
-			s = Server(self.cfgServer, get_info=ALL)
-			c = Connection(s, user=self.cfgDomain+'\\'+self.cfgUsername, password=self.cfgPassword, authentication=NTLM, auto_bind=True)
-			c.search(search_base=self.createLdapBase(self.cfgDomain), search_filter='(&(objectCategory=computer)(ms-MCS-AdmPwd=*)(name='+computerName+'))',attributes=['ms-MCS-AdmPwd','ms-MCS-AdmPwdExpirationTime','SAMAccountname','distinguishedName'])
-			for entry in c.entries:
+			self.connection.search(search_base=self.createLdapBase(self.cfgDomain), search_filter='(&(objectCategory=computer)(ms-MCS-AdmPwd=*)(name='+computerName+'))',attributes=['ms-MCS-AdmPwd','ms-MCS-AdmPwdExpirationTime','SAMAccountname','distinguishedName'])
+			for entry in self.connection.entries:
 				count += 1
 				# display result
 				if computerName == '*':
@@ -92,8 +93,6 @@ class LapsCli():
 		except Exception as e:
 			# display error
 			print('Error: '+str(e))
-			self.cfgUsername = ''
-			self.cfgPassword = ''
 
 		self.tmpDn = ''
 
@@ -102,7 +101,7 @@ class LapsCli():
 		if self.tmpDn.strip() == '': return
 
 		# ask for credentials
-		if not self.checkCredentials(): return
+		if not self.checkCredentialsAndConnect(): return
 
 		try:
 			# calc new time
@@ -110,37 +109,77 @@ class LapsCli():
 			newExpirationDateTime = dt_to_filetime( newExpirationDate )
 			print('New Expiration: '+str(newExpirationDateTime)+' ('+str(newExpirationDate)+')')
 
-			# connect to server and start query
-			s = Server(self.cfgServer, get_info=ALL)
-			c = Connection(s, user=self.cfgDomain+'\\'+self.cfgUsername, password=self.cfgPassword, authentication=NTLM, auto_bind=True)
-			c.modify(self.tmpDn, { 'ms-Mcs-AdmPwdExpirationTime': [(MODIFY_REPLACE, [str(newExpirationDateTime)])] })
-			if c.result['result'] == 0:
+			# start LDAP query
+			self.connection.modify(self.tmpDn, { 'ms-Mcs-AdmPwdExpirationTime': [(MODIFY_REPLACE, [str(newExpirationDateTime)])] })
+			if self.connection.result['result'] == 0:
 				print('Expiration Date Changed Successfully.')
 		except Exception as e:
 			# display error
 			print('Error: '+str(e))
 
-	def checkCredentials(self):
+	def checkCredentialsAndConnect(self):
+		if self.server != None and self.connection != None: return True
+
+		# ask for server address and domain name if not already set via config file
 		if self.cfgServer == "":
 			item = input('💻 LDAP Server Address: ')
-			if item and item.strip() != "": self.cfgServer = item
+			if item and item.strip() != "":
+				self.cfgServer = item
+				self.server = None
 			else: return False
 		if self.cfgDomain == "":
 			item = input('♕ Domain Name (e.g. example.com): ')
-			if item and item.strip() != "": self.cfgDomain = item
+			if item and item.strip() != "":
+				self.cfgDomain = item
+				self.server = None
 			else: return False
+		self.SaveSettings()
+
+		# establish server connection
+		if self.server == None:
+			try:
+				self.server = Server(self.cfgServer, get_info=ALL)
+			except Exception as e:
+				print('Error connecting to LDAP server: ', str(e))
+				return False
+
+		# try to bind to server via Kerberos
+		try:
+			self.connection = Connection(self.server, authentication=SASL, sasl_mechanism=KERBEROS, auto_bind=True)
+			#self.connection.bind()
+			return True # return if connection created successfully
+		except Exception as e:
+			print('Unable to connect via Kerberos: '+str(e))
+
+		# ask for username and password for NTLM bind
 		if self.cfgUsername == "":
 			item = input('👤 Username ['+getpass.getuser()+']: ') or getpass.getuser()
-			if item and item.strip() != "": self.cfgUsername = item
+			if item and item.strip() != "":
+				self.cfgUsername = item
+				self.connection = None
 			else: return False
 		if self.cfgPassword == "":
 			item = getpass.getpass('🔑 Password for »'+self.cfgUsername+'«: ')
-			if item and item.strip() != "": self.cfgPassword = item
+			if item and item.strip() != "":
+				self.cfgPassword = item
+				self.connection = None
 			else: return False
 		self.SaveSettings()
+
+		# try to bind to server via NTLM
+		try:
+			self.connection = Connection(self.server, user=self.cfgDomain+'\\'+self.cfgUsername, password=self.cfgPassword, authentication=NTLM, auto_bind=True)
+			#self.connection.bind()
+		except Exception as e:
+			self.cfgUsername = ''
+			self.cfgPassword = ''
+			print('Error binding to LDAP server: ', str(e))
+			return False
+
 		return True
 
 	def createLdapBase(self, domain):
+		# convert FQDN "example.com" to LDAP path notation "DC=example,DC=com"
 		search_base = ""
 		base = domain.split(".")
 		for b in base:
@@ -156,13 +195,7 @@ class LapsCli():
 				self.cfgDomain = cfgJson['domain']
 				self.cfgUsername = cfgJson['username']
 		except Exception as e:
-			print(str(e))
-			msg = QMessageBox()
-			msg.setIcon(QMessageBox.Critical)
-			msg.setWindowTitle('Error loading command file')
-			msg.setText(str(e))
-			msg.setStandardButtons(QMessageBox.Ok)
-			retval = msg.exec_()
+			print('Error loading command file: '+str(e))
 
 	def SaveSettings(self):
 		try:
@@ -173,13 +206,7 @@ class LapsCli():
 					'username': self.cfgUsername
 				}, json_file, indent=4)
 		except Exception as e:
-			print(str(e))
-			msg = QMessageBox()
-			msg.setIcon(QMessageBox.Critical)
-			msg.setWindowTitle('Error loading command file')
-			msg.setText(str(e))
-			msg.setStandardButtons(QMessageBox.Ok)
-			retval = msg.exec_()
+			print('Error saving command file: '+str(e))
 
 def main():
 	cli = LapsCli()
