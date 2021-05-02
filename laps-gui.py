@@ -91,6 +91,8 @@ class LapsMainWindow(QMainWindow):
 
 	cfgPath     = str(Path.home())+'/.laps-client.json'
 	cfgServer   = ''
+	cfgPort     = 389 #636 for SSL
+	cfgSsl      = False
 	cfgDomain   = ''
 	cfgUsername = ''
 	cfgPassword = ''
@@ -203,7 +205,7 @@ class LapsMainWindow(QMainWindow):
 				print('expiration time: '+str(entry['ms-Mcs-AdmPwdExpirationTime']))
 				self.txtPassword.setText(str(entry['ms-Mcs-AdmPwd']))
 				self.txtPasswordExpires.setText(str(entry['ms-Mcs-AdmPwdExpirationTime']))
-				self.statusBar.showMessage('Found: '+str(entry['distinguishedName'])+' ('+self.cfgServer+': '+self.cfgUsername+'@'+self.cfgDomain+')')
+				self.statusBar.showMessage('Found: '+str(entry['distinguishedName'])+' ('+self.cfgServer+':'+str(self.cfgPort)+' '+self.cfgUsername+'@'+self.cfgDomain+')')
 				self.tmpDn = str(entry['distinguishedName'])
 				self.btnSetExpirationTime.setEnabled(True)
 				self.btnSearchComputer.setEnabled(True)
@@ -215,7 +217,7 @@ class LapsMainWindow(QMainWindow):
 			# no result found
 			self.txtPassword.setText('')
 			self.txtPasswordExpires.setText('')
-			self.statusBar.showMessage('No Result For: '+computerName+' ('+self.cfgServer+': '+self.cfgUsername+'@'+self.cfgDomain+')')
+			self.statusBar.showMessage('No Result For: '+computerName+' ('+self.cfgServer+':'+str(self.cfgPort)+' '+self.cfgUsername+'@'+self.cfgDomain+')')
 		except Exception as e:
 			# display error
 			self.statusBar.showMessage(str(e))
@@ -239,7 +241,7 @@ class LapsMainWindow(QMainWindow):
 			# start LDAP query
 			self.connection.modify(self.tmpDn, { 'ms-Mcs-AdmPwdExpirationTime': [(MODIFY_REPLACE, [str(newExpirationDateTime)])] })
 			if self.connection.result['result'] == 0:
-				self.statusBar.showMessage('Expiration Date Changed Successfully: '+self.tmpDn+' ('+self.cfgServer+': '+self.cfgUsername+'@'+self.cfgDomain+')')
+				self.statusBar.showMessage('Expiration Date Changed Successfully: '+self.tmpDn+' ('+self.cfgServer+':'+str(self.cfgPort)+' '+self.cfgUsername+'@'+self.cfgDomain+')')
 		except Exception as e:
 			# display error
 			self.statusBar.showMessage(str(e))
@@ -265,7 +267,7 @@ class LapsMainWindow(QMainWindow):
 		# establish server connection
 		if self.server == None:
 			try:
-				self.server = Server(self.cfgServer, get_info=ALL)
+				self.server = Server(self.cfgServer, port=self.cfgPort, use_ssl=self.cfgSsl, get_info=ALL)
 			except Exception as e:
 				self.showErrorDialog('Error connecting to LDAP server', str(e))
 				return False
@@ -318,22 +320,26 @@ class LapsMainWindow(QMainWindow):
 		try:
 			with open(self.cfgPath) as f:
 				cfgJson = json.load(f)
-				self.cfgServer = cfgJson['server']
-				self.cfgDomain = cfgJson['domain']
-				self.cfgUsername = cfgJson['username']
+				self.cfgServer = cfgJson.get('server', '')
+				self.cfgDomain = cfgJson.get('domain', '')
+				self.cfgUsername = cfgJson.get('username', '')
+				self.cfgPort = int(cfgJson.get('port', self.cfgPort))
+				self.cfgSsl = bool(cfgJson.get('ssl', self.cfgSsl))
 		except Exception as e:
-			self.showErrorDialog('Error loading command file', str(e))
+			self.showErrorDialog('Error loading settings file', str(e))
 
 	def SaveSettings(self):
 		try:
 			with open(self.cfgPath, 'w') as json_file:
 				json.dump({
 					'server': self.cfgServer,
+					'port': self.cfgPort,
+					'ssl': self.cfgSsl,
 					'domain': self.cfgDomain,
 					'username': self.cfgUsername
 				}, json_file, indent=4)
 		except Exception as e:
-			self.showErrorDialog('Error saving command file', str(e))
+			self.showErrorDialog('Error saving settings file', str(e))
 
 	def showErrorDialog(self, title, text):
 		print('Error: '+text)

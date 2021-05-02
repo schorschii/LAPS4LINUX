@@ -42,6 +42,8 @@ class LapsCli():
 
 	cfgPath     = str(Path.home())+'/.laps-client.json'
 	cfgServer   = ''
+	cfgPort     = 389 #636 for SSL
+	cfgSsl      = False
 	cfgDomain   = ''
 	cfgUsername = ''
 	cfgPassword = ''
@@ -66,7 +68,7 @@ class LapsCli():
 
 		# ask for credentials
 		if not self.checkCredentialsAndConnect(): return
-		print('Connection: '+self.cfgServer+': '+self.cfgUsername+'@'+self.cfgDomain)
+		print('Connection: '+self.cfgServer+':'+str(self.cfgPort)+' '+self.cfgUsername+'@'+self.cfgDomain)
 
 		try:
 			# start LDAP query
@@ -138,7 +140,7 @@ class LapsCli():
 		# establish server connection
 		if self.server == None:
 			try:
-				self.server = Server(self.cfgServer, get_info=ALL)
+				self.server = Server(self.cfgServer, port=self.cfgPort, use_ssl=self.cfgSsl, get_info=ALL)
 			except Exception as e:
 				print('Error connecting to LDAP server: ', str(e))
 				return False
@@ -191,22 +193,26 @@ class LapsCli():
 		try:
 			with open(self.cfgPath) as f:
 				cfgJson = json.load(f)
-				self.cfgServer = cfgJson['server']
-				self.cfgDomain = cfgJson['domain']
-				self.cfgUsername = cfgJson['username']
+				self.cfgServer = cfgJson.get('server', '')
+				self.cfgDomain = cfgJson.get('domain', '')
+				self.cfgUsername = cfgJson.get('username', '')
+				self.cfgPort = int(cfgJson.get('port', self.cfgPort))
+				self.cfgSsl = bool(cfgJson.get('ssl', self.cfgSsl))
 		except Exception as e:
-			print('Error loading command file: '+str(e))
+			print('Error loading settings file: '+str(e))
 
 	def SaveSettings(self):
 		try:
 			with open(self.cfgPath, 'w') as json_file:
 				json.dump({
 					'server': self.cfgServer,
+					'port': self.cfgPort,
+					'ssl': self.cfgSsl,
 					'domain': self.cfgDomain,
 					'username': self.cfgUsername
 				}, json_file, indent=4)
 		except Exception as e:
-			print('Error saving command file: '+str(e))
+			print('Error saving settings file: '+str(e))
 
 def main():
 	cli = LapsCli()
