@@ -4,8 +4,8 @@
 from ldap3 import ALL, Server, Connection, NTLM, extend, SUBTREE, utils, MODIFY_REPLACE
 from pathlib import Path
 from os import path
-from getpass import getpass
 from datetime import datetime
+import getpass
 import argparse
 import json
 import sys
@@ -37,7 +37,7 @@ class LapsCli():
 	PRODUCT_VERSION   = "1.0.0"
 	PRODUCT_WEBSITE   = "https://github.com/schorschii/laps4linux"
 
-	cfgPath     = str(Path.home())+'/.laps-gui.json'
+	cfgPath     = str(Path.home())+'/.laps-client.json'
 	cfgServer   = ""
 	cfgDomain   = ""
 	cfgUsername = ""
@@ -130,11 +130,11 @@ class LapsCli():
 			if item and item.strip() != "": self.cfgDomain = item
 			else: return False
 		if self.cfgUsername == "":
-			item = input('👤 Username: ')
+			item = input('👤 Username ['+getpass.getuser()+']: ') or getpass.getuser()
 			if item and item.strip() != "": self.cfgUsername = item
 			else: return False
 		if self.cfgPassword == "":
-			item = getpass('🔑 Password: ')
+			item = getpass.getpass('🔑 Password for »'+self.cfgUsername+'«: ')
 			if item and item.strip() != "": self.cfgPassword = item
 			else: return False
 		self.SaveSettings()

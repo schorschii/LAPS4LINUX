@@ -7,6 +7,7 @@ from PyQt5.QtGui import *
 from PyQt5.QtCore import *
 from pathlib import Path
 from os import path
+import getpass
 import json
 import sys
 
@@ -85,7 +86,7 @@ class LapsMainWindow(QMainWindow):
 	PRODUCT_VERSION   = "1.0.0"
 	PRODUCT_WEBSITE   = "https://georg-sieber.de"
 
-	cfgPath     = str(Path.home())+'/.laps-gui.json'
+	cfgPath     = str(Path.home())+'/.laps-client.json'
 	cfgServer   = ""
 	cfgDomain   = ""
 	cfgUsername = ""
@@ -256,11 +257,11 @@ class LapsMainWindow(QMainWindow):
 			if ok and item: self.cfgDomain = item
 			else: return False
 		if self.cfgUsername == "":
-			item, ok = QInputDialog.getText(self, '👤 Username', 'Please enter the username which should be used to connect to your LDAP server.')
+			item, ok = QInputDialog.getText(self, '👤 Username', 'Please enter the username which should be used to connect to »'+self.cfgServer+'«.', QLineEdit.Normal, getpass.getuser())
 			if ok and item: self.cfgUsername = item
 			else: return False
 		if self.cfgPassword == "":
-			item, ok = QInputDialog.getText(self, '🔑 Password', 'Please enter the password which should be used to connect to your LDAP server.', QLineEdit.Password)
+			item, ok = QInputDialog.getText(self, '🔑 Password for »'+self.cfgUsername+'«', 'Please enter the password which should be used to connect to »'+self.cfgServer+'«.', QLineEdit.Password)
 			if ok and item: self.cfgPassword = item
 			else: return False
 		self.SaveSettings()
