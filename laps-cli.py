@@ -95,6 +95,9 @@ class LapsCli():
 		except Exception as e:
 			# display error
 			print('Error: '+str(e))
+			# reset connection
+			self.server = None
+			self.connection = None
 
 		self.tmpDn = ''
 
@@ -118,6 +121,9 @@ class LapsCli():
 		except Exception as e:
 			# display error
 			print('Error: '+str(e))
+			# reset connection
+			self.server = None
+			self.connection = None
 
 	def checkCredentialsAndConnect(self):
 		if self.server != None and self.connection != None: return True

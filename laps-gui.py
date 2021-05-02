@@ -221,6 +221,9 @@ class LapsMainWindow(QMainWindow):
 		except Exception as e:
 			# display error
 			self.statusBar.showMessage(str(e))
+			# reset connection
+			self.server = None
+			self.connection = None
 
 		self.tmpDn = ''
 		self.btnSetExpirationTime.setEnabled(False)
@@ -245,6 +248,9 @@ class LapsMainWindow(QMainWindow):
 		except Exception as e:
 			# display error
 			self.statusBar.showMessage(str(e))
+			# reset connection
+			self.server = None
+			self.connection = None
 
 	def checkCredentialsAndConnect(self):
 		if self.server != None and self.connection != None: return True
