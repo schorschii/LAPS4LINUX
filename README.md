@@ -41,6 +41,8 @@ Expiration Date Changed Successfully.
 ## Management Client: GUI
 ![screenshot](.github/screenshot.png)
 
+The client (both GUI and CLI) supports Kerberos authentication which means that you can use the client without entering a password if you are logged in with a domain account. If not, NTLM authentication is used as fallback and the client will ask you for username and password.
+
 It is highly recommended to turn on SSL in the config file (`~/.laps-client.json`) if your LDAP server has a valid certificate (set `ssl` to `true` and `port` to `636`).
 
 ## Runner
