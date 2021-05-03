@@ -40,6 +40,7 @@ Expiration Date Changed Successfully.
 
 ## Management Client: GUI
 ![screenshot](.github/screenshot.png)
+
 It is highly recommended to turn on SSL in the config file (`~/.laps-client.json`) if your LDAP server has a valid certificate (set `ssl` to `true` and `port` to `636`).
 
 ## Runner
