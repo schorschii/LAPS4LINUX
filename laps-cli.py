@@ -68,7 +68,7 @@ class LapsCli():
 
 		# ask for credentials
 		if not self.checkCredentialsAndConnect(): return
-		print('Connection: '+self.cfgServer+':'+str(self.cfgPort)+' '+self.cfgUsername+'@'+self.cfgDomain)
+		print('Connection:     '+self.cfgServer+':'+str(self.cfgPort)+' '+self.cfgUsername+'@'+self.cfgDomain)
 
 		try:
 			# start LDAP query
@@ -80,14 +80,14 @@ class LapsCli():
 				if computerName == '*':
 					print(str(entry['SAMAccountname'])+' : '+str(entry['ms-Mcs-AdmPwd']))
 				else:
-					print('Found:      '+str(entry['distinguishedName']))
-					print('Password:   '+str(entry['ms-Mcs-AdmPwd']))
+					print('Found:          '+str(entry['distinguishedName']))
+					print('Password:       '+str(entry['ms-Mcs-AdmPwd']))
 					self.tmpDn = str(entry['distinguishedName'])
 					try:
-						print( 'Expiration: '+str(entry['ms-Mcs-AdmPwdExpirationTime'])+' ('+str(filetime_to_dt( int(str(entry['ms-Mcs-AdmPwdExpirationTime'])) ))+')' )
+						print( 'Expiration:     '+str(entry['ms-Mcs-AdmPwdExpirationTime'])+' ('+str(filetime_to_dt( int(str(entry['ms-Mcs-AdmPwdExpirationTime'])) ))+')' )
 					except Exception as e:
 						print('Error: '+str(e))
-						print('Expiration: '+str(entry['ms-Mcs-AdmPwdExpirationTime']))
+						print('Expiration:     '+str(entry['ms-Mcs-AdmPwdExpirationTime']))
 					return
 
 			# no result found
