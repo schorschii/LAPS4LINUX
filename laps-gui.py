@@ -7,30 +7,18 @@ from PyQt5.QtGui import *
 from PyQt5.QtCore import *
 from pathlib import Path
 from os import path
+from datetime import datetime
 import getpass
 import json
 import sys
 
 # Microsoft Timestamp Conversion
-from datetime import datetime, timedelta, tzinfo
-from calendar import timegm
-EPOCH_AS_FILETIME = 116444736000000000  # January 1, 1970 as MS file time
+EPOCH_TIMESTAMP = 11644473600  # January 1, 1970 as MS file time
 HUNDREDS_OF_NANOSECONDS = 10000000
-ZERO = timedelta(0)
-HOUR = timedelta(hours=1)
-class UTC(tzinfo):
-	def utcoffset(self, dt):
-		return ZERO
-	def tzname(self, dt):
-		return "UTC"
-	def dst(self, dt):
-		return ZERO
-def dt_to_filetime(dt):
-	utc = UTC()
-	if(dt.tzinfo is None) or (dt.tzinfo.utcoffset(dt) is None): dt = dt.replace(tzinfo=utc)
-	return EPOCH_AS_FILETIME + (timegm(dt.timetuple()) * HUNDREDS_OF_NANOSECONDS)
-def filetime_to_dt(ft):
-	return datetime.utcfromtimestamp((ft - EPOCH_AS_FILETIME) / HUNDREDS_OF_NANOSECONDS)
+def dt_to_filetime(dt): # dt.timestamp() returns UTC time as expected by the LDAP server
+	return int((dt.timestamp() + EPOCH_TIMESTAMP) * HUNDREDS_OF_NANOSECONDS)
+def filetime_to_dt(ft): # ft is in UTC, fromtimestamp() converts to local time
+	return datetime.fromtimestamp(int((ft / HUNDREDS_OF_NANOSECONDS) - EPOCH_TIMESTAMP))
 
 
 class LapsAboutWindow(QDialog):
@@ -202,7 +190,7 @@ class LapsMainWindow(QMainWindow):
 			self.connection.search(search_base=self.createLdapBase(self.cfgDomain), search_filter='(&(objectCategory=computer)(ms-MCS-AdmPwd=*)(name='+computerName+'))',attributes=['ms-MCS-AdmPwd','ms-MCS-AdmPwdExpirationTime','SAMAccountname','distinguishedName'])
 			for entry in self.connection.entries:
 				# display result
-				print('expiration time: '+str(entry['ms-Mcs-AdmPwdExpirationTime']))
+				print('expiration time:     '+str(entry['ms-Mcs-AdmPwdExpirationTime']))
 				self.txtPassword.setText(str(entry['ms-Mcs-AdmPwd']))
 				self.txtPasswordExpires.setText(str(entry['ms-Mcs-AdmPwdExpirationTime']))
 				self.statusBar.showMessage('Found: '+str(entry['distinguishedName'])+' ('+self.cfgServer+':'+str(self.cfgPort)+' '+self.cfgUsername+'@'+self.cfgDomain+')')

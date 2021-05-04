@@ -5,6 +5,7 @@ from ldap3 import ALL, Server, Connection, NTLM, extend, SUBTREE, utils, MODIFY_
 from pathlib import Path
 from os import path
 from crypt import crypt
+from datetime import datetime, timedelta
 import subprocess
 import secrets
 import string
@@ -17,25 +18,12 @@ import logging
 import logging.handlers
 
 # Microsoft Timestamp Conversion
-from datetime import datetime, timedelta, tzinfo, date
-from calendar import timegm
-EPOCH_AS_FILETIME = 116444736000000000  # January 1, 1970 as MS file time
+EPOCH_TIMESTAMP = 11644473600  # January 1, 1970 as MS file time
 HUNDREDS_OF_NANOSECONDS = 10000000
-ZERO = timedelta(0)
-HOUR = timedelta(hours=1)
-class UTC(tzinfo):
-	def utcoffset(self, dt):
-		return ZERO
-	def tzname(self, dt):
-		return "UTC"
-	def dst(self, dt):
-		return ZERO
-def dt_to_filetime(dt):
-	utc = UTC()
-	if(dt.tzinfo is None) or (dt.tzinfo.utcoffset(dt) is None): dt = dt.replace(tzinfo=utc)
-	return EPOCH_AS_FILETIME + (timegm(dt.timetuple()) * HUNDREDS_OF_NANOSECONDS)
-def filetime_to_dt(ft):
-	return datetime.utcfromtimestamp((ft - EPOCH_AS_FILETIME) / HUNDREDS_OF_NANOSECONDS)
+def dt_to_filetime(dt): # dt.timestamp() returns UTC time as expected by the LDAP server
+	return int((dt.timestamp() + EPOCH_TIMESTAMP) * HUNDREDS_OF_NANOSECONDS)
+def filetime_to_dt(ft): # ft is in UTC, fromtimestamp() converts to local time
+	return datetime.fromtimestamp(int((ft / HUNDREDS_OF_NANOSECONDS) - EPOCH_TIMESTAMP))
 
 
 class LapsRunner():
@@ -228,7 +216,7 @@ def main():
 
 	except Exception as e:
 		print('Error: '+str(e))
-		runner.logger.critical('LAPS4LINUX: Error while executing workflow '+str(e))
+		runner.logger.critical('LAPS4LINUX: Error while executing workflow: '+str(e))
 		exit(1)
 
 	return
