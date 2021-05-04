@@ -71,7 +71,7 @@ class LapsAboutWindow(QDialog):
 
 class LapsMainWindow(QMainWindow):
 	PRODUCT_NAME      = 'LAPS4LINUX'
-	PRODUCT_VERSION   = '1.1.0'
+	PRODUCT_VERSION   = '1.2.0'
 	PRODUCT_WEBSITE   = 'https://github.com/schorschii/laps4linux'
 
 	server      = None
