@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from ldap3 import ALL, Server, Connection, NTLM, extend, SUBTREE, utils, MODIFY_REPLACE, Tls, SASL, KERBEROS
+from ldap3 import ALL, Server, ServerPool, Connection, NTLM, extend, SUBTREE, utils, MODIFY_REPLACE, SASL, KERBEROS, ROUND_ROBIN
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
@@ -41,7 +41,7 @@ class LapsAboutWindow(QDialog):
 		labelCopyright = QLabel(self)
 		labelCopyright.setText(
 			"<br>"
-			"© 2021 <a href='https://github.com/schorschii'>Georg Sieber</a>"
+			"© 2021 <a href='https://georg-sieber.de'>Georg Sieber</a>"
 			"<br>"
 			"<br>"
 			"GNU General Public License v3.0"
@@ -72,15 +72,13 @@ class LapsAboutWindow(QDialog):
 class LapsMainWindow(QMainWindow):
 	PRODUCT_NAME      = 'LAPS4LINUX'
 	PRODUCT_VERSION   = '1.1.0'
-	PRODUCT_WEBSITE   = 'https://georg-sieber.de'
+	PRODUCT_WEBSITE   = 'https://github.com/schorschii/laps4linux'
 
 	server      = None
 	connection  = None
 
 	cfgPath     = str(Path.home())+'/.laps-client.json'
-	cfgServer   = ''
-	cfgPort     = 389 #636 for SSL
-	cfgSsl      = False
+	cfgServer   = []
 	cfgDomain   = ''
 	cfgUsername = ''
 	cfgPassword = ''
@@ -193,7 +191,7 @@ class LapsMainWindow(QMainWindow):
 				print('expiration time:     '+str(entry['ms-Mcs-AdmPwdExpirationTime']))
 				self.txtPassword.setText(str(entry['ms-Mcs-AdmPwd']))
 				self.txtPasswordExpires.setText(str(entry['ms-Mcs-AdmPwdExpirationTime']))
-				self.statusBar.showMessage('Found: '+str(entry['distinguishedName'])+' ('+self.cfgServer+':'+str(self.cfgPort)+' '+self.cfgUsername+'@'+self.cfgDomain+')')
+				self.statusBar.showMessage('Found: '+str(entry['distinguishedName'])+' ('+str(self.connection.server)+' '+self.cfgUsername+'@'+self.cfgDomain+')')
 				self.tmpDn = str(entry['distinguishedName'])
 				self.btnSetExpirationTime.setEnabled(True)
 				self.btnSearchComputer.setEnabled(True)
@@ -205,7 +203,7 @@ class LapsMainWindow(QMainWindow):
 			# no result found
 			self.txtPassword.setText('')
 			self.txtPasswordExpires.setText('')
-			self.statusBar.showMessage('No Result For: '+computerName+' ('+self.cfgServer+':'+str(self.cfgPort)+' '+self.cfgUsername+'@'+self.cfgDomain+')')
+			self.statusBar.showMessage('No Result For: '+computerName+' ('+str(self.connection.server)+' '+self.cfgUsername+'@'+self.cfgDomain+')')
 		except Exception as e:
 			# display error
 			self.statusBar.showMessage(str(e))
@@ -232,7 +230,7 @@ class LapsMainWindow(QMainWindow):
 			# start LDAP query
 			self.connection.modify(self.tmpDn, { 'ms-Mcs-AdmPwdExpirationTime': [(MODIFY_REPLACE, [str(newExpirationDateTime)])] })
 			if self.connection.result['result'] == 0:
-				self.statusBar.showMessage('Expiration Date Changed Successfully: '+self.tmpDn+' ('+self.cfgServer+':'+str(self.cfgPort)+' '+self.cfgUsername+'@'+self.cfgDomain+')')
+				self.statusBar.showMessage('Expiration Date Changed Successfully: '+self.tmpDn+' ('+str(self.connection.server)+' '+self.cfgUsername+'@'+self.cfgDomain+')')
 		except Exception as e:
 			# display error
 			self.statusBar.showMessage(str(e))
@@ -244,10 +242,14 @@ class LapsMainWindow(QMainWindow):
 		if self.server != None and self.connection != None: return True
 
 		# ask for server address and domain name if not already set via config file
-		if self.cfgServer == "":
+		if len(self.cfgServer) == 0:
 			item, ok = QInputDialog.getText(self, '💻 Server Address', 'Please enter your LDAP server IP address or DNS name.')
 			if ok and item:
-				self.cfgServer = item
+				self.cfgServer.append({
+					'address': item,
+					'port': 389,
+					'ssl': False
+				})
 				self.server = None
 			else: return False
 		if self.cfgDomain == "":
@@ -261,7 +263,10 @@ class LapsMainWindow(QMainWindow):
 		# establish server connection
 		if self.server == None:
 			try:
-				self.server = Server(self.cfgServer, port=self.cfgPort, use_ssl=self.cfgSsl, get_info=ALL)
+				serverArray = []
+				for server in self.cfgServer:
+					serverArray.append(Server(server['address'], port=server['port'], use_ssl=server['ssl'], get_info=ALL))
+				self.server = ServerPool(serverArray, ROUND_ROBIN, active=True, exhaust=True)
 			except Exception as e:
 				self.showErrorDialog('Error connecting to LDAP server', str(e))
 				return False
@@ -276,13 +281,13 @@ class LapsMainWindow(QMainWindow):
 
 		# ask for username and password for NTLM bind
 		if self.cfgUsername == "":
-			item, ok = QInputDialog.getText(self, '👤 Username', 'Please enter the username which should be used to connect to »'+self.cfgServer+'«.', QLineEdit.Normal, getpass.getuser())
+			item, ok = QInputDialog.getText(self, '👤 Username', 'Please enter the username which should be used to connect to:\n'+str(self.cfgServer)+'.', QLineEdit.Normal, getpass.getuser())
 			if ok and item:
 				self.cfgUsername = item
 				self.connection = None
 			else: return False
 		if self.cfgPassword == "":
-			item, ok = QInputDialog.getText(self, '🔑 Password for »'+self.cfgUsername+'«', 'Please enter the password which should be used to connect to »'+self.cfgServer+'«.', QLineEdit.Password)
+			item, ok = QInputDialog.getText(self, '🔑 Password for »'+self.cfgUsername+'«', 'Please enter the password which should be used to connect to:\n'+str(self.cfgServer)+'.', QLineEdit.Password)
 			if ok and item:
 				self.cfgPassword = item
 				self.connection = None
@@ -314,11 +319,14 @@ class LapsMainWindow(QMainWindow):
 		try:
 			with open(self.cfgPath) as f:
 				cfgJson = json.load(f)
-				self.cfgServer = cfgJson.get('server', '')
+				for server in cfgJson.get('server', ''):
+					self.cfgServer.append({
+						'address': str(server['address']),
+						'port': int(server['port']),
+						'ssl': bool(server['ssl'])
+					})
 				self.cfgDomain = cfgJson.get('domain', '')
 				self.cfgUsername = cfgJson.get('username', '')
-				self.cfgPort = int(cfgJson.get('port', self.cfgPort))
-				self.cfgSsl = bool(cfgJson.get('ssl', self.cfgSsl))
 		except Exception as e:
 			self.showErrorDialog('Error loading settings file', str(e))
 
@@ -327,8 +335,6 @@ class LapsMainWindow(QMainWindow):
 			with open(self.cfgPath, 'w') as json_file:
 				json.dump({
 					'server': self.cfgServer,
-					'port': self.cfgPort,
-					'ssl': self.cfgSsl,
 					'domain': self.cfgDomain,
 					'username': self.cfgUsername
 				}, json_file, indent=4)

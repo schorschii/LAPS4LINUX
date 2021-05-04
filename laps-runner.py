@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from ldap3 import ALL, Server, Connection, NTLM, extend, SUBTREE, utils, MODIFY_REPLACE, SASL, KERBEROS
+from ldap3 import ALL, Server, ServerPool, Connection, NTLM, extend, SUBTREE, utils, MODIFY_REPLACE, SASL, KERBEROS, ROUND_ROBIN
 from pathlib import Path
 from os import path
 from crypt import crypt
@@ -12,7 +12,7 @@ import string
 import socket
 import getpass
 import argparse
-import configparser
+import json
 import sys, os
 import logging
 import logging.handlers
@@ -38,9 +38,7 @@ class LapsRunner():
 	cfgCredCacheFile    = '/tmp/laps.temp'
 	cfgClientKeytabFile = '/etc/krb5.keytab'
 	cfgPath       = '/etc/laps-runner.ini'
-	cfgServer     = ''
-	cfgPort       = 389
-	cfgSsl        = False
+	cfgServer     = []
 	cfgDomain     = ''
 
 	cfgUsername   = 'root' # the user, whose password should be changed
@@ -82,9 +80,12 @@ class LapsRunner():
 		os.environ['KRB5_CLIENT_KTNAME'] = self.cfgClientKeytabFile
 
 		# connect to server with kerberos ticket
-		self.server = Server(self.cfgServer, port=self.cfgPort, use_ssl=self.cfgSsl)
+		serverArray = []
+		for server in self.cfgServer:
+			serverArray.append(Server(server['address'], port=server['port'], use_ssl=server['ssl'], get_info=ALL))
+		self.server = ServerPool(serverArray, ROUND_ROBIN, active=True, exhaust=True)
 		self.connection = Connection(self.server, authentication=SASL, sasl_mechanism=KERBEROS, auto_bind=True)
-		print('Connected as: '+self.cfgServer+':'+str(self.cfgPort)+' '+self.connection.extend.standard.who_am_i()+'@'+self.cfgDomain)
+		print('Connected as: '+str(self.connection.server)+' '+self.connection.extend.standard.who_am_i()+'@'+self.cfgDomain)
 
 	def searchComputer(self):
 		if self.connection == None: raise Exception('No connection established')
@@ -130,7 +131,7 @@ class LapsRunner():
 		res = subprocess.run(cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL, universal_newlines=True)
 		if res.returncode == 0:
 			print('Password successfully changed in local database.')
-			self.logger.debug('LAPS4LINUX: Changed password of user '+self.cfgUsername+' in local database.')
+			self.logger.debug(self.PRODUCT_NAME+': Changed password of user '+self.cfgUsername+' in local database.')
 		else:
 			raise Exception(' '.join(cmd)+' returned non-zero exit code '+str(res.returncode))
 
@@ -164,29 +165,21 @@ class LapsRunner():
 	def LoadSettings(self):
 		if(not path.isfile(self.cfgPath)):
 			raise Exception('Config file not found: '+self.cfgPath)
-		configParser = configparser.ConfigParser({
-			'server': self.cfgServer,
-			'domain': self.cfgDomain,
-			'port': self.cfgPort,
-			'ssl': self.cfgSsl,
-			'cred-cache-file': self.cfgCredCacheFile,
-			'client-keytab-file': self.cfgClientKeytabFile,
-			'password-change-user': self.cfgUsername,
-			'password-days-valid': self.cfgDaysValid,
-			'password-length': self.cfgLength,
-			'password-alphabet': self.cfgAlphabet
-		})
-		configParser.read(self.cfgPath)
-		self.cfgServer = configParser.get('runner', 'server')
-		self.cfgDomain = configParser.get('runner', 'domain')
-		self.cfgPort = int(configParser.get('runner', 'port'))
-		self.cfgSsl = False if configParser.get('runner', 'ssl').strip() == '0' else True
-		self.cfgCredCacheFile = configParser.get('runner', 'cred-cache-file')
-		self.cfgClientKeytabFile = configParser.get('runner', 'client-keytab-file')
-		self.cfgUsername = configParser.get('runner', 'password-change-user')
-		self.cfgDaysValid = int(configParser.get('runner', 'password-days-valid'))
-		self.cfgLength = int(configParser.get('runner', 'password-length'))
-		self.cfgAlphabet = configParser.get('runner', 'password-alphabet')
+		with open(self.cfgPath) as f:
+			cfgJson = json.load(f)
+			for server in cfgJson.get('server', ''):
+				self.cfgServer.append({
+					'address': str(server['address']),
+					'port': int(server['port']),
+					'ssl': bool(server['ssl'])
+				})
+			self.cfgDomain = cfgJson.get('domain', self.cfgDomain)
+			self.cfgCredCacheFile = cfgJson.get('cred-cache-file', self.cfgCredCacheFile)
+			self.cfgClientKeytabFile = cfgJson.get('client-keytab-file', self.cfgClientKeytabFile)
+			self.cfgUsername = cfgJson.get('password-change-user', self.cfgUsername)
+			self.cfgDaysValid = int(cfgJson.get('password-days-valid', self.cfgDaysValid))
+			self.cfgLength = int(cfgJson.get('password-length', self.cfgLength))
+			self.cfgAlphabet = str(cfgJson.get('password-alphabet', self.cfgAlphabet))
 
 def main():
 	runner = LapsRunner()
@@ -216,7 +209,7 @@ def main():
 
 	except Exception as e:
 		print('Error: '+str(e))
-		runner.logger.critical('LAPS4LINUX: Error while executing workflow: '+str(e))
+		runner.logger.critical(runner.PRODUCT_NAME+': Error while executing workflow: '+str(e))
 		exit(1)
 
 	return

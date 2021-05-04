@@ -7,7 +7,7 @@ $ ./laps-cli.py --search notebook01
 LAPS4LINUX CLI v1.0.0
 https://github.com/schorschii/laps4linux
 
-🔑 Password:
+🔑 Password for »ldapuser«:
 Connection:     ldapserver01: user@example.com
 Found:          CN=NOTEBOOK01,OU=NOTEBOOKS,DC=example,DC=com
 Password:       abc123
@@ -18,7 +18,7 @@ $ ./laps-cli.py --show-all
 LAPS4LINUX CLI v1.0.0
 https://github.com/schorschii/laps4linux
 
-🔑 Password:
+🔑 Password for »ldapuser«:
 Connection: ldapserver01: user@example.com
 NOTEBOOK01$ : abc123
 NOTEBOOK02$ : 123abc
@@ -29,7 +29,7 @@ $ ./laps-cli.py --search notebook01 --set-expiry "2021-04-28 01:01:01"
 LAPS4LINUX CLI v1.0.0
 https://github.com/schorschii/laps4linux
 
-🔑 Password:
+🔑 Password for »ldapuser«:
 Connection:     ldapserver01: user@example.com
 Found:          CN=NOTEBOOK01,OU=NOTEBOOKS,DC=example,DC=com
 Password:       abc123
@@ -43,7 +43,7 @@ Expiration Date Changed Successfully.
 
 The client (both GUI and CLI) supports Kerberos authentication which means that you can use the client without entering a password if you are logged in with a domain account. If not, NTLM authentication is used as fallback and the client will ask you for username and password.
 
-It is highly recommended to turn on SSL in the config file (`~/.laps-client.json`) if your LDAP server has a valid certificate (set `ssl` to `true` and `port` to `636`).
+It is highly recommended to turn on SSL in the config file (`~/.laps-client.json`) if your LDAP server has a valid certificate (set `ssl` to `true` and `port` to `636`). You can also configure multiple LDAP server in the config file.
 
 ## Runner
 The runner is responsible for automatically changing the admin password of a Linux client and updating it in the LDAP directory. This assumes that Kerberos and Samba is installed and that the machine is already joined to your domain (using `net ads join`).
