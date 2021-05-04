@@ -211,19 +211,18 @@ def main():
 	cli = LapsCli()
 
 	parser = argparse.ArgumentParser()
-	parser.add_argument('--show-all', action='store_true', help='Show passwords for all computer')
-	parser.add_argument('--search', default=None, help='Search for this computer and display password')
-	parser.add_argument('--set-expiry', default=None, help='Set new expiration date (format: "2020-01-01 00:00:00")')
+	parser.add_argument('search', default=None, metavar='COMPUTERNAME', help='Search for this computer and display the admin password. Use "*" to display all computer passwords found in LDAP directory.')
+	parser.add_argument('-e', '--set-expiry', default=None, metavar='"2020-01-01 00:00:00"', help='Set new expiration date for computer found by search string.')
 	args = parser.parse_args()
 
-	if args.show_all:
+	if args.search and args.search.strip() == '*':
 		cli.SearchComputer('*')
 		return
 
-	if args.search and args.search.strip() != "":
+	if args.search and args.search.strip() != '':
 		cli.SearchComputer(args.search)
 
-		if args.set_expiry and args.set_expiry.strip() != "":
+		if args.set_expiry and args.set_expiry.strip() != '':
 			cli.SetExpiry(args.set_expiry.strip())
 
 		return
