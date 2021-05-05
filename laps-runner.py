@@ -37,7 +37,7 @@ class LapsRunner():
 
 	cfgCredCacheFile    = '/tmp/laps.temp'
 	cfgClientKeytabFile = '/etc/krb5.keytab'
-	cfgPath       = '/etc/laps-runner.ini'
+	cfgPath       = '/etc/laps-runner.json'
 	cfgServer     = []
 	cfgDomain     = ''
 
