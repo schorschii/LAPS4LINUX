@@ -53,10 +53,10 @@ The runner should be called periodically via cron. It decides by the expiration 
 *** /etc/cron.hourly/laps-runner ***
 
 #!/bin/sh
-/usr/sbin/laps-runner --config /etc/laps-runner.ini
+/usr/sbin/laps-runner --config /etc/laps-runner.json
 ```
 
-Please configure the server name etc. by editing the configuration file `/etc/laps-runner.ini`.
+Please configure the server name etc. by editing the configuration file `/etc/laps-runner.json`.
 
 You can call the runner with the `-f` parameter to force updating the password directly after installation. You should do this to check if the runner is working properly.
 
