@@ -3,7 +3,7 @@ Linux implementation of the Local Administrator Password Solution (LAPS) from Mi
 
 ## Management Client: CLI
 ```
-$ ./laps-cli.py --search notebook01
+$ ./laps-cli.py notebook01
 LAPS4LINUX CLI v1.0.0
 https://github.com/schorschii/laps4linux
 
@@ -14,7 +14,7 @@ Password:       abc123
 Expiration:     132641316610000000 (2021-04-29 01:01:01)
 
 
-$ ./laps-cli.py --show-all
+$ ./laps-cli.py "*"
 LAPS4LINUX CLI v1.0.0
 https://github.com/schorschii/laps4linux
 
@@ -25,7 +25,7 @@ NOTEBOOK02$ : 123abc
 ...
 
 
-$ ./laps-cli.py --search notebook01 --set-expiry "2021-04-28 01:01:01"
+$ ./laps-cli.py notebook01 --set-expiry "2021-04-28 01:01:01"
 LAPS4LINUX CLI v1.0.0
 https://github.com/schorschii/laps4linux
 
