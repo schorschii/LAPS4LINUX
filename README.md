@@ -46,7 +46,9 @@ The client (both GUI and CLI) supports Kerberos authentication which means that 
 It is highly recommended to turn on SSL in the config file (`~/.laps-client.json`) if your LDAP server has a valid certificate (set `ssl` to `true` and `port` to `636`). You can also configure multiple LDAP server in the config file.
 
 ## Runner
-The runner is responsible for automatically changing the admin password of a Linux client and updating it in the LDAP directory. This assumes that Kerberos and Samba is installed and that the machine is already joined to your domain (using `net ads join`).
+The runner is responsible for automatically changing the admin password of a Linux client and updating it in the LDAP directory. This assumes that Kerberos is installed and that the machine is already joined to your domain using Samba's `net ads join` or the modern `adcli join` command (recommended). PBIS (`domainjoin-cli join`) is currently untested.
+
+A detailed domain join guide is available [on my website](https://georg-sieber.de/?page=blog-linux-im-unternehmen) (attention: only in German).
 
 The runner should be called periodically via cron. It decides by the expiration time stored in the LDAP directory when the password should be changed.
 ```
