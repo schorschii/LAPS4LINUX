@@ -16,6 +16,7 @@ import json
 import sys, os
 import logging
 import logging.handlers
+import traceback
 
 # Microsoft Timestamp Conversion
 EPOCH_TIMESTAMP = 11644473600  # January 1, 1970 as MS file time
@@ -42,6 +43,7 @@ class LapsRunner():
 	cfgServer           = []
 	cfgDomain           = ''
 
+	cfgHostname         = None
 	cfgUsername         = 'root' # the user, whose password should be changed
 	cfgDaysValid        = 30 # how long the new password should be valid
 	cfgLength           = 15 # the generated password length
@@ -69,10 +71,15 @@ class LapsRunner():
 			print(self.PRODUCT_WEBSITE)
 		print('')
 
+	def getHostname(self):
+		if(self.cfgHostname == None or self.cfgHostname.strip() == ''):
+			return socket.gethostname().upper()
+		else:
+			return self.cfgHostname.strip().upper()
+
 	def initKerberos(self):
 		# query new kerberos ticket
-		samaccountname = socket.gethostname().upper()+'$'
-		cmd = ['kinit', '-k', '-c', self.cfgCredCacheFile, samaccountname]
+		cmd = ['kinit', '-k', '-c', self.cfgCredCacheFile, self.getHostname()+'$']
 		res = subprocess.run(cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL, universal_newlines=True)
 		if res.returncode != 0: raise Exception(' '.join(cmd)+' returned non-zero exit code '+str(res.returncode))
 
@@ -93,20 +100,24 @@ class LapsRunner():
 		if self.connection == None: raise Exception('No connection established')
 
 		# check and escape input
-		computerName = utils.conv.escape_filter_chars(socket.gethostname().upper())
+		computerName = utils.conv.escape_filter_chars(self.getHostname())
 
 		# start query
-		self.connection.search(search_base=self.createLdapBase(self.cfgDomain), search_filter='(&(objectCategory=computer)(name='+computerName+'))',attributes=[cfgLdapAttributePassword,cfgLdapAttributePasswordExpiry,'SAMAccountname','distinguishedName'])
+		self.connection.search(
+			search_base = self.createLdapBase(self.cfgDomain),
+			search_filter = '(&(objectCategory=computer)(name='+computerName+'))',
+			attributes = [ self.cfgLdapAttributePassword, self.cfgLdapAttributePasswordExpiry, 'SAMAccountname', 'distinguishedName' ]
+		)
 		for entry in self.connection.entries:
 			# display result
 			self.tmpDn = str(entry['distinguishedName'])
-			self.tmpPassword = str(entry[cfgLdapAttributePassword])
-			self.tmpExpiry = str(entry[cfgLdapAttributePasswordExpiry])
+			self.tmpPassword = str(entry[self.cfgLdapAttributePassword])
+			self.tmpExpiry = str(entry[self.cfgLdapAttributePasswordExpiry])
 			try:
 				# date conversion will fail if there is no previous expiration time saved
-				self.tmpExpiryDate = filetime_to_dt( int(str(entry[cfgLdapAttributePasswordExpiry])) )
+				self.tmpExpiryDate = filetime_to_dt( int(str(entry[self.cfgLdapAttributePasswordExpiry])) )
 			except Exception as e:
-				print('Unable to parse date '+str(entry[cfgLdapAttributePasswordExpiry])+' - assuming that no expiration date is set.')
+				print('Unable to parse date '+str(entry[self.cfgLdapAttributePasswordExpiry])+' - assuming that no expiration date is set.')
 				self.tmpExpiryDate = datetime.utcfromtimestamp(0)
 			return True
 
@@ -146,8 +157,8 @@ class LapsRunner():
 
 		# start query
 		self.connection.modify(self.tmpDn, {
-			cfgLdapAttributePasswordExpiry: [(MODIFY_REPLACE, [str(newExpirationDateTime)])],
-			cfgLdapAttributePassword: [(MODIFY_REPLACE, [str(newPassword)])],
+			self.cfgLdapAttributePasswordExpiry: [(MODIFY_REPLACE, [str(newExpirationDateTime)])],
+			self.cfgLdapAttributePassword: [(MODIFY_REPLACE, [str(newPassword)])],
 		})
 		if self.connection.result['result'] == 0:
 			print('Password and expiration date changed successfully in LDAP directory (new expiration '+str(newExpirationDate)+').')
@@ -184,6 +195,7 @@ class LapsRunner():
 			self.cfgAlphabet = str(cfgJson.get('password-alphabet', self.cfgAlphabet))
 			self.cfgLdapAttributePassword = str(cfgJson.get('ldap-attribute-password', self.cfgLdapAttributePassword))
 			self.cfgLdapAttributePasswordExpiry = str(cfgJson.get('ldap-attribute-password-expiry', self.cfgLdapAttributePasswordExpiry))
+			self.cfgHostname = cfgJson.get('hostname', self.cfgHostname)
 
 def main():
 	runner = LapsRunner()
@@ -212,7 +224,7 @@ def main():
 			print('Password will expire in '+str(runner.tmpExpiryDate)+', no need to update.')
 
 	except Exception as e:
-		print('Error: '+str(e))
+		print(traceback.format_exc())
 		runner.logger.critical(runner.PRODUCT_NAME+': Error while executing workflow: '+str(e))
 		exit(1)
 

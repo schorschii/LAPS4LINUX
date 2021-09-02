@@ -63,7 +63,9 @@ Please configure the server name etc. by editing the configuration file `/etc/la
 You can call the runner with the `-f` parameter to force updating the password directly after installation. You should do this to check if the runner is working properly.
 
 ### Hostnames Longer Than 15 Characters
-Computer objects in the Microsoft Active Directory can not be longer than 15 characters. If you join a computer with a longer hostname, it will be registered with a different "short name". You have to enter this shortname in the config file in order to make the Kerberos authentication work. You can find out the shortname by inspecting your keytab: `sudo klist -k /etc/krb5.keytab`.
+Computer objects in the Microsoft Active Directory can not be longer than 15 characters. If you join a computer with a longer hostname, it will be registered with a different "short name". You have to enter this short name in the config file (setting `hostname`) in order to make the Kerberos authentication work. You can find out the short name by inspecting your keytab: `sudo klist -k /etc/krb5.keytab`.
+
+Set the `hostname` option to `null` (default) to use the system's normal host name.
 
 ### Troubleshooting
 If the script throws an error like `kinit -k -c /tmp/laps.temp SERVER$ returned non-zero exit code 1`, please check what happens when you execute the following commands manually on the command line.
