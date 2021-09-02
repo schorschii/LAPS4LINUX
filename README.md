@@ -46,7 +46,7 @@ The client (both GUI and CLI) supports Kerberos authentication which means that 
 It is highly recommended to turn on SSL in the config file (`~/.laps-client.json`) if your LDAP server has a valid certificate (set `ssl` to `true` and `port` to `636`). You can also configure multiple LDAP server in the config file.
 
 ## Runner
-The runner is responsible for automatically changing the admin password of a Linux client and updating it in the LDAP directory. This assumes that Kerberos is installed and that the machine is already joined to your domain using Samba's `net ads join` or the modern `adcli join` command (recommended). PBIS (`domainjoin-cli join`) is currently untested.
+The runner is responsible for automatically changing the admin password of a Linux client and updating it in the LDAP directory. This assumes that Kerberos (`krb5-user`) is installed and that the machine is already joined to your domain using Samba's `net ads join`, PBIS' `domainjoin-cli join` or the modern `adcli join` command (recommended).
 
 A detailed domain join guide is available [on my website](https://georg-sieber.de/?page=blog-linux-im-unternehmen) (attention: only in German).
 
@@ -61,6 +61,17 @@ The runner should be called periodically via cron. It decides by the expiration 
 Please configure the server name etc. by editing the configuration file `/etc/laps-runner.json`.
 
 You can call the runner with the `-f` parameter to force updating the password directly after installation. You should do this to check if the runner is working properly.
+
+### Hostnames Longer Than 15 Characters
+Computer objects in the Microsoft Active Directory can not be longer than 15 characters. If you join a computer with a longer hostname, it will be registered with a different "short name". You have to enter this shortname in the config file in order to make the Kerberos authentication work. You can find out the shortname by inspecting your keytab: `sudo klist -k /etc/krb5.keytab`.
+
+### Troubleshooting
+If the script throws an error like `kinit -k -c /tmp/laps.temp SERVER$ returned non-zero exit code 1`, please check what happens when you execute the following commands manually on the command line.
+```
+sudo kinit -k -c /tmp/laps.temp COMPUTERNAME$
+sudo klist -c /tmp/laps.temp
+```
+Please replace COMPUTERNAME with your hostname, but do not forget the trailing dollar sign.
 
 ## Support
 You can hire me for commercial support or adjustments for this project. Please [contact me](https://georg-sieber.de/?page=impressum) if you are interested.
