@@ -35,16 +35,20 @@ class LapsRunner():
 	connection = None
 	logger     = None
 
+	cfgPath             = '/etc/laps-runner.json'
+
 	cfgCredCacheFile    = '/tmp/laps.temp'
 	cfgClientKeytabFile = '/etc/krb5.keytab'
-	cfgPath       = '/etc/laps-runner.json'
-	cfgServer     = []
-	cfgDomain     = ''
+	cfgServer           = []
+	cfgDomain           = ''
 
-	cfgUsername   = 'root' # the user, whose password should be changed
-	cfgDaysValid  = 30 # how long the new password should be valid
-	cfgLength     = 15 # the generated password length
-	cfgAlphabet   = string.ascii_letters+string.digits # allowed chars for the new password
+	cfgUsername         = 'root' # the user, whose password should be changed
+	cfgDaysValid        = 30 # how long the new password should be valid
+	cfgLength           = 15 # the generated password length
+	cfgAlphabet         = string.ascii_letters+string.digits # allowed chars for the new password
+
+	cfgLdapAttributePassword       = 'ms-MCS-AdmPwd'
+	cfgLdapAttributePasswordExpiry = 'ms-MCS-AdmPwdExpirationTime'
 
 	tmpDn         = ''
 	tmpPassword   = ''
@@ -67,8 +71,6 @@ class LapsRunner():
 
 	def initKerberos(self):
 		# query new kerberos ticket
-		#sudo kinit -k -c /tmp/laps.temp COMPUTERNAME$
-		#sudo klist -c /tmp/laps.temp
 		samaccountname = socket.gethostname().upper()+'$'
 		cmd = ['kinit', '-k', '-c', self.cfgCredCacheFile, samaccountname]
 		res = subprocess.run(cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL, universal_newlines=True)
@@ -94,17 +96,17 @@ class LapsRunner():
 		computerName = utils.conv.escape_filter_chars(socket.gethostname().upper())
 
 		# start query
-		self.connection.search(search_base=self.createLdapBase(self.cfgDomain), search_filter='(&(objectCategory=computer)(name='+computerName+'))',attributes=['ms-MCS-AdmPwd','ms-MCS-AdmPwdExpirationTime','SAMAccountname','distinguishedName'])
+		self.connection.search(search_base=self.createLdapBase(self.cfgDomain), search_filter='(&(objectCategory=computer)(name='+computerName+'))',attributes=[cfgLdapAttributePassword,cfgLdapAttributePasswordExpiry,'SAMAccountname','distinguishedName'])
 		for entry in self.connection.entries:
 			# display result
 			self.tmpDn = str(entry['distinguishedName'])
-			self.tmpPassword = str(entry['ms-Mcs-AdmPwd'])
-			self.tmpExpiry = str(entry['ms-Mcs-AdmPwdExpirationTime'])
+			self.tmpPassword = str(entry[cfgLdapAttributePassword])
+			self.tmpExpiry = str(entry[cfgLdapAttributePasswordExpiry])
 			try:
 				# date conversion will fail if there is no previous expiration time saved
-				self.tmpExpiryDate = filetime_to_dt( int(str(entry['ms-Mcs-AdmPwdExpirationTime'])) )
+				self.tmpExpiryDate = filetime_to_dt( int(str(entry[cfgLdapAttributePasswordExpiry])) )
 			except Exception as e:
-				print('Unable to parse date '+str(entry['ms-Mcs-AdmPwdExpirationTime'])+' - assuming that no expiration date is set.')
+				print('Unable to parse date '+str(entry[cfgLdapAttributePasswordExpiry])+' - assuming that no expiration date is set.')
 				self.tmpExpiryDate = datetime.utcfromtimestamp(0)
 			return True
 
@@ -144,8 +146,8 @@ class LapsRunner():
 
 		# start query
 		self.connection.modify(self.tmpDn, {
-			'ms-Mcs-AdmPwdExpirationTime': [(MODIFY_REPLACE, [str(newExpirationDateTime)])],
-			'ms-Mcs-AdmPwd': [(MODIFY_REPLACE, [str(newPassword)])],
+			cfgLdapAttributePasswordExpiry: [(MODIFY_REPLACE, [str(newExpirationDateTime)])],
+			cfgLdapAttributePassword: [(MODIFY_REPLACE, [str(newPassword)])],
 		})
 		if self.connection.result['result'] == 0:
 			print('Password and expiration date changed successfully in LDAP directory (new expiration '+str(newExpirationDate)+').')
@@ -180,6 +182,8 @@ class LapsRunner():
 			self.cfgDaysValid = int(cfgJson.get('password-days-valid', self.cfgDaysValid))
 			self.cfgLength = int(cfgJson.get('password-length', self.cfgLength))
 			self.cfgAlphabet = str(cfgJson.get('password-alphabet', self.cfgAlphabet))
+			self.cfgLdapAttributePassword = str(cfgJson.get('ldap-attribute-password', self.cfgLdapAttributePassword))
+			self.cfgLdapAttributePasswordExpiry = str(cfgJson.get('ldap-attribute-password-expiry', self.cfgLdapAttributePasswordExpiry))
 
 def main():
 	runner = LapsRunner()
