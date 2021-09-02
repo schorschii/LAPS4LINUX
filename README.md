@@ -58,7 +58,7 @@ The runner should be called periodically via cron. It decides by the expiration 
 /usr/sbin/laps-runner --config /etc/laps-runner.json
 ```
 
-Please configure the server name etc. by editing the configuration file `/etc/laps-runner.json`.
+Please configure the runner by editing the configuration file `/etc/laps-runner.json`. You can leave the server array empty if the runner should auto-discover your domain controllers by DNS SRV records.
 
 You can call the runner with the `-f` parameter to force updating the password directly after installation. You should do this to check if the runner is working properly.
 

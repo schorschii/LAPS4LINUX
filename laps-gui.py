@@ -7,6 +7,7 @@ from PyQt5.QtCore import *
 from pathlib import Path
 from os import path
 from datetime import datetime
+from dns import resolver, rdatatype
 import ldap3
 import getpass
 import json
@@ -242,8 +243,14 @@ class LapsMainWindow(QMainWindow):
 		if self.server != None and self.connection != None: return True
 
 		# ask for server address and domain name if not already set via config file
+		if self.cfgDomain == "":
+			item, ok = QInputDialog.getText(self, '♕ Domain', 'Please enter your Domain name (e.g. example.com).')
+			if ok and item:
+				self.cfgDomain = item
+				self.server = None
+			else: return False
 		if len(self.cfgServer) == 0:
-			item, ok = QInputDialog.getText(self, '💻 Server Address', 'Please enter your LDAP server IP address or DNS name.')
+			item, ok = QInputDialog.getText(self, '💻 Server Address', 'Please enter your LDAP server IP address or DNS name.'+'\n'+'(leave empty for auto-discovery via DNS)')
 			if ok and item:
 				self.cfgServer.append({
 					'address': item,
@@ -251,13 +258,17 @@ class LapsMainWindow(QMainWindow):
 					'ssl': False
 				})
 				self.server = None
-			else: return False
-		if self.cfgDomain == "":
-			item, ok = QInputDialog.getText(self, '♕ Domain', 'Please enter your Domain name (e.g. example.com).')
-			if ok and item:
-				self.cfgDomain = item
+			else:
+				# query domain controllers by dns lookup
+				res = resolver.query(qname=f"_ldap._tcp.{self.cfgDomain}", rdtype=rdatatype.SRV, lifetime=10)
+				if(len(res.rrset) == 0): return False
+				for srv in res.rrset:
+					self.cfgServer.append({
+						'address': str(srv.target),
+						'port': 636,
+						'ssl': True
+					})
 				self.server = None
-			else: return False
 		self.SaveSettings()
 
 		# establish server connection

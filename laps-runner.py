@@ -5,6 +5,7 @@ from pathlib import Path
 from os import path
 from crypt import crypt
 from datetime import datetime, timedelta
+from dns import resolver, rdatatype
 import ldap3
 import subprocess
 import secrets
@@ -90,8 +91,15 @@ class LapsRunner():
 
 		# connect to server with kerberos ticket
 		serverArray = []
-		for server in self.cfgServer:
-			serverArray.append(ldap3.Server(server['address'], port=server['port'], use_ssl=server['ssl'], get_info=ldap3.ALL))
+		if(len(self.cfgServer) == 0):
+			# query domain controllers by dns lookup
+			res = resolver.query(qname=f"_ldap._tcp.{self.cfgDomain}", rdtype=rdatatype.SRV, lifetime=10)
+			for srv in res.rrset:
+				serverArray.append(ldap3.Server(host=str(srv.target), port=636, use_ssl=True, get_info=ldap3.ALL))
+		else:
+			# use servers given in config file
+			for server in self.cfgServer:
+				serverArray.append(ldap3.Server(server['address'], port=server['port'], use_ssl=server['ssl'], get_info=ldap3.ALL))
 		self.server = ldap3.ServerPool(serverArray, ldap3.ROUND_ROBIN, active=True, exhaust=True)
 		self.connection = ldap3.Connection(self.server, authentication=ldap3.SASL, sasl_mechanism=ldap3.KERBEROS, auto_bind=True)
 		print('Connected as: '+str(self.connection.server)+' '+self.connection.extend.standard.who_am_i()+'@'+self.cfgDomain)

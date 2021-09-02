@@ -4,6 +4,7 @@
 from pathlib import Path
 from os import path
 from datetime import datetime
+from dns import resolver, rdatatype
 import ldap3
 import getpass
 import argparse
@@ -114,8 +115,14 @@ class LapsCli():
 		if self.server != None and self.connection != None: return True
 
 		# ask for server address and domain name if not already set via config file
+		if self.cfgDomain == "":
+			item = input('♕ Domain Name (e.g. example.com): ')
+			if item and item.strip() != "":
+				self.cfgDomain = item
+				self.server = None
+			else: return False
 		if len(self.cfgServer) == 0:
-			item = input('💻 LDAP Server Address: ')
+			item = input('💻 LDAP Server Address (leave empty for auto-discovery via DNS): ')
 			if item and item.strip() != "":
 				self.cfgServer.append({
 					'address': item,
@@ -123,13 +130,17 @@ class LapsCli():
 					'ssl': False
 				})
 				self.server = None
-			else: return False
-		if self.cfgDomain == "":
-			item = input('♕ Domain Name (e.g. example.com): ')
-			if item and item.strip() != "":
-				self.cfgDomain = item
+			else:
+				# query domain controllers by dns lookup
+				res = resolver.query(qname=f"_ldap._tcp.{self.cfgDomain}", rdtype=rdatatype.SRV, lifetime=10)
+				if(len(res.rrset) == 0): return False
+				for srv in res.rrset:
+					self.cfgServer.append({
+						'address': str(srv.target),
+						'port': 636,
+						'ssl': True
+					})
 				self.server = None
-			else: return False
 		self.SaveSettings()
 
 		# establish server connection
