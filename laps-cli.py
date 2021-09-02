@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from ldap3 import ALL, Server, ServerPool, Connection, NTLM, extend, SUBTREE, utils, MODIFY_REPLACE, SASL, KERBEROS, ROUND_ROBIN
 from pathlib import Path
 from os import path
 from datetime import datetime
+import ldap3
 import getpass
 import argparse
 import json
@@ -49,7 +49,7 @@ class LapsCli():
 	def SearchComputer(self, computerName):
 		# check and escape input
 		if computerName.strip() == '': return
-		if not computerName == '*': computerName = utils.conv.escape_filter_chars(computerName)
+		if not computerName == '*': computerName = ldap3.utils.conv.escape_filter_chars(computerName)
 
 		# ask for credentials
 		if not self.checkCredentialsAndConnect(): return
@@ -100,7 +100,7 @@ class LapsCli():
 			print('New Expiration: '+str(newExpirationDateTime)+' ('+str(newExpirationDate)+')')
 
 			# start LDAP query
-			self.connection.modify(self.tmpDn, { 'ms-Mcs-AdmPwdExpirationTime': [(MODIFY_REPLACE, [str(newExpirationDateTime)])] })
+			self.connection.modify(self.tmpDn, { 'ms-Mcs-AdmPwdExpirationTime': [(ldap3.MODIFY_REPLACE, [str(newExpirationDateTime)])] })
 			if self.connection.result['result'] == 0:
 				print('Expiration Date Changed Successfully.')
 		except Exception as e:
@@ -137,15 +137,15 @@ class LapsCli():
 			try:
 				serverArray = []
 				for server in self.cfgServer:
-					serverArray.append(Server(server['address'], port=server['port'], use_ssl=server['ssl'], get_info=ALL))
-				self.server = ServerPool(serverArray, ROUND_ROBIN, active=True, exhaust=True)
+					serverArray.append(ldap3.Server(server['address'], port=server['port'], use_ssl=server['ssl'], get_info=ldap3.ALL))
+				self.server = ldap3.ServerPool(serverArray, ldap3.ROUND_ROBIN, active=True, exhaust=True)
 			except Exception as e:
 				print('Error connecting to LDAP server: ', str(e))
 				return False
 
 		# try to bind to server via Kerberos
 		try:
-			self.connection = Connection(self.server, authentication=SASL, sasl_mechanism=KERBEROS, auto_bind=True)
+			self.connection = ldap3.Connection(self.server, authentication=ldap3.SASL, sasl_mechanism=ldap3.KERBEROS, auto_bind=True)
 			#self.connection.bind()
 			return True # return if connection created successfully
 		except Exception as e:
@@ -168,7 +168,7 @@ class LapsCli():
 
 		# try to bind to server via NTLM
 		try:
-			self.connection = Connection(self.server, user=self.cfgDomain+'\\'+self.cfgUsername, password=self.cfgPassword, authentication=NTLM, auto_bind=True)
+			self.connection = ldap3.Connection(self.server, user=self.cfgDomain+'\\'+self.cfgUsername, password=self.cfgPassword, authentication=ldap3.NTLM, auto_bind=True)
 			#self.connection.bind()
 		except Exception as e:
 			self.cfgUsername = ''

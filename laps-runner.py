@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from ldap3 import ALL, Server, ServerPool, Connection, NTLM, extend, SUBTREE, utils, MODIFY_REPLACE, SASL, KERBEROS, ROUND_ROBIN
 from pathlib import Path
 from os import path
 from crypt import crypt
 from datetime import datetime, timedelta
+import ldap3
 import subprocess
 import secrets
 import string
@@ -91,16 +91,16 @@ class LapsRunner():
 		# connect to server with kerberos ticket
 		serverArray = []
 		for server in self.cfgServer:
-			serverArray.append(Server(server['address'], port=server['port'], use_ssl=server['ssl'], get_info=ALL))
-		self.server = ServerPool(serverArray, ROUND_ROBIN, active=True, exhaust=True)
-		self.connection = Connection(self.server, authentication=SASL, sasl_mechanism=KERBEROS, auto_bind=True)
+			serverArray.append(ldap3.Server(server['address'], port=server['port'], use_ssl=server['ssl'], get_info=ldap3.ALL))
+		self.server = ldap3.ServerPool(serverArray, ldap3.ROUND_ROBIN, active=True, exhaust=True)
+		self.connection = ldap3.Connection(self.server, authentication=ldap3.SASL, sasl_mechanism=ldap3.KERBEROS, auto_bind=True)
 		print('Connected as: '+str(self.connection.server)+' '+self.connection.extend.standard.who_am_i()+'@'+self.cfgDomain)
 
 	def searchComputer(self):
 		if self.connection == None: raise Exception('No connection established')
 
 		# check and escape input
-		computerName = utils.conv.escape_filter_chars(self.getHostname())
+		computerName = ldap3.utils.conv.escape_filter_chars(self.getHostname())
 
 		# start query
 		self.connection.search(
@@ -157,8 +157,8 @@ class LapsRunner():
 
 		# start query
 		self.connection.modify(self.tmpDn, {
-			self.cfgLdapAttributePasswordExpiry: [(MODIFY_REPLACE, [str(newExpirationDateTime)])],
-			self.cfgLdapAttributePassword: [(MODIFY_REPLACE, [str(newPassword)])],
+			self.cfgLdapAttributePasswordExpiry: [(ldap3.MODIFY_REPLACE, [str(newExpirationDateTime)])],
+			self.cfgLdapAttributePassword: [(ldap3.MODIFY_REPLACE, [str(newPassword)])],
 		})
 		if self.connection.result['result'] == 0:
 			print('Password and expiration date changed successfully in LDAP directory (new expiration '+str(newExpirationDate)+').')
