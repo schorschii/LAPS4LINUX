@@ -256,8 +256,8 @@ class LapsMainWindow(QMainWindow):
 			for srv in res.rrset:
 				serverEntry = {
 					'address': str(srv.target),
-					'port': 636,
-					'ssl': True
+					'port': srv.port,
+					'ssl': (srv.port == 636)
 				}
 				print('DNS auto discovery found server: '+json.dumps(serverEntry))
 				self.cfgServer.append(serverEntry)
