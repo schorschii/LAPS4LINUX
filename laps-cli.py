@@ -122,25 +122,27 @@ class LapsCli():
 				self.server = None
 			else: return False
 		if len(self.cfgServer) == 0:
-			item = input('💻 LDAP Server Address (leave empty for auto-discovery via DNS): ')
-			if item and item.strip() != "":
-				self.cfgServer.append({
-					'address': item,
-					'port': 389,
-					'ssl': False
-				})
-				self.server = None
-			else:
-				# query domain controllers by dns lookup
-				res = resolver.query(qname=f"_ldap._tcp.{self.cfgDomain}", rdtype=rdatatype.SRV, lifetime=10)
-				if(len(res.rrset) == 0): return False
-				for srv in res.rrset:
+			# query domain controllers by dns lookup
+			res = resolver.query(qname=f"_ldap._tcp.{self.cfgDomain}", rdtype=rdatatype.SRV, lifetime=10)
+			if(len(res.rrset) == 0): return False
+			for srv in res.rrset:
+				serverEntry = {
+					'address': str(srv.target),
+					'port': 636,
+					'ssl': True
+				}
+				print('DNS auto discovery found server: '+json.dumps(serverEntry))
+				self.cfgServer.append(serverEntry)
+			# ask user to enter server names if auto discovery was not successful
+			if len(self.cfgServer) == 0:
+				item = input('💻 LDAP Server Address: ')
+				if item and item.strip() != "":
 					self.cfgServer.append({
-						'address': str(srv.target),
-						'port': 636,
-						'ssl': True
+						'address': item,
+						'port': 389,
+						'ssl': False
 					})
-				self.server = None
+					self.server = None
 		self.SaveSettings()
 
 		# establish server connection
