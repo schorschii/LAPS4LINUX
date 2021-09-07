@@ -293,14 +293,17 @@ class LapsMainWindow(QMainWindow):
 			print('Unable to connect via Kerberos: '+str(e))
 
 		# ask for username and password for NTLM bind
+		sslHint = ''
+		if len(self.cfgServer) > 0 and self.cfgServer[0]['ssl'] == False:
+			sslHint = '\n\nPlease consider enabling SSL in the config file (~/.laps-client.json).'
 		if self.cfgUsername == "":
-			item, ok = QInputDialog.getText(self, '👤 Username', 'Please enter the username which should be used to connect to:\n'+str(self.cfgServer)+'.', QLineEdit.Normal, getpass.getuser())
+			item, ok = QInputDialog.getText(self, '👤 Username', 'Please enter the username which should be used to connect to:\n'+str(self.cfgServer), QLineEdit.Normal, getpass.getuser())
 			if ok and item:
 				self.cfgUsername = item
 				self.connection = None
 			else: return False
 		if self.cfgPassword == "":
-			item, ok = QInputDialog.getText(self, '🔑 Password for »'+self.cfgUsername+'«', 'Please enter the password which should be used to connect to:\n'+str(self.cfgServer)+'.', QLineEdit.Password)
+			item, ok = QInputDialog.getText(self, '🔑 Password for »'+self.cfgUsername+'«', 'Please enter the password which should be used to connect to:\n'+str(self.cfgServer)+sslHint, QLineEdit.Password)
 			if ok and item:
 				self.cfgPassword = item
 				self.connection = None
