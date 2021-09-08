@@ -1,0 +1,23 @@
+{
+    "server": [
+        {
+            "address": "dc1.example.com",
+            "port": 636,
+            "ssl": true
+        },
+        {
+            "address": "dc2.example.com",
+            "port": 636,
+            "ssl": true
+        },
+        {
+            "address": "dc3.example.com",
+            "port": 636,
+            "ssl": true
+        }
+    ],
+    "domain": "example.com",
+    "username": "johndoe",
+    "ldap-attribute-password": "ms-MCS-AdmPwd",
+    "ldap-attribute-password-expiry": "ms-MCS-AdmPwdExpirationTime"
+}
