@@ -27,13 +27,16 @@ class LapsCli():
 
 	server      = None
 	connection  = None
+	tmpDn       = ''
 
 	cfgPath     = str(Path.home())+'/.laps-client.json'
 	cfgServer   = []
 	cfgDomain   = ''
 	cfgUsername = ''
 	cfgPassword = ''
-	tmpDn       = ''
+	cfgLdapAttributePassword       = 'ms-MCS-AdmPwd'
+	cfgLdapAttributePasswordExpiry = 'ms-MCS-AdmPwdExpirationTime'
+
 
 	def __init__(self, *args, **kwargs):
 		self.LoadSettings()
@@ -59,21 +62,25 @@ class LapsCli():
 		try:
 			# start LDAP query
 			count = 0
-			self.connection.search(search_base=self.createLdapBase(self.cfgDomain), search_filter='(&(objectCategory=computer)(ms-MCS-AdmPwd=*)(name='+computerName+'))',attributes=['ms-MCS-AdmPwd','ms-MCS-AdmPwdExpirationTime','SAMAccountname','distinguishedName'])
+			self.connection.search(
+				search_base=self.createLdapBase(self.cfgDomain),
+				search_filter='(&(objectCategory=computer)('+self.cfgLdapAttributePassword+'=*)(name='+computerName+'))',
+				attributes=[self.cfgLdapAttributePassword, self.cfgLdapAttributePasswordExpiry, 'SAMAccountname', 'distinguishedName']
+			)
 			for entry in self.connection.entries:
 				count += 1
 				# display result
 				if computerName == '*':
-					print(str(entry['SAMAccountname'])+' : '+str(entry['ms-Mcs-AdmPwd']))
+					print(str(entry['SAMAccountname'])+' : '+str(entry[self.cfgLdapAttributePassword]))
 				else:
 					print('Found:          '+str(entry['distinguishedName']))
-					print('Password:       '+str(entry['ms-Mcs-AdmPwd']))
+					print('Password:       '+str(entry[self.cfgLdapAttributePassword]))
 					self.tmpDn = str(entry['distinguishedName'])
 					try:
-						print( 'Expiration:     '+str(entry['ms-Mcs-AdmPwdExpirationTime'])+' ('+str(filetime_to_dt( int(str(entry['ms-Mcs-AdmPwdExpirationTime'])) ))+')' )
+						print( 'Expiration:     '+str(entry[self.cfgLdapAttributePasswordExpiry])+' ('+str(filetime_to_dt( int(str(entry[self.cfgLdapAttributePasswordExpiry])) ))+')' )
 					except Exception as e:
 						print('Error: '+str(e))
-						print('Expiration:     '+str(entry['ms-Mcs-AdmPwdExpirationTime']))
+						print('Expiration:     '+str(entry[self.cfgLdapAttributePasswordExpiry]))
 					return
 
 			# no result found
@@ -101,7 +108,7 @@ class LapsCli():
 			print('New Expiration: '+str(newExpirationDateTime)+' ('+str(newExpirationDate)+')')
 
 			# start LDAP query
-			self.connection.modify(self.tmpDn, { 'ms-Mcs-AdmPwdExpirationTime': [(ldap3.MODIFY_REPLACE, [str(newExpirationDateTime)])] })
+			self.connection.modify(self.tmpDn, { self.cfgLdapAttributePasswordExpiry: [(ldap3.MODIFY_REPLACE, [str(newExpirationDateTime)])] })
 			if self.connection.result['result'] == 0:
 				print('Expiration Date Changed Successfully.')
 		except Exception as e:
@@ -212,6 +219,8 @@ class LapsCli():
 					})
 				self.cfgDomain = cfgJson.get('domain', '')
 				self.cfgUsername = cfgJson.get('username', '')
+				self.cfgLdapAttributePassword = str(cfgJson.get('ldap-attribute-password', self.cfgLdapAttributePassword))
+				self.cfgLdapAttributePasswordExpiry = str(cfgJson.get('ldap-attribute-password-expiry', self.cfgLdapAttributePasswordExpiry))
 		except Exception as e:
 			print('Error loading settings file: '+str(e))
 
@@ -221,7 +230,9 @@ class LapsCli():
 				json.dump({
 					'server': self.cfgServer,
 					'domain': self.cfgDomain,
-					'username': self.cfgUsername
+					'username': self.cfgUsername,
+					'ldap-attribute-password': self.cfgLdapAttributePassword,
+					'ldap-attribute-password-expiry': self.cfgLdapAttributePasswordExpiry
 				}, json_file, indent=4)
 		except Exception as e:
 			print('Error saving settings file: '+str(e))

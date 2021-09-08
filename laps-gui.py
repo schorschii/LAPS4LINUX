@@ -77,13 +77,16 @@ class LapsMainWindow(QMainWindow):
 
 	server      = None
 	connection  = None
+	tmpDn       = ''
 
 	cfgPath     = str(Path.home())+'/.laps-client.json'
 	cfgServer   = []
 	cfgDomain   = ''
 	cfgUsername = ''
 	cfgPassword = ''
-	tmpDn       = ''
+	cfgLdapAttributePassword       = 'ms-MCS-AdmPwd'
+	cfgLdapAttributePasswordExpiry = 'ms-MCS-AdmPwdExpirationTime'
+
 
 	def __init__(self):
 		super(LapsMainWindow, self).__init__()
@@ -186,18 +189,22 @@ class LapsMainWindow(QMainWindow):
 
 		try:
 			# start LDAP query
-			self.connection.search(search_base=self.createLdapBase(self.cfgDomain), search_filter='(&(objectCategory=computer)(ms-MCS-AdmPwd=*)(name='+computerName+'))',attributes=['ms-MCS-AdmPwd','ms-MCS-AdmPwdExpirationTime','SAMAccountname','distinguishedName'])
+			self.connection.search(
+				search_base=self.createLdapBase(self.cfgDomain),
+				search_filter='(&(objectCategory=computer)('+self.cfgLdapAttributePassword+'=*)(name='+computerName+'))',
+				attributes=[self.cfgLdapAttributePassword, self.cfgLdapAttributePasswordExpiry, 'SAMAccountname', 'distinguishedName']
+			)
 			for entry in self.connection.entries:
 				# display result
-				print('expiration time:     '+str(entry['ms-Mcs-AdmPwdExpirationTime']))
-				self.txtPassword.setText(str(entry['ms-Mcs-AdmPwd']))
-				self.txtPasswordExpires.setText(str(entry['ms-Mcs-AdmPwdExpirationTime']))
+				print('expiration time:     '+str(entry[self.cfgLdapAttributePasswordExpiry]))
+				self.txtPassword.setText(str(entry[self.cfgLdapAttributePassword]))
+				self.txtPasswordExpires.setText(str(entry[self.cfgLdapAttributePasswordExpiry]))
 				self.statusBar.showMessage('Found: '+str(entry['distinguishedName'])+' ('+str(self.connection.server)+' '+self.cfgUsername+'@'+self.cfgDomain+')')
 				self.tmpDn = str(entry['distinguishedName'])
 				self.btnSetExpirationTime.setEnabled(True)
 				self.btnSearchComputer.setEnabled(True)
 				try:
-					self.txtPasswordExpires.setText( str(filetime_to_dt( int(str(entry['ms-Mcs-AdmPwdExpirationTime'])) )) )
+					self.txtPasswordExpires.setText( str(filetime_to_dt( int(str(entry[self.cfgLdapAttributePasswordExpiry])) )) )
 				except Exception as e: print(str(e))
 				return
 
@@ -229,7 +236,7 @@ class LapsMainWindow(QMainWindow):
 			print('new expiration time: '+str(newExpirationDateTime))
 
 			# start LDAP query
-			self.connection.modify(self.tmpDn, { 'ms-Mcs-AdmPwdExpirationTime': [(ldap3.MODIFY_REPLACE, [str(newExpirationDateTime)])] })
+			self.connection.modify(self.tmpDn, { self.cfgLdapAttributePasswordExpiry: [(ldap3.MODIFY_REPLACE, [str(newExpirationDateTime)])] })
 			if self.connection.result['result'] == 0:
 				self.statusBar.showMessage('Expiration Date Changed Successfully: '+self.tmpDn+' ('+str(self.connection.server)+' '+self.cfgUsername+'@'+self.cfgDomain+')')
 		except Exception as e:
@@ -343,6 +350,8 @@ class LapsMainWindow(QMainWindow):
 					})
 				self.cfgDomain = cfgJson.get('domain', '')
 				self.cfgUsername = cfgJson.get('username', '')
+				self.cfgLdapAttributePassword = str(cfgJson.get('ldap-attribute-password', self.cfgLdapAttributePassword))
+				self.cfgLdapAttributePasswordExpiry = str(cfgJson.get('ldap-attribute-password-expiry', self.cfgLdapAttributePasswordExpiry))
 		except Exception as e:
 			self.showErrorDialog('Error loading settings file', str(e))
 
@@ -352,7 +361,9 @@ class LapsMainWindow(QMainWindow):
 				json.dump({
 					'server': self.cfgServer,
 					'domain': self.cfgDomain,
-					'username': self.cfgUsername
+					'username': self.cfgUsername,
+					'ldap-attribute-password': self.cfgLdapAttributePassword,
+					'ldap-attribute-password-expiry': self.cfgLdapAttributePasswordExpiry
 				}, json_file, indent=4)
 		except Exception as e:
 			self.showErrorDialog('Error saving settings file', str(e))
