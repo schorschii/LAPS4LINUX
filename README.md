@@ -1,7 +1,8 @@
 # LAPS4LINUX
 Linux implementation of the Local Administrator Password Solution (LAPS) from Microsoft.
 
-## Management Client: CLI
+## Management Client
+### Command Line Interface (CLI)
 ```
 $ ./laps-cli.py notebook01
 LAPS4LINUX CLI v1.0.0
@@ -38,12 +39,15 @@ New Expiration: 132640452610000000 (2021-04-28 01:01:01)
 Expiration Date Changed Successfully.
 ```
 
-## Management Client: GUI
+### Graphical User Interface (GUI)
 ![screenshot](.github/screenshot.png)
 
 The client (both GUI and CLI) supports Kerberos authentication which means that you can use the client without entering a password if you are logged in with a domain account. If not, NTLM authentication is used as fallback and the client will ask you for username and password.
 
 It is highly recommended to turn on SSL in the config file (`~/.laps-client.json`) if your LDAP server has a valid certificate (set `ssl` to `true` and `port` to `636`). You can also configure multiple LDAP server in the config file.
+
+### Query Additional Attributes
+LAPS4LINUX allows you to query additional attributes besides the admin password which might be of interest for you. For that, just edit the config file `~/.laps-client.json` and enter the additional LDAP attributes you'd like to query into the setting `"ldap-attributes-additional"` (please have a look at the example config file).
 
 ## Runner
 The runner is responsible for automatically changing the admin password of a Linux client and updating it in the LDAP directory. This assumes that Kerberos (`krb5-user`) is installed and that the machine is already joined to your domain using Samba's `net ads join`, PBIS' `domainjoin-cli join` or the modern `adcli join` command (recommended).

@@ -86,6 +86,8 @@ class LapsMainWindow(QMainWindow):
 	cfgPassword = ''
 	cfgLdapAttributePassword       = 'ms-MCS-AdmPwd'
 	cfgLdapAttributePasswordExpiry = 'ms-MCS-AdmPwdExpirationTime'
+	cfgLdapAttributesAdditional    = []
+	refLdapAttributesAdditionalTextBoxes = {}
 
 
 	def __init__(self):
@@ -119,39 +121,60 @@ class LapsMainWindow(QMainWindow):
 
 		# Window Content
 		grid = QGridLayout()
+		gridLine = 0
 
 		self.lblSearchComputer = QLabel('Computer Name')
-		grid.addWidget(self.lblSearchComputer, 0, 0)
+		grid.addWidget(self.lblSearchComputer, gridLine, 0)
+		gridLine += 1
 		self.txtSearchComputer = QLineEdit()
 		self.txtSearchComputer.returnPressed.connect(self.OnReturnSearch)
-		grid.addWidget(self.txtSearchComputer, 1, 0)
+		grid.addWidget(self.txtSearchComputer, gridLine, 0)
 		self.btnSearchComputer = QPushButton('Search')
 		self.btnSearchComputer.clicked.connect(self.OnClickSearch)
-		grid.addWidget(self.btnSearchComputer, 1, 1)
+		grid.addWidget(self.btnSearchComputer, gridLine, 1)
+		gridLine += 1
+
+		for attribute in self.cfgLdapAttributesAdditional:
+			lblAdditionalAttribute = QLabel(str(attribute))
+			grid.addWidget(lblAdditionalAttribute, gridLine, 0)
+			gridLine += 1
+			txtAdditionalAttribute = QLineEdit()
+			txtAdditionalAttribute.setReadOnly(True)
+			font = QFontDatabase.systemFont(QFontDatabase.FixedFont)
+			font.setPointSize(14)
+			txtAdditionalAttribute.setFont(font)
+			grid.addWidget(txtAdditionalAttribute, gridLine, 0)
+			gridLine += 1
+			self.refLdapAttributesAdditionalTextBoxes[str(attribute)] = txtAdditionalAttribute
 
 		self.lblPassword = QLabel('Password')
-		grid.addWidget(self.lblPassword, 2, 0)
+		grid.addWidget(self.lblPassword, gridLine, 0)
+		gridLine += 1
 		self.txtPassword = QLineEdit()
 		self.txtPassword.setReadOnly(True)
 		font = QFontDatabase.systemFont(QFontDatabase.FixedFont)
 		font.setPointSize(14)
 		self.txtPassword.setFont(font)
-		grid.addWidget(self.txtPassword, 3, 0)
+		grid.addWidget(self.txtPassword, gridLine, 0)
+		gridLine += 1
 
 		self.lblPasswordExpires = QLabel('Password Expires')
-		grid.addWidget(self.lblPasswordExpires, 4, 0)
+		grid.addWidget(self.lblPasswordExpires, gridLine, 0)
+		gridLine += 1
 		self.txtPasswordExpires = QLineEdit()
 		self.txtPasswordExpires.setReadOnly(True)
-		grid.addWidget(self.txtPasswordExpires, 5, 0)
+		grid.addWidget(self.txtPasswordExpires, gridLine, 0)
+		gridLine += 1
 
 		self.lblNewExpirationTime = QLabel('New Expiration Time')
-		grid.addWidget(self.lblNewExpirationTime, 6, 0)
+		grid.addWidget(self.lblNewExpirationTime, gridLine, 0)
+		gridLine += 1
 		self.cwNewExpirationTime = QCalendarWidget()
-		grid.addWidget(self.cwNewExpirationTime, 7, 0)
+		grid.addWidget(self.cwNewExpirationTime, gridLine, 0)
 		self.btnSetExpirationTime = QPushButton('Set')
 		self.btnSetExpirationTime.setEnabled(False)
 		self.btnSetExpirationTime.clicked.connect(self.OnClickSetExpiry)
-		grid.addWidget(self.btnSetExpirationTime, 7, 1)
+		grid.addWidget(self.btnSetExpirationTime, gridLine, 1)
 
 		widget = QWidget(self)
 		widget.setLayout(grid)
@@ -188,15 +211,18 @@ class LapsMainWindow(QMainWindow):
 			return
 
 		try:
+			# compile query attributes
+			attributes = [self.cfgLdapAttributePassword, self.cfgLdapAttributePasswordExpiry, 'SAMAccountname', 'distinguishedName']
+			for attribute in self.cfgLdapAttributesAdditional:
+				attributes.append(str(attribute))
 			# start LDAP query
 			self.connection.search(
 				search_base=self.createLdapBase(self.cfgDomain),
 				search_filter='(&(objectCategory=computer)('+self.cfgLdapAttributePassword+'=*)(name='+computerName+'))',
-				attributes=[self.cfgLdapAttributePassword, self.cfgLdapAttributePasswordExpiry, 'SAMAccountname', 'distinguishedName']
+				attributes=attributes
 			)
 			for entry in self.connection.entries:
 				# display result
-				print('expiration time:     '+str(entry[self.cfgLdapAttributePasswordExpiry]))
 				self.txtPassword.setText(str(entry[self.cfgLdapAttributePassword]))
 				self.txtPasswordExpires.setText(str(entry[self.cfgLdapAttributePasswordExpiry]))
 				self.statusBar.showMessage('Found: '+str(entry['distinguishedName'])+' ('+str(self.connection.server)+' '+self.cfgUsername+'@'+self.cfgDomain+')')
@@ -206,6 +232,9 @@ class LapsMainWindow(QMainWindow):
 				try:
 					self.txtPasswordExpires.setText( str(filetime_to_dt( int(str(entry[self.cfgLdapAttributePasswordExpiry])) )) )
 				except Exception as e: print(str(e))
+				# additional attributes
+				for attribute in self.cfgLdapAttributesAdditional:
+					self.refLdapAttributesAdditionalTextBoxes[str(attribute)].setText( str(entry[str(attribute)]) )
 				return
 
 			# no result found
@@ -352,6 +381,8 @@ class LapsMainWindow(QMainWindow):
 				self.cfgUsername = cfgJson.get('username', '')
 				self.cfgLdapAttributePassword = str(cfgJson.get('ldap-attribute-password', self.cfgLdapAttributePassword))
 				self.cfgLdapAttributePasswordExpiry = str(cfgJson.get('ldap-attribute-password-expiry', self.cfgLdapAttributePasswordExpiry))
+				tmpLdapAttributesAdditional = cfgJson.get('ldap-attributes-additional', self.cfgLdapAttributesAdditional)
+				if(isinstance(tmpLdapAttributesAdditional, list)): self.cfgLdapAttributesAdditional = tmpLdapAttributesAdditional
 		except Exception as e:
 			self.showErrorDialog('Error loading settings file', str(e))
 
@@ -363,7 +394,8 @@ class LapsMainWindow(QMainWindow):
 					'domain': self.cfgDomain,
 					'username': self.cfgUsername,
 					'ldap-attribute-password': self.cfgLdapAttributePassword,
-					'ldap-attribute-password-expiry': self.cfgLdapAttributePasswordExpiry
+					'ldap-attribute-password-expiry': self.cfgLdapAttributePasswordExpiry,
+					'ldap-attributes-additional': self.cfgLdapAttributesAdditional
 				}, json_file, indent=4)
 		except Exception as e:
 			self.showErrorDialog('Error saving settings file', str(e))
