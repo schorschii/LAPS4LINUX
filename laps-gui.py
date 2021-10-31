@@ -241,6 +241,8 @@ class LapsMainWindow(QMainWindow):
 			self.txtPassword.setText('')
 			self.txtPasswordExpires.setText('')
 			self.statusBar.showMessage('No Result For: '+computerName+' ('+str(self.connection.server)+' '+self.cfgUsername+'@'+self.cfgDomain+')')
+			for attribute in self.cfgLdapAttributesAdditional:
+				self.refLdapAttributesAdditionalTextBoxes[str(attribute)].setText('')
 		except Exception as e:
 			# display error
 			self.statusBar.showMessage(str(e))
