@@ -34,9 +34,8 @@ class LapsCli():
 	cfgDomain   = ''
 	cfgUsername = ''
 	cfgPassword = ''
-	cfgLdapAttributePassword       = 'ms-MCS-AdmPwd'
+	cfgLdapAttributes              = ['ms-MCS-AdmPwd', 'ms-MCS-AdmPwdExpirationTime']
 	cfgLdapAttributePasswordExpiry = 'ms-MCS-AdmPwdExpirationTime'
-	cfgLdapAttributesAdditional    = []
 
 
 	def __init__(self, *args, **kwargs):
@@ -44,10 +43,7 @@ class LapsCli():
 
 		# Show Note
 		print(self.PRODUCT_NAME+' v'+self.PRODUCT_VERSION)
-		if not 'slub' in self.cfgDomain:
-			print('If you like LAPS4LINUX please consider making a donation to support further development ('+self.PRODUCT_WEBSITE+').')
-		else:
-			print(self.PRODUCT_WEBSITE)
+		print(self.PRODUCT_WEBSITE)
 
 		print('')
 
@@ -62,42 +58,47 @@ class LapsCli():
 
 		try:
 			# compile query attributes
-			attributes = [self.cfgLdapAttributePassword, self.cfgLdapAttributePasswordExpiry, 'SAMAccountname', 'distinguishedName']
-			for attribute in self.cfgLdapAttributesAdditional:
+			attributes = ['SAMAccountname', 'distinguishedName']
+			for attribute in self.cfgLdapAttributes:
 				attributes.append(str(attribute))
 			# start LDAP query
 			count = 0
 			self.connection.search(
 				search_base=self.createLdapBase(self.cfgDomain),
-				search_filter='(&(objectCategory=computer)('+self.cfgLdapAttributePassword+'=*)(name='+computerName+'))',
+				search_filter='(&(objectCategory=computer)(name='+computerName+'))',
 				attributes=attributes
 			)
 			for entry in self.connection.entries:
 				count += 1
-				# display result
+				# display result list
 				if computerName == '*':
-					displayValues = [str(entry[self.cfgLdapAttributePassword]).ljust(25)]
-					for attribute in self.cfgLdapAttributesAdditional:
+					displayValues = []
+					for attribute in self.cfgLdapAttributes:
 						displayValues.append(str(entry[str(attribute)]).ljust(25))
 					print(str(entry['SAMAccountname'])+' : '+str.join(' : ', displayValues))
+				# display single result
 				else:
 					self.printResult('Found', str(entry['distinguishedName']))
-					for attribute in self.cfgLdapAttributesAdditional:
-						self.printResult(str(attribute), str(entry[str(attribute)]))
-					self.printResult('Password', str(entry[self.cfgLdapAttributePassword]))
+					for attribute in self.cfgLdapAttributes:
+						lblText = str(attribute)
+						if(str(attribute) == 'ms-MCS-AdmPwd'): lblText = 'Password'
+						if(str(attribute) == self.cfgLdapAttributePasswordExpiry): lblText = 'Password Expiration Date'
+						if(str(attribute) == self.cfgLdapAttributePasswordExpiry):
+							try:
+								self.printResult('Expiration', str(entry[str(attribute)])+' ('+str(filetime_to_dt( int(str(entry[str(attribute)])) ))+')')
+							except Exception as e:
+								self.printResult('Error', str(e))
+								self.printResult('Expiration', str(entry[str(attribute)]))
+						else:
+							self.printResult(lblText, str(entry[str(attribute)]))
 					self.tmpDn = str(entry['distinguishedName'])
-					try:
-						self.printResult('Expiration', str(entry[self.cfgLdapAttributePasswordExpiry])+' ('+str(filetime_to_dt( int(str(entry[self.cfgLdapAttributePasswordExpiry])) ))+')')
-					except Exception as e:
-						self.printResult('Error', str(e))
-						self.printResult('Expiration', str(entry[self.cfgLdapAttributePasswordExpiry]))
 					return
 
 			# no result found
-			if count == 0: print('No Result For: '+computerName)
+			if count == 0: self.printResult('No Result For', computerName)
 		except Exception as e:
 			# display error
-			print('Error: '+str(e))
+			self.printResult('Error', str(e))
 			# reset connection
 			self.server = None
 			self.connection = None
@@ -107,7 +108,6 @@ class LapsCli():
 	def SetExpiry(self, newExpirationDateTimeString):
 		# check if dn of target computer object is known
 		if self.tmpDn.strip() == '': return
-
 		# ask for credentials
 		if not self.checkCredentialsAndConnect(): return
 
@@ -121,9 +121,10 @@ class LapsCli():
 			self.connection.modify(self.tmpDn, { self.cfgLdapAttributePasswordExpiry: [(ldap3.MODIFY_REPLACE, [str(newExpirationDateTime)])] })
 			if self.connection.result['result'] == 0:
 				print('Expiration Date Changed Successfully.')
+
 		except Exception as e:
 			# display error
-			print('Error: '+str(e))
+			self.printResult('Error', str(e))
 			# reset connection
 			self.server = None
 			self.connection = None
@@ -232,10 +233,9 @@ class LapsCli():
 					})
 				self.cfgDomain = cfgJson.get('domain', '')
 				self.cfgUsername = cfgJson.get('username', '')
-				self.cfgLdapAttributePassword = str(cfgJson.get('ldap-attribute-password', self.cfgLdapAttributePassword))
 				self.cfgLdapAttributePasswordExpiry = str(cfgJson.get('ldap-attribute-password-expiry', self.cfgLdapAttributePasswordExpiry))
-				tmpLdapAttributesAdditional = cfgJson.get('ldap-attributes-additional', self.cfgLdapAttributesAdditional)
-				if(isinstance(tmpLdapAttributesAdditional, list)): self.cfgLdapAttributesAdditional = tmpLdapAttributesAdditional
+				tmpLdapAttributes = cfgJson.get('ldap-attributes', self.cfgLdapAttributes)
+				if(isinstance(tmpLdapAttributes, list)): self.cfgLdapAttributes = tmpLdapAttributes
 		except Exception as e:
 			print('Error loading settings file: '+str(e))
 
@@ -246,9 +246,8 @@ class LapsCli():
 					'server': self.cfgServer,
 					'domain': self.cfgDomain,
 					'username': self.cfgUsername,
-					'ldap-attribute-password': self.cfgLdapAttributePassword,
 					'ldap-attribute-password-expiry': self.cfgLdapAttributePasswordExpiry,
-					'ldap-attributes-additional': self.cfgLdapAttributesAdditional
+					'ldap-attributes': self.cfgLdapAttributes
 				}, json_file, indent=4)
 		except Exception as e:
 			print('Error saving settings file: '+str(e))

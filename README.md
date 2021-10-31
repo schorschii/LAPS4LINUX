@@ -80,4 +80,6 @@ sudo klist -c /tmp/laps.temp
 Please replace COMPUTERNAME with your hostname, but do not forget the trailing dollar sign.
 
 ## Support
+If you like LAPS4LINUX please consider making a donation to support further development.
+
 You can hire me for commercial support or adjustments for this project. Please [contact me](https://georg-sieber.de/?page=impressum) if you are interested.

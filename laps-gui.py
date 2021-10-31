@@ -137,10 +137,9 @@ class LapsMainWindow(QMainWindow):
 	cfgDomain   = ''
 	cfgUsername = ''
 	cfgPassword = ''
-	cfgLdapAttributePassword       = 'ms-MCS-AdmPwd'
+	cfgLdapAttributes              = ['ms-MCS-AdmPwd', 'ms-MCS-AdmPwdExpirationTime']
 	cfgLdapAttributePasswordExpiry = 'ms-MCS-AdmPwdExpirationTime'
-	cfgLdapAttributesAdditional    = []
-	refLdapAttributesAdditionalTextBoxes = {}
+	refLdapAttributesTextBoxes     = {}
 
 
 	def __init__(self):
@@ -187,8 +186,11 @@ class LapsMainWindow(QMainWindow):
 		grid.addWidget(self.btnSearchComputer, gridLine, 1)
 		gridLine += 1
 
-		for attribute in self.cfgLdapAttributesAdditional:
-			lblAdditionalAttribute = QLabel(str(attribute))
+		for attribute in self.cfgLdapAttributes:
+			lblText = str(attribute)
+			if(str(attribute) == 'ms-MCS-AdmPwd'): lblText = 'Administrator Password'
+			if(str(attribute) == self.cfgLdapAttributePasswordExpiry): lblText = 'Password Expiration Date'
+			lblAdditionalAttribute = QLabel(lblText)
 			grid.addWidget(lblAdditionalAttribute, gridLine, 0)
 			gridLine += 1
 			txtAdditionalAttribute = QLineEdit()
@@ -198,26 +200,7 @@ class LapsMainWindow(QMainWindow):
 			txtAdditionalAttribute.setFont(font)
 			grid.addWidget(txtAdditionalAttribute, gridLine, 0)
 			gridLine += 1
-			self.refLdapAttributesAdditionalTextBoxes[str(attribute)] = txtAdditionalAttribute
-
-		self.lblPassword = QLabel('Password')
-		grid.addWidget(self.lblPassword, gridLine, 0)
-		gridLine += 1
-		self.txtPassword = QLineEdit()
-		self.txtPassword.setReadOnly(True)
-		font = QFontDatabase.systemFont(QFontDatabase.FixedFont)
-		font.setPointSize(14)
-		self.txtPassword.setFont(font)
-		grid.addWidget(self.txtPassword, gridLine, 0)
-		gridLine += 1
-
-		self.lblPasswordExpires = QLabel('Password Expires')
-		grid.addWidget(self.lblPasswordExpires, gridLine, 0)
-		gridLine += 1
-		self.txtPasswordExpires = QLineEdit()
-		self.txtPasswordExpires.setReadOnly(True)
-		grid.addWidget(self.txtPasswordExpires, gridLine, 0)
-		gridLine += 1
+			self.refLdapAttributesTextBoxes[str(attribute)] = txtAdditionalAttribute
 
 		self.btnSetExpirationTime = QPushButton('Set New Expiration Time')
 		self.btnSetExpirationTime.setEnabled(False)
@@ -230,7 +213,7 @@ class LapsMainWindow(QMainWindow):
 		self.setCentralWidget(widget)
 
 		# Window Settings
-		self.setMinimumSize(490, 350)
+		self.setMinimumSize(480, 300)
 		self.setWindowTitle(self.PRODUCT_NAME+' v'+self.PRODUCT_VERSION)
 		self.statusBar.showMessage('Settings file: '+self.cfgPath)
 
@@ -258,37 +241,37 @@ class LapsMainWindow(QMainWindow):
 
 		try:
 			# compile query attributes
-			attributes = [self.cfgLdapAttributePassword, self.cfgLdapAttributePasswordExpiry, 'SAMAccountname', 'distinguishedName']
-			for attribute in self.cfgLdapAttributesAdditional:
+			attributes = ['SAMAccountname', 'distinguishedName']
+			for attribute in self.cfgLdapAttributes:
 				attributes.append(str(attribute))
 			# start LDAP query
 			self.connection.search(
 				search_base=self.createLdapBase(self.cfgDomain),
-				search_filter='(&(objectCategory=computer)('+self.cfgLdapAttributePassword+'=*)(name='+computerName+'))',
+				search_filter='(&(objectCategory=computer)(name='+computerName+'))',
 				attributes=attributes
 			)
 			for entry in self.connection.entries:
 				# display result
-				self.txtPassword.setText(str(entry[self.cfgLdapAttributePassword]))
-				self.txtPasswordExpires.setText(str(entry[self.cfgLdapAttributePasswordExpiry]))
 				self.statusBar.showMessage('Found: '+str(entry['distinguishedName'])+' ('+str(self.connection.server)+' '+self.cfgUsername+'@'+self.cfgDomain+')')
 				self.tmpDn = str(entry['distinguishedName'])
 				self.btnSetExpirationTime.setEnabled(True)
 				self.btnSearchComputer.setEnabled(True)
-				try:
-					self.txtPasswordExpires.setText( str(filetime_to_dt( int(str(entry[self.cfgLdapAttributePasswordExpiry])) )) )
-				except Exception as e: print(str(e))
-				# additional attributes
-				for attribute in self.cfgLdapAttributesAdditional:
-					self.refLdapAttributesAdditionalTextBoxes[str(attribute)].setText( str(entry[str(attribute)]) )
+				for attribute in self.cfgLdapAttributes:
+					textBox = self.refLdapAttributesTextBoxes[str(attribute)]
+					if(str(attribute) == self.cfgLdapAttributePasswordExpiry):
+						try:
+							textBox.setText( str(filetime_to_dt( int(str(entry[str(attribute)])) )) )
+						except Exception as e:
+							print(str(e))
+							textBox.setText( str(entry[str(attribute)]) )
+					else:
+						textBox.setText( str(entry[str(attribute)]) )
 				return
 
 			# no result found
-			self.txtPassword.setText('')
-			self.txtPasswordExpires.setText('')
 			self.statusBar.showMessage('No Result For: '+computerName+' ('+str(self.connection.server)+' '+self.cfgUsername+'@'+self.cfgDomain+')')
-			for attribute in self.cfgLdapAttributesAdditional:
-				self.refLdapAttributesAdditionalTextBoxes[str(attribute)].setText('')
+			for attribute in self.cfgLdapAttributes:
+				self.refLdapAttributesTextBoxes[str(attribute)].setText('')
 		except Exception as e:
 			# display error
 			self.statusBar.showMessage(str(e))
@@ -409,10 +392,9 @@ class LapsMainWindow(QMainWindow):
 					})
 				self.cfgDomain = cfgJson.get('domain', '')
 				self.cfgUsername = cfgJson.get('username', '')
-				self.cfgLdapAttributePassword = str(cfgJson.get('ldap-attribute-password', self.cfgLdapAttributePassword))
 				self.cfgLdapAttributePasswordExpiry = str(cfgJson.get('ldap-attribute-password-expiry', self.cfgLdapAttributePasswordExpiry))
-				tmpLdapAttributesAdditional = cfgJson.get('ldap-attributes-additional', self.cfgLdapAttributesAdditional)
-				if(isinstance(tmpLdapAttributesAdditional, list)): self.cfgLdapAttributesAdditional = tmpLdapAttributesAdditional
+				tmpLdapAttributes = cfgJson.get('ldap-attributes', self.cfgLdapAttributes)
+				if(isinstance(tmpLdapAttributes, list)): self.cfgLdapAttributes = tmpLdapAttributes
 		except Exception as e:
 			self.showErrorDialog('Error loading settings file', str(e))
 
@@ -423,9 +405,8 @@ class LapsMainWindow(QMainWindow):
 					'server': self.cfgServer,
 					'domain': self.cfgDomain,
 					'username': self.cfgUsername,
-					'ldap-attribute-password': self.cfgLdapAttributePassword,
 					'ldap-attribute-password-expiry': self.cfgLdapAttributePasswordExpiry,
-					'ldap-attributes-additional': self.cfgLdapAttributesAdditional
+					'ldap-attributes': self.cfgLdapAttributes
 				}, json_file, indent=4)
 		except Exception as e:
 			self.showErrorDialog('Error saving settings file', str(e))
