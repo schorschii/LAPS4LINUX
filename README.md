@@ -47,7 +47,7 @@ The client (both GUI and CLI) supports Kerberos authentication which means that 
 It is highly recommended to turn on SSL in the config file (`~/.laps-client.json`) if your LDAP server has a valid certificate (set `ssl` to `true` and `port` to `636`). You can also configure multiple LDAP server in the config file.
 
 ### Query Additional Attributes
-LAPS4LINUX allows you to query additional attributes besides the admin password which might be of interest for you. For that, just edit the config file `~/.laps-client.json` and enter the additional LDAP attributes you'd like to query into the setting `"ldap-attributes-additional"` (please have a look at the example config file).
+LAPS4LINUX allows you to query additional attributes besides the admin password which might be of interest for you. For that, just edit the config file `~/.laps-client.json` and enter the additional LDAP attributes you'd like to query into the settings array `"ldap-attributes"`.
 
 ## Runner
 The runner is responsible for automatically changing the admin password of a Linux client and updating it in the LDAP directory. This assumes that Kerberos (`krb5-user`) is installed and that the machine is already joined to your domain using Samba's `net ads join`, PBIS' `domainjoin-cli join` or the modern `adcli join` command (recommended).
