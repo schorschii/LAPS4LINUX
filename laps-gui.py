@@ -56,9 +56,9 @@ class LapsAboutWindow(QDialog):
 
 		labelDescription = QLabel(self)
 		labelDescription.setText(
-			"""LAPS4LINUX GUI allows you to query local administrator passwords for workstations in you domain running the LAPS client from your LDAP (Active Directory) server.\n\n"""
-			"""The LAPS client periodically sets a new administrator password and saves it into the LDAP directory.\n\n"""
-			"""LAPS was originally developed by Microsoft, this is an inofficial Linux implementation."""
+			"""LAPS4LINUX GUI allows you to query local administrator passwords for LAPS runner managed workstations in your domain from your LDAP (Active Directory) server.\n\n"""
+			"""The LAPS runner periodically sets a new administrator password and saves it into the LDAP directory.\n\n"""
+			"""LAPS was originally developed by Microsoft, this is an inofficial Linux/Unix implementation with some enhancements (e.g. the CLI/GUI client can display additional attributes)."""
 		)
 		labelDescription.setStyleSheet("opacity:0.8")
 		labelDescription.setFixedWidth(450)
