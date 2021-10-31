@@ -202,7 +202,7 @@ class LapsMainWindow(QMainWindow):
 			gridLine += 1
 			self.refLdapAttributesTextBoxes[str(attribute)] = txtAdditionalAttribute
 
-		self.btnSetExpirationTime = QPushButton('Set New Expiration Time')
+		self.btnSetExpirationTime = QPushButton('Set New Expiration Date')
 		self.btnSetExpirationTime.setEnabled(False)
 		self.btnSetExpirationTime.clicked.connect(self.OnClickSetExpiry)
 		grid.addWidget(self.btnSetExpirationTime, gridLine, 0)
