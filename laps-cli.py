@@ -29,6 +29,7 @@ class LapsCli():
 	connection  = None
 	tmpDn       = ''
 
+	cfgPresetPath = '/etc/laps-client.json'
 	cfgPath     = str(Path.home())+'/.laps-client.json'
 	cfgServer   = []
 	cfgDomain   = ''
@@ -144,16 +145,17 @@ class LapsCli():
 			else: return False
 		if len(self.cfgServer) == 0:
 			# query domain controllers by dns lookup
-			res = resolver.query(qname=f"_ldap._tcp.{self.cfgDomain}", rdtype=rdatatype.SRV, lifetime=10)
-			if(len(res.rrset) == 0): return False
-			for srv in res.rrset:
-				serverEntry = {
-					'address': str(srv.target),
-					'port': srv.port,
-					'ssl': (srv.port == 636)
-				}
-				print('DNS auto discovery found server: '+json.dumps(serverEntry))
-				self.cfgServer.append(serverEntry)
+			try:
+				res = resolver.query(qname=f"_ldap._tcp.{self.cfgDomain}", rdtype=rdatatype.SRV, lifetime=10)
+				for srv in res.rrset:
+					serverEntry = {
+						'address': str(srv.target),
+						'port': srv.port,
+						'ssl': (srv.port == 636)
+					}
+					print('DNS auto discovery found server: '+json.dumps(serverEntry))
+					self.cfgServer.append(serverEntry)
+			except Exception as e: print('DNS auto discovery failed: '+str(e))
 			# ask user to enter server names if auto discovery was not successful
 			if len(self.cfgServer) == 0:
 				item = input('💻 LDAP Server Address: ')
@@ -221,9 +223,11 @@ class LapsCli():
 		return search_base[:-1]
 
 	def LoadSettings(self):
-		if(not path.isfile(self.cfgPath)): return
+		if(path.isfile(self.cfgPath)): cfgPath = self.cfgPath
+		elif(path.isfile(self.cfgPresetPath)): cfgPath = self.cfgPresetPath
+		else: return
 		try:
-			with open(self.cfgPath) as f:
+			with open(cfgPath) as f:
 				cfgJson = json.load(f)
 				for server in cfgJson.get('server', ''):
 					self.cfgServer.append({
