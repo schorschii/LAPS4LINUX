@@ -49,6 +49,9 @@ class LapsAboutWindow(QDialog):
 			"<br>"
 			"<a href='"+self.parentWidget().PRODUCT_WEBSITE+"'>"+self.parentWidget().PRODUCT_WEBSITE+"</a>"
 			"<br>"
+			"<br>"
+			"If you like LAPS4LINUX please consider<br>making a donation to support further development."
+			"<br>"
 		)
 		labelCopyright.setOpenExternalLinks(True)
 		labelCopyright.setAlignment(Qt.AlignCenter)
@@ -56,7 +59,7 @@ class LapsAboutWindow(QDialog):
 
 		labelDescription = QLabel(self)
 		labelDescription.setText(
-			"""LAPS4LINUX GUI allows you to query local administrator passwords for LAPS runner managed workstations in your domain from your LDAP (Active Directory) server.\n\n"""
+			"""LAPS4LINUX client allows you to query local administrator passwords for LAPS runner managed workstations in your domain from your LDAP (Active Directory) server.\n\n"""
 			"""The LAPS runner periodically sets a new administrator password and saves it into the LDAP directory.\n\n"""
 			"""LAPS was originally developed by Microsoft, this is an inofficial Linux/Unix implementation with some enhancements (e.g. the CLI/GUI client can display additional attributes)."""
 		)
@@ -69,6 +72,56 @@ class LapsAboutWindow(QDialog):
 
 		self.setLayout(self.layout)
 		self.setWindowTitle("About")
+
+class LapsCalendarWindow(QDialog):
+	def __init__(self, *args, **kwargs):
+		super(LapsCalendarWindow, self).__init__(*args, **kwargs)
+		self.InitUI()
+
+	def InitUI(self):
+		self.buttonBox = QDialogButtonBox(QDialogButtonBox.Ok|QDialogButtonBox.Cancel)
+		self.buttonBox.accepted.connect(self.OnClickAccept)
+		self.buttonBox.rejected.connect(self.OnClickReject)
+
+		self.layout = QVBoxLayout(self)
+
+		self.cwNewExpirationTime = QCalendarWidget()
+		self.layout.addWidget(self.cwNewExpirationTime)
+
+		self.layout.addWidget(self.buttonBox)
+
+		self.setLayout(self.layout)
+		self.setWindowTitle("Set New Expiration Date")
+
+	def OnClickAccept(self):
+		parentWidget = self.parentWidget()
+
+		# check if dn of target computer object is known
+		if parentWidget.tmpDn.strip() == '': return
+		# ask for credentials
+		if not parentWidget.checkCredentialsAndConnect(): return
+
+		try:
+			# calc new time
+			newExpirationDateTime = dt_to_filetime( datetime.combine(self.cwNewExpirationTime.selectedDate().toPyDate(), datetime.min.time()) )
+			print('new expiration time: '+str(newExpirationDateTime))
+			# start LDAP query
+			parentWidget.connection.modify(parentWidget.tmpDn, { parentWidget.cfgLdapAttributePasswordExpiry: [(ldap3.MODIFY_REPLACE, [str(newExpirationDateTime)])] })
+			if parentWidget.connection.result['result'] == 0:
+				parentWidget.showInfoDialog('Success', 'Expiration date successfully changed to '+str(newExpirationDateTime)+'.', parentWidget.tmpDn+' ('+str(parentWidget.connection.server)+' '+parentWidget.cfgUsername+'@'+parentWidget.cfgDomain+')')
+				# update values in main window
+				parentWidget.OnClickSearch(None)
+				self.close()
+
+		except Exception as e:
+			# display error
+			parentWidget.showErrorDialog('Error setting new expiration date', str(e))
+			# reset connection
+			parentWidget.server = None
+			parentWidget.connection = None
+
+	def OnClickReject(self):
+		self.close()
 
 class LapsMainWindow(QMainWindow):
 	PRODUCT_NAME      = 'LAPS4LINUX'
@@ -166,15 +219,11 @@ class LapsMainWindow(QMainWindow):
 		grid.addWidget(self.txtPasswordExpires, gridLine, 0)
 		gridLine += 1
 
-		self.lblNewExpirationTime = QLabel('New Expiration Time')
-		grid.addWidget(self.lblNewExpirationTime, gridLine, 0)
-		gridLine += 1
-		self.cwNewExpirationTime = QCalendarWidget()
-		grid.addWidget(self.cwNewExpirationTime, gridLine, 0)
-		self.btnSetExpirationTime = QPushButton('Set')
+		self.btnSetExpirationTime = QPushButton('Set New Expiration Time')
 		self.btnSetExpirationTime.setEnabled(False)
 		self.btnSetExpirationTime.clicked.connect(self.OnClickSetExpiry)
-		grid.addWidget(self.btnSetExpirationTime, gridLine, 1)
+		grid.addWidget(self.btnSetExpirationTime, gridLine, 0)
+		gridLine += 1
 
 		widget = QWidget(self)
 		widget.setLayout(grid)
@@ -183,10 +232,7 @@ class LapsMainWindow(QMainWindow):
 		# Window Settings
 		self.setMinimumSize(490, 350)
 		self.setWindowTitle(self.PRODUCT_NAME+' v'+self.PRODUCT_VERSION)
-
-		# Show Note
-		if not 'slub' in self.cfgDomain:
-			self.statusBar.showMessage('If you like LAPS4LINUX please consider making a donation to support further development ('+self.PRODUCT_WEBSITE+').')
+		self.statusBar.showMessage('Settings file: '+self.cfgPath)
 
 	def OnQuit(self, e):
 		sys.exit()
@@ -255,27 +301,9 @@ class LapsMainWindow(QMainWindow):
 		self.btnSearchComputer.setEnabled(True)
 
 	def OnClickSetExpiry(self, e):
-		# check if dn of target computer object is known
-		if self.tmpDn.strip() == '': return
-
-		# ask for credentials
-		if not self.checkCredentialsAndConnect(): return
-
-		try:
-			# calc new time
-			newExpirationDateTime = dt_to_filetime( datetime.combine(self.cwNewExpirationTime.selectedDate().toPyDate(), datetime.min.time()) )
-			print('new expiration time: '+str(newExpirationDateTime))
-
-			# start LDAP query
-			self.connection.modify(self.tmpDn, { self.cfgLdapAttributePasswordExpiry: [(ldap3.MODIFY_REPLACE, [str(newExpirationDateTime)])] })
-			if self.connection.result['result'] == 0:
-				self.statusBar.showMessage('Expiration Date Changed Successfully: '+self.tmpDn+' ('+str(self.connection.server)+' '+self.cfgUsername+'@'+self.cfgDomain+')')
-		except Exception as e:
-			# display error
-			self.statusBar.showMessage(str(e))
-			# reset connection
-			self.server = None
-			self.connection = None
+		dlg = LapsCalendarWindow(self)
+		dlg.refMainWindows = self
+		dlg.exec_()
 
 	def checkCredentialsAndConnect(self):
 		if self.server != None and self.connection != None: return True
@@ -402,12 +430,22 @@ class LapsMainWindow(QMainWindow):
 		except Exception as e:
 			self.showErrorDialog('Error saving settings file', str(e))
 
-	def showErrorDialog(self, title, text):
+	def showErrorDialog(self, title, text, additionalText=''):
 		print('Error: '+text)
 		msg = QMessageBox()
 		msg.setIcon(QMessageBox.Critical)
 		msg.setWindowTitle(title)
 		msg.setText(text)
+		msg.setDetailedText(additionalText)
+		msg.setStandardButtons(QMessageBox.Ok)
+		retval = msg.exec_()
+	def showInfoDialog(self, title, text, additionalText=''):
+		print('Info: '+text)
+		msg = QMessageBox()
+		msg.setIcon(QMessageBox.Information)
+		msg.setWindowTitle(title)
+		msg.setText(text)
+		msg.setDetailedText(additionalText)
 		msg.setStandardButtons(QMessageBox.Ok)
 		retval = msg.exec_()
 
