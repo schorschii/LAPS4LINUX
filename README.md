@@ -42,8 +42,10 @@ Expiration Date Changed Successfully.
 ### Graphical User Interface (GUI)
 ![screenshot](.github/screenshot.png)
 
+### Kerberos Authentication
 The client (both GUI and CLI) supports Kerberos authentication which means that you can use the client without entering a password if you are logged in with a domain account. If not, NTLM authentication is used as fallback and the client will ask you for username and password.
 
+### SSL Connection
 It is highly recommended to turn on SSL in the config file (`~/.laps-client.json`) if your LDAP server has a valid certificate (set `ssl` to `true` and `port` to `636`). You can also configure multiple LDAP server in the config file.
 
 ### Query Additional Attributes
@@ -51,6 +53,9 @@ LAPS4LINUX allows you to query additional attributes besides the admin password 
 
 ### Default Config File
 You can create a preset config file `/etc/laps-client.json` which will be loaded if `~/.laps-client.json` does not exist. With this, you can distribute default settings (all relevant LDAP attributes, SSL on etc.) for new users.
+
+### `laps://` Protocol Scheme
+The GUI supports the protocol scheme `laps://`, which means you can call the GUI like `laps-gui.py laps://HOSTNAME` to automatically search `HOSTNAME` after startup. This feature is mainly intended to use with the [OCO server](https://github.com/schorschii/OCO-Server) web frontend ("[COMPUTER_COMMANDS](https://github.com/schorschii/OCO-Server/blob/master/docs/Computers.md#client-commands)").
 
 ## Runner
 The runner is responsible for automatically changing the admin password of a Linux client and updating it in the LDAP directory. This assumes that Kerberos (`krb5-user`) is installed and that the machine is already joined to your domain using Samba's `net ads join`, PBIS' `domainjoin-cli join` or the modern `adcli join` command (recommended).

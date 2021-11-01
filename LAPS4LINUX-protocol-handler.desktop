@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=LAPS4LINUX Protocol Handler
+Exec=/usr/bin/laps-gui %u
+StartupNotify=false
+MimeType=x-scheme-handler/laps;
+NoDisplay=true
+
+# execute `update-desktop-database` after copying into /usr/share/applications

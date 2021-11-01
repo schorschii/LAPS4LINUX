@@ -4,6 +4,7 @@
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
+from urllib.parse import unquote
 from pathlib import Path
 from os import path
 from datetime import datetime
@@ -127,6 +128,7 @@ class LapsMainWindow(QMainWindow):
 	PRODUCT_NAME      = 'LAPS4LINUX'
 	PRODUCT_VERSION   = '1.3.0'
 	PRODUCT_WEBSITE   = 'https://github.com/schorschii/laps4linux'
+	PROTOCOL_SCHEME   = 'laps://'
 
 	server      = None
 	connection  = None
@@ -217,6 +219,17 @@ class LapsMainWindow(QMainWindow):
 		self.setMinimumSize(480, 300)
 		self.setWindowTitle(self.PRODUCT_NAME+' v'+self.PRODUCT_VERSION)
 		self.statusBar.showMessage('Settings file: '+self.cfgPath)
+
+		# Handle Parameter - Automatic Search
+		urlToHandle = None
+		for arg in sys.argv:
+			if(arg.startswith(self.PROTOCOL_SCHEME)):
+				urlToHandle = arg
+		if(urlToHandle != None):
+			print('Handle '+urlToHandle)
+			protocolPayload = unquote(urlToHandle).replace(self.PROTOCOL_SCHEME, '')
+			self.txtSearchComputer.setText(protocolPayload)
+			self.OnClickSearch(None)
 
 	def OnQuit(self, e):
 		sys.exit()
