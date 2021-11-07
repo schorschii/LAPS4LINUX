@@ -140,7 +140,10 @@ class LapsMainWindow(QMainWindow):
 	cfgDomain   = ''
 	cfgUsername = ''
 	cfgPassword = ''
-	cfgLdapAttributes              = ['ms-MCS-AdmPwd', 'ms-MCS-AdmPwdExpirationTime']
+	cfgLdapAttributes              = {
+		'Administrator Password': 'ms-MCS-AdmPwd',
+		'Password Expiration Date': 'ms-MCS-AdmPwdExpirationTime'
+	}
 	cfgLdapAttributePasswordExpiry = 'ms-MCS-AdmPwdExpirationTime'
 	refLdapAttributesTextBoxes     = {}
 
@@ -189,11 +192,8 @@ class LapsMainWindow(QMainWindow):
 		grid.addWidget(self.btnSearchComputer, gridLine, 1)
 		gridLine += 1
 
-		for attribute in self.cfgLdapAttributes:
-			lblText = str(attribute)
-			if(str(attribute) == 'ms-MCS-AdmPwd'): lblText = 'Administrator Password'
-			if(str(attribute) == self.cfgLdapAttributePasswordExpiry): lblText = 'Password Expiration Date'
-			lblAdditionalAttribute = QLabel(lblText)
+		for title, attribute in self.GetAttributesAsDict().items():
+			lblAdditionalAttribute = QLabel(str(title))
 			grid.addWidget(lblAdditionalAttribute, gridLine, 0)
 			gridLine += 1
 			txtAdditionalAttribute = QLineEdit()
@@ -203,7 +203,7 @@ class LapsMainWindow(QMainWindow):
 			txtAdditionalAttribute.setFont(font)
 			grid.addWidget(txtAdditionalAttribute, gridLine, 0)
 			gridLine += 1
-			self.refLdapAttributesTextBoxes[str(attribute)] = txtAdditionalAttribute
+			self.refLdapAttributesTextBoxes[str(title)] = txtAdditionalAttribute
 
 		self.btnSetExpirationTime = QPushButton('Set New Expiration Date')
 		self.btnSetExpirationTime.setEnabled(False)
@@ -231,6 +231,16 @@ class LapsMainWindow(QMainWindow):
 			self.txtSearchComputer.setText(protocolPayload)
 			self.OnClickSearch(None)
 
+	def GetAttributesAsDict(self):
+		finalDict = {}
+		if(isinstance(self.cfgLdapAttributes, list)):
+			for attribute in self.cfgLdapAttributes:
+				finalDict[attribute] = attribute
+		elif(isinstance(self.cfgLdapAttributes, dict)):
+			for title, attribute in self.cfgLdapAttributes.items():
+				finalDict[str(title)] = str(attribute)
+		return finalDict
+
 	def OnQuit(self, e):
 		sys.exit()
 
@@ -256,7 +266,7 @@ class LapsMainWindow(QMainWindow):
 		try:
 			# compile query attributes
 			attributes = ['SAMAccountname', 'distinguishedName']
-			for attribute in self.cfgLdapAttributes:
+			for title, attribute in self.GetAttributesAsDict().items():
 				attributes.append(str(attribute))
 			# start LDAP query
 			self.connection.search(
@@ -270,8 +280,8 @@ class LapsMainWindow(QMainWindow):
 				self.tmpDn = str(entry['distinguishedName'])
 				self.btnSetExpirationTime.setEnabled(True)
 				self.btnSearchComputer.setEnabled(True)
-				for attribute in self.cfgLdapAttributes:
-					textBox = self.refLdapAttributesTextBoxes[str(attribute)]
+				for title, attribute in self.GetAttributesAsDict().items():
+					textBox = self.refLdapAttributesTextBoxes[str(title)]
 					if(str(attribute) == self.cfgLdapAttributePasswordExpiry):
 						try:
 							textBox.setText( str(filetime_to_dt( int(str(entry[str(attribute)])) )) )
@@ -284,8 +294,8 @@ class LapsMainWindow(QMainWindow):
 
 			# no result found
 			self.statusBar.showMessage('No Result For: '+computerName+' ('+str(self.connection.server)+' '+self.cfgUsername+'@'+self.cfgDomain+')')
-			for attribute in self.cfgLdapAttributes:
-				self.refLdapAttributesTextBoxes[str(attribute)].setText('')
+			for title, attribute in self.GetAttributesAsDict().items():
+				self.refLdapAttributesTextBoxes[str(title)].setText('')
 		except Exception as e:
 			# display error
 			self.statusBar.showMessage(str(e))
@@ -411,7 +421,8 @@ class LapsMainWindow(QMainWindow):
 				self.cfgUsername = cfgJson.get('username', '')
 				self.cfgLdapAttributePasswordExpiry = str(cfgJson.get('ldap-attribute-password-expiry', self.cfgLdapAttributePasswordExpiry))
 				tmpLdapAttributes = cfgJson.get('ldap-attributes', self.cfgLdapAttributes)
-				if(isinstance(tmpLdapAttributes, list)): self.cfgLdapAttributes = tmpLdapAttributes
+				if(isinstance(tmpLdapAttributes, list) or isinstance(tmpLdapAttributes, dict)):
+					self.cfgLdapAttributes = tmpLdapAttributes
 		except Exception as e:
 			self.showErrorDialog('Error loading settings file', str(e))
 
