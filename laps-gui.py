@@ -113,6 +113,8 @@ class LapsCalendarWindow(QDialog):
 				# update values in main window
 				parentWidget.OnClickSearch(None)
 				self.close()
+			else:
+				parentWidget.showErrorDialog('Error', 'Unable to change expiration date to '+str(newExpirationDateTime)+'.'+"\n\n"+str(parentWidget.connection.result['message']), parentWidget.tmpDn+' ('+str(parentWidget.connection.server)+' '+parentWidget.cfgUsername+'@'+parentWidget.cfgDomain+')')
 
 		except Exception as e:
 			# display error

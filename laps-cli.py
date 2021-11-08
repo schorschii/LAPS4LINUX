@@ -132,6 +132,8 @@ class LapsCli():
 			self.connection.modify(self.tmpDn, { self.cfgLdapAttributePasswordExpiry: [(ldap3.MODIFY_REPLACE, [str(newExpirationDateTime)])] })
 			if self.connection.result['result'] == 0:
 				print('Expiration Date Changed Successfully.')
+			else:
+				print('Unable to change expiration date. '+str(self.connection.result['message']))
 
 		except Exception as e:
 			# display error
