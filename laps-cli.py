@@ -22,7 +22,7 @@ def filetime_to_dt(ft): # ft is in UTC, fromtimestamp() converts to local time
 
 class LapsCli():
 	PRODUCT_NAME      = 'LAPS4LINUX CLI'
-	PRODUCT_VERSION   = '1.4.1'
+	PRODUCT_VERSION   = '1.4.2'
 	PRODUCT_WEBSITE   = 'https://github.com/schorschii/laps4linux'
 
 	gcModeOn    = False
