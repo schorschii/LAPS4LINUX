@@ -362,7 +362,12 @@ class LapsMainWindow(QMainWindow):
 
 		# try to bind to server via Kerberos
 		try:
-			self.connection = ldap3.Connection(self.server, authentication=ldap3.SASL, sasl_mechanism=ldap3.KERBEROS, auto_bind=True)
+			self.connection = ldap3.Connection(
+				self.server,
+				authentication=ldap3.SASL,
+				sasl_mechanism=ldap3.KERBEROS,
+				auto_bind=True
+			)
 			#self.connection.bind()
 			return True # return if connection created successfully
 		except Exception as e:
@@ -388,7 +393,13 @@ class LapsMainWindow(QMainWindow):
 
 		# try to bind to server via NTLM
 		try:
-			self.connection = ldap3.Connection(self.server, user=self.cfgDomain+'\\'+self.cfgUsername, password=self.cfgPassword, authentication=ldap3.NTLM, auto_bind=True)
+			self.connection = ldap3.Connection(
+				self.server,
+				user=self.cfgDomain+'\\'+self.cfgUsername,
+				password=self.cfgPassword,
+				authentication=ldap3.NTLM,
+				auto_bind=True
+			)
 			#self.connection.bind()
 		except Exception as e:
 			self.cfgUsername = ''
