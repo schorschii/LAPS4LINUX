@@ -25,6 +25,7 @@ class LapsCli():
 	PRODUCT_VERSION   = '1.4.0'
 	PRODUCT_WEBSITE   = 'https://github.com/schorschii/laps4linux'
 
+	gcModeOn    = False
 	server      = None
 	connection  = None
 	tmpDn       = ''
@@ -128,12 +129,45 @@ class LapsCli():
 			newExpirationDateTime = dt_to_filetime( newExpirationDate )
 			self.printResult('New Expiration', str(newExpirationDateTime)+' ('+str(newExpirationDate)+')')
 
-			# start LDAP query
-			self.connection.modify(self.tmpDn, { self.cfgLdapAttributePasswordExpiry: [(ldap3.MODIFY_REPLACE, [str(newExpirationDateTime)])] })
-			if self.connection.result['result'] == 0:
+			# decide which connection to use
+			if(self.gcModeOn):
+				# global catalog (which is read only) was used for search - we need to establish a new connection to the "normal" LDAP port
+				# LDAP referrals to the correct (sub)domain controller is handled automatically by ldap3
+				serverArray = []
+				for server in self.cfgServer:
+					serverArray.append(ldap3.Server(server['address'], port=server['port'], use_ssl=server['ssl'], get_info=ldap3.ALL))
+				server = ldap3.ServerPool(serverArray, ldap3.ROUND_ROBIN, active=True, exhaust=True)
+				# try to bind to server via Kerberos
+				try:
+					connection = ldap3.Connection(server,
+						authentication=ldap3.SASL,
+						sasl_mechanism=ldap3.KERBEROS,
+						auto_referrals=True,
+						auto_bind=True
+					)
+				except Exception as e:
+					print('Unable to connect via Kerberos: '+str(e))
+				# try to bind to server with username and password
+				try:
+					connection = ldap3.Connection(server,
+						user=self.cfgUsername+'@'+self.cfgDomain,
+						password=self.cfgPassword,
+						authentication=ldap3.SIMPLE,
+						auto_referrals=True,
+						auto_bind=True
+					)
+				except Exception as e:
+					print('Error binding to LDAP server: '+str(e))
+			else:
+				# no global catalog was used for search - we can use the same connection again to set the expiration date
+				connection = self.connection
+
+			# start LDAP modify
+			connection.modify(self.tmpDn, { self.cfgLdapAttributePasswordExpiry: [(ldap3.MODIFY_REPLACE, [str(newExpirationDateTime)])] })
+			if connection.result['result'] == 0:
 				print('Expiration Date Changed Successfully.')
 			else:
-				print('Unable to change expiration date. '+str(self.connection.result['message']))
+				print('Unable to change expiration date. '+str(connection.result['message']))
 
 		except Exception as e:
 			# display error
@@ -185,7 +219,11 @@ class LapsCli():
 			try:
 				serverArray = []
 				for server in self.cfgServer:
-					serverArray.append(ldap3.Server(server['address'], port=server['port'], use_ssl=server['ssl'], get_info=ldap3.ALL))
+					port = server['port']
+					if('gc-port' in server):
+						port = server['gc-port']
+						self.gcModeOn = True
+					serverArray.append(ldap3.Server(server['address'], port=port, use_ssl=server['ssl'], get_info=ldap3.ALL))
 				self.server = ldap3.ServerPool(serverArray, ldap3.ROUND_ROBIN, active=True, exhaust=True)
 			except Exception as e:
 				print('Error connecting to LDAP server: ', str(e))
@@ -197,6 +235,7 @@ class LapsCli():
 				self.server,
 				authentication=ldap3.SASL,
 				sasl_mechanism=ldap3.KERBEROS,
+				auto_referrals=True,
 				auto_bind=True
 			)
 			#self.connection.bind()
@@ -226,6 +265,7 @@ class LapsCli():
 				user=self.cfgUsername+'@'+self.cfgDomain,
 				password=self.cfgPassword,
 				authentication=ldap3.SIMPLE,
+				auto_referrals=True,
 				auto_bind=True
 			)
 			#self.connection.bind()
@@ -252,12 +292,7 @@ class LapsCli():
 		try:
 			with open(cfgPath) as f:
 				cfgJson = json.load(f)
-				for server in cfgJson.get('server', ''):
-					self.cfgServer.append({
-						'address': str(server['address']),
-						'port': int(server['port']),
-						'ssl': bool(server['ssl'])
-					})
+				self.cfgServer = cfgJson.get('server', '')
 				self.cfgDomain = cfgJson.get('domain', '')
 				self.cfgUsername = cfgJson.get('username', '')
 				self.cfgLdapAttributePasswordExpiry = str(cfgJson.get('ldap-attribute-password-expiry', self.cfgLdapAttributePasswordExpiry))

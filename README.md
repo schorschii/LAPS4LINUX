@@ -48,8 +48,26 @@ The client (both GUI and CLI) supports Kerberos authentication which means that 
 ### SSL Connection
 It is highly recommended to turn on SSL in the config file (`~/.laps-client.json`) if your LDAP server has a valid certificate (set `ssl` to `true` and `port` to `636`). You can also configure multiple LDAP server in the config file.
 
-### Use The Global Catalog
-If you are managing multiple domains, you may want to search for a computer in all domains. Please use the global catalog for this. This means that you need to set the server port in the configuration file to `3268` (LDAP) or `3269` (LDAPS).
+### Domain Forest Searches
+If you are managing multiple domains, you probably want to search for a computer in all domains. Please use the global catalog for this. This means that you need to set the option `gc-port` in the configuration file of all servers, e.g. to `3268` (LDAP) or `3269` (LDAPS).
+
+Example:
+```
+{
+    "server": [
+        {
+            "address": "dc.example.com",
+            "port": 636,
+            "gc-port": 3269,
+            "ssl": true
+        },
+        .....
+    ],
+    .....
+}
+```
+
+Since the global catalog is read only, LAPS4LINUX will switch to "normal" LDAP(S) port when you want to change the password expiry date. That's why, the `port` option is still required even if a `gc-port` is given!
 
 ### Query Additional Attributes
 LAPS4LINUX allows you to query additional attributes besides the admin password which might be of interest for you. For that, just edit the config file `~/.laps-client.json` and enter the additional LDAP attributes you'd like to query into the settings array `"ldap-attributes"`.

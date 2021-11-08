@@ -107,18 +107,52 @@ class LapsCalendarWindow(QDialog):
 			newExpirationDate = datetime.combine(self.cwNewExpirationTime.selectedDate().toPyDate(), datetime.min.time())
 			newExpirationDateTime = dt_to_filetime(newExpirationDate)
 			print('new expiration time: '+str(newExpirationDateTime))
-			# start LDAP query
-			parentWidget.connection.modify(parentWidget.tmpDn, { parentWidget.cfgLdapAttributePasswordExpiry: [(ldap3.MODIFY_REPLACE, [str(newExpirationDateTime)])] })
-			if parentWidget.connection.result['result'] == 0:
+
+			# decide which connection to use
+			if(parentWidget.gcModeOn):
+				# global catalog (which is read only) was used for search - we need to establish a new connection to the "normal" LDAP port
+				# LDAP referrals to the correct (sub)domain controller is handled automatically by ldap3
+				serverArray = []
+				for server in parentWidget.cfgServer:
+					serverArray.append(ldap3.Server(server['address'], port=server['port'], use_ssl=server['ssl'], get_info=ldap3.ALL))
+				server = ldap3.ServerPool(serverArray, ldap3.ROUND_ROBIN, active=True, exhaust=True)
+				# try to bind to server via Kerberos
+				try:
+					connection = ldap3.Connection(server,
+						authentication=ldap3.SASL,
+						sasl_mechanism=ldap3.KERBEROS,
+						auto_referrals=True,
+						auto_bind=True
+					)
+				except Exception as e:
+					print('Unable to connect via Kerberos: '+str(e))
+				# try to bind to server with username and password
+				try:
+					connection = ldap3.Connection(server,
+						user=parentWidget.cfgUsername+'@'+parentWidget.cfgDomain,
+						password=parentWidget.cfgPassword,
+						authentication=ldap3.SIMPLE,
+						auto_referrals=True,
+						auto_bind=True
+					)
+				except Exception as e:
+					parentWidget.showErrorDialog('Error binding to LDAP server', str(e))
+			else:
+				# no global catalog was used for search - we can use the same connection again to set the expiration date
+				connection = parentWidget.connection
+
+			# start LDAP modify
+			connection.modify(parentWidget.tmpDn, { parentWidget.cfgLdapAttributePasswordExpiry: [(ldap3.MODIFY_REPLACE, [str(newExpirationDateTime)])] })
+			if connection.result['result'] == 0:
 				parentWidget.showInfoDialog('Success',
 					'Expiration date successfully changed to '+str(newExpirationDate)+'.',
-					parentWidget.tmpDn+' ('+str(parentWidget.connection.server)+' '+parentWidget.cfgUsername+'@'+parentWidget.cfgDomain+')'
+					parentWidget.tmpDn+' ('+str(connection.server)+' '+parentWidget.cfgUsername+'@'+parentWidget.cfgDomain+')'
 				)
 				# update values in main window
 				parentWidget.OnClickSearch(None)
 				self.close()
 			else:
-				parentWidget.showErrorDialog('Error', 'Unable to change expiration date to '+str(newExpirationDateTime)+'.'+"\n\n"+str(parentWidget.connection.result['message']), parentWidget.tmpDn+' ('+str(parentWidget.connection.server)+' '+parentWidget.cfgUsername+'@'+parentWidget.cfgDomain+')')
+				parentWidget.showErrorDialog('Error', 'Unable to change expiration date to '+str(newExpirationDateTime)+'.'+"\n\n"+str(connection.result['message']), parentWidget.tmpDn+' ('+str(connection.server)+' '+parentWidget.cfgUsername+'@'+parentWidget.cfgDomain+')')
 
 		except Exception as e:
 			# display error
@@ -136,6 +170,7 @@ class LapsMainWindow(QMainWindow):
 	PRODUCT_WEBSITE   = 'https://github.com/schorschii/laps4linux'
 	PROTOCOL_SCHEME   = 'laps://'
 
+	gcModeOn    = False
 	server      = None
 	connection  = None
 	tmpDn       = ''
@@ -358,7 +393,11 @@ class LapsMainWindow(QMainWindow):
 			try:
 				serverArray = []
 				for server in self.cfgServer:
-					serverArray.append(ldap3.Server(server['address'], port=server['port'], use_ssl=server['ssl'], get_info=ldap3.ALL))
+					port = server['port']
+					if('gc-port' in server):
+						port = server['gc-port']
+						self.gcModeOn = True
+					serverArray.append(ldap3.Server(server['address'], port=port, use_ssl=server['ssl'], get_info=ldap3.ALL))
 				self.server = ldap3.ServerPool(serverArray, ldap3.ROUND_ROBIN, active=True, exhaust=True)
 			except Exception as e:
 				self.showErrorDialog('Error connecting to LDAP server', str(e))
@@ -370,6 +409,7 @@ class LapsMainWindow(QMainWindow):
 				self.server,
 				authentication=ldap3.SASL,
 				sasl_mechanism=ldap3.KERBEROS,
+				auto_referrals=True,
 				auto_bind=True
 			)
 			#self.connection.bind()
@@ -402,6 +442,7 @@ class LapsMainWindow(QMainWindow):
 				user=self.cfgUsername+'@'+self.cfgDomain,
 				password=self.cfgPassword,
 				authentication=ldap3.SIMPLE,
+				auto_referrals=True,
 				auto_bind=True
 			)
 			#self.connection.bind()
@@ -428,12 +469,7 @@ class LapsMainWindow(QMainWindow):
 		try:
 			with open(cfgPath) as f:
 				cfgJson = json.load(f)
-				for server in cfgJson.get('server', ''):
-					self.cfgServer.append({
-						'address': str(server['address']),
-						'port': int(server['port']),
-						'ssl': bool(server['ssl'])
-					})
+				self.cfgServer = cfgJson.get('server', '')
 				self.cfgDomain = cfgJson.get('domain', '')
 				self.cfgUsername = cfgJson.get('username', '')
 				self.cfgLdapAttributePasswordExpiry = str(cfgJson.get('ldap-attribute-password-expiry', self.cfgLdapAttributePasswordExpiry))
