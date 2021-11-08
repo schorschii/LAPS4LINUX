@@ -43,10 +43,13 @@ Expiration Date Changed Successfully.
 ![screenshot](.github/screenshot.png)
 
 ### Kerberos Authentication
-The client (both GUI and CLI) supports Kerberos authentication which means that you can use the client without entering a password if you are logged in with a domain account. If not, NTLM authentication is used as fallback and the client will ask you for username and password.
+The client (both GUI and CLI) supports Kerberos authentication which means that you can use the client without entering a password if you are logged in with a domain account and have a valid Kerberos ticket. If not, ldap3's "simple" authentication is used as fallback and the client will ask you for username and password.
 
 ### SSL Connection
 It is highly recommended to turn on SSL in the config file (`~/.laps-client.json`) if your LDAP server has a valid certificate (set `ssl` to `true` and `port` to `636`). You can also configure multiple LDAP server in the config file.
+
+### Use The Global Catalog
+If you are managing multiple domains, you may want to search for a computer in all domains. Please use the global catalog for this. This means that you need to set the server port in the configuration file to `3268` (LDAP) or `3269` (LDAPS).
 
 ### Query Additional Attributes
 LAPS4LINUX allows you to query additional attributes besides the admin password which might be of interest for you. For that, just edit the config file `~/.laps-client.json` and enter the additional LDAP attributes you'd like to query into the settings array `"ldap-attributes"`.

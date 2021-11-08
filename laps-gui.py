@@ -391,13 +391,13 @@ class LapsMainWindow(QMainWindow):
 			else: return False
 		self.SaveSettings()
 
-		# try to bind to server via NTLM
+		# try to bind to server with username and password
 		try:
 			self.connection = ldap3.Connection(
 				self.server,
-				user=self.cfgDomain+'\\'+self.cfgUsername,
+				user=self.cfgUsername+'@'+self.cfgDomain,
 				password=self.cfgPassword,
-				authentication=ldap3.NTLM,
+				authentication=ldap3.SIMPLE,
 				auto_bind=True
 			)
 			#self.connection.bind()
