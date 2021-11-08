@@ -132,7 +132,7 @@ class LapsCalendarWindow(QDialog):
 
 class LapsMainWindow(QMainWindow):
 	PRODUCT_NAME      = 'LAPS4LINUX'
-	PRODUCT_VERSION   = '1.3.0'
+	PRODUCT_VERSION   = '1.4.0'
 	PRODUCT_WEBSITE   = 'https://github.com/schorschii/laps4linux'
 	PROTOCOL_SCHEME   = 'laps://'
 

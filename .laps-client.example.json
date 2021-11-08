@@ -21,6 +21,7 @@
     "ldap-attribute-password-expiry": "ms-MCS-AdmPwdExpirationTime",
     "ldap-attributes": {
         "Operating System": "operatingSystem",
+        "lastLogonTimestamp": "lastLogonTimestamp",
         "Administrator Password": "ms-MCS-AdmPwd",
         "Password Expiration Date": "ms-MCS-AdmPwdExpirationTime"
     }
