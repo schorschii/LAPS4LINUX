@@ -104,12 +104,16 @@ class LapsCalendarWindow(QDialog):
 
 		try:
 			# calc new time
-			newExpirationDateTime = dt_to_filetime( datetime.combine(self.cwNewExpirationTime.selectedDate().toPyDate(), datetime.min.time()) )
+			newExpirationDate = datetime.combine(self.cwNewExpirationTime.selectedDate().toPyDate(), datetime.min.time())
+			newExpirationDateTime = dt_to_filetime(newExpirationDate)
 			print('new expiration time: '+str(newExpirationDateTime))
 			# start LDAP query
 			parentWidget.connection.modify(parentWidget.tmpDn, { parentWidget.cfgLdapAttributePasswordExpiry: [(ldap3.MODIFY_REPLACE, [str(newExpirationDateTime)])] })
 			if parentWidget.connection.result['result'] == 0:
-				parentWidget.showInfoDialog('Success', 'Expiration date successfully changed to '+str(newExpirationDateTime)+'.', parentWidget.tmpDn+' ('+str(parentWidget.connection.server)+' '+parentWidget.cfgUsername+'@'+parentWidget.cfgDomain+')')
+				parentWidget.showInfoDialog('Success',
+					'Expiration date successfully changed to '+str(newExpirationDate)+'.',
+					parentWidget.tmpDn+' ('+str(parentWidget.connection.server)+' '+parentWidget.cfgUsername+'@'+parentWidget.cfgDomain+')'
+				)
 				# update values in main window
 				parentWidget.OnClickSearch(None)
 				self.close()
