@@ -76,7 +76,7 @@ class LapsCli():
 			attributes = ['SAMAccountname', 'distinguishedName']
 			for title, attribute in self.GetAttributesAsDict().items():
 				attributes.append(str(attribute))
-			# start LDAP query
+			# start LDAP search
 			count = 0
 			self.connection.search(
 				search_base=self.createLdapBase(self.cfgDomain),
@@ -94,16 +94,8 @@ class LapsCli():
 				# display single result
 				else:
 					self.printResult('Found', str(entry['distinguishedName']))
-					for title, attribute in self.GetAttributesAsDict().items():
-						if(str(attribute) == self.cfgLdapAttributePasswordExpiry):
-							try:
-								self.printResult(str(title), str(entry[str(attribute)])+' ('+str(filetime_to_dt( int(str(entry[str(attribute)])) ))+')')
-							except Exception as e:
-								self.printResult('Error', str(e))
-								self.printResult(str(title), str(entry[str(attribute)]))
-						else:
-							self.printResult(str(title), str(entry[str(attribute)]))
 					self.tmpDn = str(entry['distinguishedName'])
+					self.queryAttributes()
 					return
 
 			# no result found
@@ -120,8 +112,6 @@ class LapsCli():
 	def SetExpiry(self, newExpirationDateTimeString):
 		# check if dn of target computer object is known
 		if self.tmpDn.strip() == '': return
-		# ask for credentials
-		if not self.checkCredentialsAndConnect(): return
 
 		try:
 			# calc new time
@@ -129,45 +119,12 @@ class LapsCli():
 			newExpirationDateTime = dt_to_filetime( newExpirationDate )
 			self.printResult('New Expiration', str(newExpirationDateTime)+' ('+str(newExpirationDate)+')')
 
-			# decide which connection to use
-			if(self.gcModeOn):
-				# global catalog (which is read only) was used for search - we need to establish a new connection to the "normal" LDAP port
-				# LDAP referrals to the correct (sub)domain controller is handled automatically by ldap3
-				serverArray = []
-				for server in self.cfgServer:
-					serverArray.append(ldap3.Server(server['address'], port=server['port'], use_ssl=server['ssl'], get_info=ldap3.ALL))
-				server = ldap3.ServerPool(serverArray, ldap3.ROUND_ROBIN, active=True, exhaust=True)
-				# try to bind to server via Kerberos
-				try:
-					connection = ldap3.Connection(server,
-						authentication=ldap3.SASL,
-						sasl_mechanism=ldap3.KERBEROS,
-						auto_referrals=True,
-						auto_bind=True
-					)
-				except Exception as e:
-					print('Unable to connect via Kerberos: '+str(e))
-				# try to bind to server with username and password
-				try:
-					connection = ldap3.Connection(server,
-						user=self.cfgUsername+'@'+self.cfgDomain,
-						password=self.cfgPassword,
-						authentication=ldap3.SIMPLE,
-						auto_referrals=True,
-						auto_bind=True
-					)
-				except Exception as e:
-					print('Error binding to LDAP server: '+str(e))
-			else:
-				# no global catalog was used for search - we can use the same connection again to set the expiration date
-				connection = self.connection
-
 			# start LDAP modify
-			connection.modify(self.tmpDn, { self.cfgLdapAttributePasswordExpiry: [(ldap3.MODIFY_REPLACE, [str(newExpirationDateTime)])] })
-			if connection.result['result'] == 0:
+			self.connection.modify(self.tmpDn, { self.cfgLdapAttributePasswordExpiry: [(ldap3.MODIFY_REPLACE, [str(newExpirationDateTime)])] })
+			if self.connection.result['result'] == 0:
 				print('Expiration Date Changed Successfully.')
 			else:
-				print('Unable to change expiration date. '+str(connection.result['message']))
+				print('Unable to change expiration date. '+str(self.connection.result['message']))
 
 		except Exception as e:
 			# display error
@@ -176,12 +133,69 @@ class LapsCli():
 			self.server = None
 			self.connection = None
 
+	def queryAttributes(self):
+		# decide which connection to use for LDAP attribute query
+		if(self.gcModeOn):
+			# global catalog was used for search (this buddy is read only and not all attributes are replicated into it)
+			# -> that's why we need to establish a new connection to the "normal" LDAP port
+			# LDAP referrals to the correct (sub)domain controller is handled automatically by ldap3
+			serverArray = []
+			for server in self.cfgServer:
+				serverArray.append(ldap3.Server(server['address'], port=server['port'], use_ssl=server['ssl'], get_info=ldap3.ALL))
+			server = ldap3.ServerPool(serverArray, ldap3.ROUND_ROBIN, active=True, exhaust=True)
+			# try to bind to server via Kerberos
+			try:
+				self.connection = ldap3.Connection(server,
+					authentication=ldap3.SASL,
+					sasl_mechanism=ldap3.KERBEROS,
+					auto_referrals=True,
+					auto_bind=True
+				)
+			except Exception as e:
+				print('Unable to connect via Kerberos: '+str(e))
+			# try to bind to server with username and password
+			try:
+				self.connection = ldap3.Connection(server,
+					user=self.cfgUsername+'@'+self.cfgDomain,
+					password=self.cfgPassword,
+					authentication=ldap3.SIMPLE,
+					auto_referrals=True,
+					auto_bind=True
+				)
+			except Exception as e:
+				self.showErrorDialog('Error binding to LDAP server', str(e))
+				raise Exception(str(e))
+		else:
+			# no global catalog was used for search - we can use the same connection again to set the expiration date
+			pass
+
+		# compile query attributes
+		attributes = ['SAMAccountname', 'distinguishedName']
+		for title, attribute in self.GetAttributesAsDict().items():
+			attributes.append(str(attribute))
+		# start LDAP search
+		self.connection.search(
+			search_base=self.tmpDn,
+			search_filter='(objectCategory=computer)',
+			attributes=attributes
+		)
+		for entry in self.connection.entries:
+			# display single result
+			for title, attribute in self.GetAttributesAsDict().items():
+				if(str(attribute) == self.cfgLdapAttributePasswordExpiry):
+					try:
+						self.printResult(str(title), str(entry[str(attribute)])+' ('+str(filetime_to_dt( int(str(entry[str(attribute)])) ))+')')
+					except Exception as e:
+						self.printResult('Error', str(e))
+						self.printResult(str(title), str(entry[str(attribute)]))
+				else:
+					self.printResult(str(title), str(entry[str(attribute)]))
+			return
+
 	def printResult(self, attribute, value):
 		print((attribute+':').ljust(26)+value)
 
 	def checkCredentialsAndConnect(self):
-		if self.server != None and self.connection != None: return True
-
 		# ask for server address and domain name if not already set via config file
 		if self.cfgDomain == "":
 			item = input('♕ Domain Name (e.g. example.com): ')

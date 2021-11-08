@@ -99,8 +99,6 @@ class LapsCalendarWindow(QDialog):
 
 		# check if dn of target computer object is known
 		if parentWidget.tmpDn.strip() == '': return
-		# ask for credentials
-		if not parentWidget.checkCredentialsAndConnect(): return
 
 		try:
 			# calc new time
@@ -108,51 +106,18 @@ class LapsCalendarWindow(QDialog):
 			newExpirationDateTime = dt_to_filetime(newExpirationDate)
 			print('new expiration time: '+str(newExpirationDateTime))
 
-			# decide which connection to use
-			if(parentWidget.gcModeOn):
-				# global catalog (which is read only) was used for search - we need to establish a new connection to the "normal" LDAP port
-				# LDAP referrals to the correct (sub)domain controller is handled automatically by ldap3
-				serverArray = []
-				for server in parentWidget.cfgServer:
-					serverArray.append(ldap3.Server(server['address'], port=server['port'], use_ssl=server['ssl'], get_info=ldap3.ALL))
-				server = ldap3.ServerPool(serverArray, ldap3.ROUND_ROBIN, active=True, exhaust=True)
-				# try to bind to server via Kerberos
-				try:
-					connection = ldap3.Connection(server,
-						authentication=ldap3.SASL,
-						sasl_mechanism=ldap3.KERBEROS,
-						auto_referrals=True,
-						auto_bind=True
-					)
-				except Exception as e:
-					print('Unable to connect via Kerberos: '+str(e))
-				# try to bind to server with username and password
-				try:
-					connection = ldap3.Connection(server,
-						user=parentWidget.cfgUsername+'@'+parentWidget.cfgDomain,
-						password=parentWidget.cfgPassword,
-						authentication=ldap3.SIMPLE,
-						auto_referrals=True,
-						auto_bind=True
-					)
-				except Exception as e:
-					parentWidget.showErrorDialog('Error binding to LDAP server', str(e))
-			else:
-				# no global catalog was used for search - we can use the same connection again to set the expiration date
-				connection = parentWidget.connection
-
 			# start LDAP modify
-			connection.modify(parentWidget.tmpDn, { parentWidget.cfgLdapAttributePasswordExpiry: [(ldap3.MODIFY_REPLACE, [str(newExpirationDateTime)])] })
-			if connection.result['result'] == 0:
+			parentWidget.connection.modify(parentWidget.tmpDn, { parentWidget.cfgLdapAttributePasswordExpiry: [(ldap3.MODIFY_REPLACE, [str(newExpirationDateTime)])] })
+			if parentWidget.connection.result['result'] == 0:
 				parentWidget.showInfoDialog('Success',
 					'Expiration date successfully changed to '+str(newExpirationDate)+'.',
-					parentWidget.tmpDn+' ('+str(connection.server)+' '+parentWidget.cfgUsername+'@'+parentWidget.cfgDomain+')'
+					parentWidget.tmpDn+' ('+str(parentWidget.connection.server)+')'
 				)
 				# update values in main window
 				parentWidget.OnClickSearch(None)
 				self.close()
 			else:
-				parentWidget.showErrorDialog('Error', 'Unable to change expiration date to '+str(newExpirationDateTime)+'.'+"\n\n"+str(connection.result['message']), parentWidget.tmpDn+' ('+str(connection.server)+' '+parentWidget.cfgUsername+'@'+parentWidget.cfgDomain+')')
+				parentWidget.showErrorDialog('Error', 'Unable to change expiration date to '+str(newExpirationDateTime)+'.'+"\n\n"+str(parentWidget.connection.result['message']), parentWidget.tmpDn+' ('+str(parentWidget.connection.server)+')')
 
 		except Exception as e:
 			# display error
@@ -305,36 +270,20 @@ class LapsMainWindow(QMainWindow):
 			return
 
 		try:
-			# compile query attributes
-			attributes = ['SAMAccountname', 'distinguishedName']
-			for title, attribute in self.GetAttributesAsDict().items():
-				attributes.append(str(attribute))
-			# start LDAP query
+			# start LDAP search
 			self.connection.search(
 				search_base=self.createLdapBase(self.cfgDomain),
 				search_filter='(&(objectCategory=computer)(name='+computerName+'))',
-				attributes=attributes
+				attributes=['SAMAccountname', 'distinguishedName']
 			)
 			for entry in self.connection.entries:
-				# display result
-				self.statusBar.showMessage('Found: '+str(entry['distinguishedName'])+' ('+str(self.connection.server)+' '+self.cfgUsername+'@'+self.cfgDomain+')')
+				self.statusBar.showMessage('Found: '+str(entry['distinguishedName'])+' ('+str(self.connection.server)+')')
 				self.tmpDn = str(entry['distinguishedName'])
-				self.btnSetExpirationTime.setEnabled(True)
-				self.btnSearchComputer.setEnabled(True)
-				for title, attribute in self.GetAttributesAsDict().items():
-					textBox = self.refLdapAttributesTextBoxes[str(title)]
-					if(str(attribute) == self.cfgLdapAttributePasswordExpiry):
-						try:
-							textBox.setText( str(filetime_to_dt( int(str(entry[str(attribute)])) )) )
-						except Exception as e:
-							print(str(e))
-							textBox.setText( str(entry[str(attribute)]) )
-					else:
-						textBox.setText( str(entry[str(attribute)]) )
+				self.queryAttributes()
 				return
 
 			# no result found
-			self.statusBar.showMessage('No Result For: '+computerName+' ('+str(self.connection.server)+' '+self.cfgUsername+'@'+self.cfgDomain+')')
+			self.statusBar.showMessage('No Result For: '+computerName+' ('+str(self.connection.server)+')')
 			for title, attribute in self.GetAttributesAsDict().items():
 				self.refLdapAttributesTextBoxes[str(title)].setText('')
 		except Exception as e:
@@ -353,9 +302,69 @@ class LapsMainWindow(QMainWindow):
 		dlg.refMainWindows = self
 		dlg.exec_()
 
-	def checkCredentialsAndConnect(self):
-		if self.server != None and self.connection != None: return True
+	def queryAttributes(self):
+		# decide which connection to use for LDAP attribute query
+		if(self.gcModeOn):
+			# global catalog was used for search (this buddy is read only and not all attributes are replicated into it)
+			# -> that's why we need to establish a new connection to the "normal" LDAP port
+			# LDAP referrals to the correct (sub)domain controller is handled automatically by ldap3
+			serverArray = []
+			for server in self.cfgServer:
+				serverArray.append(ldap3.Server(server['address'], port=server['port'], use_ssl=server['ssl'], get_info=ldap3.ALL))
+			server = ldap3.ServerPool(serverArray, ldap3.ROUND_ROBIN, active=True, exhaust=True)
+			# try to bind to server via Kerberos
+			try:
+				self.connection = ldap3.Connection(server,
+					authentication=ldap3.SASL,
+					sasl_mechanism=ldap3.KERBEROS,
+					auto_referrals=True,
+					auto_bind=True
+				)
+			except Exception as e:
+				print('Unable to connect via Kerberos: '+str(e))
+			# try to bind to server with username and password
+			try:
+				self.connection = ldap3.Connection(server,
+					user=self.cfgUsername+'@'+self.cfgDomain,
+					password=self.cfgPassword,
+					authentication=ldap3.SIMPLE,
+					auto_referrals=True,
+					auto_bind=True
+				)
+			except Exception as e:
+				self.showErrorDialog('Error binding to LDAP server', str(e))
+				raise Exception(str(e))
+		else:
+			# no global catalog was used for search - we can use the same connection again to set the expiration date
+			pass
 
+		# compile query attributes
+		attributes = ['SAMAccountname', 'distinguishedName']
+		for title, attribute in self.GetAttributesAsDict().items():
+			attributes.append(str(attribute))
+		# start LDAP search
+		self.connection.search(
+			search_base=self.tmpDn,
+			search_filter='(objectCategory=computer)',
+			attributes=attributes
+		)
+		# display result
+		for entry in self.connection.entries:
+			self.btnSetExpirationTime.setEnabled(True)
+			self.btnSearchComputer.setEnabled(True)
+			for title, attribute in self.GetAttributesAsDict().items():
+				textBox = self.refLdapAttributesTextBoxes[str(title)]
+				if(str(attribute) == self.cfgLdapAttributePasswordExpiry):
+					try:
+						textBox.setText( str(filetime_to_dt( int(str(entry[str(attribute)])) )) )
+					except Exception as e:
+						print(str(e))
+						textBox.setText( str(entry[str(attribute)]) )
+				else:
+					textBox.setText( str(entry[str(attribute)]) )
+			return
+
+	def checkCredentialsAndConnect(self):
 		# ask for server address and domain name if not already set via config file
 		if self.cfgDomain == "":
 			item, ok = QInputDialog.getText(self, '♕ Domain', 'Please enter your Domain name (e.g. example.com).')
