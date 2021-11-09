@@ -166,6 +166,14 @@ class LapsMainWindow(QMainWindow):
 		# File Menu
 		fileMenu = mainMenu.addMenu('&File')
 
+		searchAction = QAction('&Search', self)
+		searchAction.setShortcut('F2')
+		searchAction.triggered.connect(self.OnClickSearch)
+		fileMenu.addAction(searchAction)
+		setExpirationDateAction = QAction('Set &Expiration', self)
+		setExpirationDateAction.setShortcut('F3')
+		setExpirationDateAction.triggered.connect(self.OnClickSetExpiry)
+		fileMenu.addAction(setExpirationDateAction)
 		fileMenu.addSeparator()
 		quitAction = QAction('&Quit', self)
 		quitAction.setShortcut('Ctrl+Q')
@@ -173,12 +181,12 @@ class LapsMainWindow(QMainWindow):
 		fileMenu.addAction(quitAction)
 
 		# Help Menu
-		editMenu = mainMenu.addMenu('&Help')
+		helpMenu = mainMenu.addMenu('&Help')
 
 		aboutAction = QAction('&About', self)
 		aboutAction.setShortcut('F1')
 		aboutAction.triggered.connect(self.OnOpenAboutDialog)
-		editMenu.addAction(aboutAction)
+		helpMenu.addAction(aboutAction)
 
 		# Statusbar
 		self.statusBar = self.statusBar()
@@ -298,6 +306,9 @@ class LapsMainWindow(QMainWindow):
 		self.btnSearchComputer.setEnabled(True)
 
 	def OnClickSetExpiry(self, e):
+		# check if dn of target computer object is known
+		if self.tmpDn.strip() == '': return
+
 		dlg = LapsCalendarWindow(self)
 		dlg.refMainWindows = self
 		dlg.exec_()
