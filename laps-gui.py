@@ -297,6 +297,7 @@ class LapsMainWindow(QMainWindow):
 		except Exception as e:
 			# display error
 			self.statusBar.showMessage(str(e))
+			print(str(e))
 			# reset connection
 			self.server = None
 			self.connection = None
@@ -314,40 +315,10 @@ class LapsMainWindow(QMainWindow):
 		dlg.exec_()
 
 	def queryAttributes(self):
-		# decide which connection to use for LDAP attribute query
-		if(self.gcModeOn):
-			# global catalog was used for search (this buddy is read only and not all attributes are replicated into it)
-			# -> that's why we need to establish a new connection to the "normal" LDAP port
-			# LDAP referrals to the correct (sub)domain controller is handled automatically by ldap3
-			serverArray = []
-			for server in self.cfgServer:
-				serverArray.append(ldap3.Server(server['address'], port=server['port'], use_ssl=server['ssl'], get_info=ldap3.ALL))
-			server = ldap3.ServerPool(serverArray, ldap3.ROUND_ROBIN, active=True, exhaust=True)
-			# try to bind to server via Kerberos
-			try:
-				self.connection = ldap3.Connection(server,
-					authentication=ldap3.SASL,
-					sasl_mechanism=ldap3.KERBEROS,
-					auto_referrals=True,
-					auto_bind=True
-				)
-			except Exception as e:
-				print('Unable to connect via Kerberos: '+str(e))
-			# try to bind to server with username and password
-			try:
-				self.connection = ldap3.Connection(server,
-					user=self.cfgUsername+'@'+self.cfgDomain,
-					password=self.cfgPassword,
-					authentication=ldap3.SIMPLE,
-					auto_referrals=True,
-					auto_bind=True
-				)
-			except Exception as e:
-				self.showErrorDialog('Error binding to LDAP server', str(e))
-				raise Exception(str(e))
-		else:
-			# no global catalog was used for search - we can use the same connection again to set the expiration date
-			pass
+		if(not self.reconnectForAttributeQuery()):
+			self.btnSetExpirationTime.setEnabled(False)
+			self.btnSearchComputer.setEnabled(True)
+			return
 
 		# compile query attributes
 		attributes = ['SAMAccountname', 'distinguishedName']
@@ -473,6 +444,41 @@ class LapsMainWindow(QMainWindow):
 			return False
 
 		return True # return if connection created successfully
+
+	def reconnectForAttributeQuery(self):
+		# global catalog was not used for search - we can use the same connection for attribute query
+		if(not self.gcModeOn): return True
+		# global catalog was used for search (this buddy is read only and not all attributes are replicated into it)
+		# -> that's why we need to establish a new connection to the "normal" LDAP port
+		# LDAP referrals to the correct (sub)domain controller is handled automatically by ldap3
+		serverArray = []
+		for server in self.cfgServer:
+			serverArray.append(ldap3.Server(server['address'], port=server['port'], use_ssl=server['ssl'], get_info=ldap3.ALL))
+		server = ldap3.ServerPool(serverArray, ldap3.ROUND_ROBIN, active=True, exhaust=True)
+		# try to bind to server via Kerberos
+		try:
+			self.connection = ldap3.Connection(server,
+				authentication=ldap3.SASL,
+				sasl_mechanism=ldap3.KERBEROS,
+				auto_referrals=True,
+				auto_bind=True
+			)
+			return True
+		except Exception as e:
+			print('Unable to connect via Kerberos: '+str(e))
+		# try to bind to server with username and password
+		try:
+			self.connection = ldap3.Connection(server,
+				user=self.cfgUsername+'@'+self.cfgDomain,
+				password=self.cfgPassword,
+				authentication=ldap3.SIMPLE,
+				auto_referrals=True,
+				auto_bind=True
+			)
+			return True
+		except Exception as e:
+			self.showErrorDialog('Error binding to LDAP server', str(e))
+			return False
 
 	def createLdapBase(self, domain):
 		# convert FQDN "example.com" to LDAP path notation "DC=example,DC=com"
