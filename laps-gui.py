@@ -130,7 +130,9 @@ class LapsCalendarWindow(QDialog):
 		self.close()
 
 class LapsMainWindow(QMainWindow):
-	PRODUCT_NAME      = 'LAPS4LINUX'
+	PLATFORM          = sys.platform.lower()
+
+	PRODUCT_NAME      = 'LAPS4WINDOWS' if PLATFORM=='win32' else 'LAPS4MAC' if PLATFORM=='darwin' else 'LAPS4LINUX'
 	PRODUCT_VERSION   = '1.5.0'
 	PRODUCT_WEBSITE   = 'https://github.com/schorschii/laps4linux'
 	PROTOCOL_SCHEME   = 'laps://'
@@ -143,7 +145,7 @@ class LapsMainWindow(QMainWindow):
 	cfgPresetDirWindows = path.dirname(sys.executable) if getattr(sys, 'frozen', False) else sys.path[0]
 	cfgPresetDirUnix    = '/etc'
 	cfgPresetFile       = 'laps-client.json'
-	cfgPresetPath       = (cfgPresetDirWindows if sys.platform.lower()=='win32' else cfgPresetDirUnix)+'/'+cfgPresetFile 
+	cfgPresetPath       = (cfgPresetDirWindows if PLATFORM=='win32' else cfgPresetDirUnix)+'/'+cfgPresetFile
 
 	cfgPath     = str(Path.home())+'/.laps-client.json'
 	cfgServer   = []
@@ -216,8 +218,12 @@ class LapsMainWindow(QMainWindow):
 			gridLine += 1
 			txtAdditionalAttribute = QLineEdit()
 			txtAdditionalAttribute.setReadOnly(True)
-			font = QFontDatabase.systemFont(QFontDatabase.FixedFont)
-			font.setPointSize(14)
+			if(self.PLATFORM=='win32'):
+				font = QFont('Consolas', 14)
+				font.setBold(True)
+			else:
+				font = QFontDatabase.systemFont(QFontDatabase.FixedFont)
+				font.setPointSize(18 if self.PLATFORM=='darwin' else 14)
 			txtAdditionalAttribute.setFont(font)
 			grid.addWidget(txtAdditionalAttribute, gridLine, 0)
 			gridLine += 1
