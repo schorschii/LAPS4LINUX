@@ -140,7 +140,11 @@ class LapsMainWindow(QMainWindow):
 	connection  = None
 	tmpDn       = ''
 
-	cfgPresetPath = '/etc/laps-client.json'
+	cfgPresetDirWindows = path.dirname(sys.executable) if getattr(sys, 'frozen', False) else sys.path[0]
+	cfgPresetDirUnix    = '/etc'
+	cfgPresetFile       = 'laps-client.json'
+	cfgPresetPath       = (cfgPresetDirWindows if sys.platform.lower()=='win32' else cfgPresetDirUnix)+'/'+cfgPresetFile 
+
 	cfgPath     = str(Path.home())+'/.laps-client.json'
 	cfgServer   = []
 	cfgDomain   = ''
@@ -241,7 +245,7 @@ class LapsMainWindow(QMainWindow):
 				urlToHandle = arg
 		if(urlToHandle != None):
 			print('Handle '+urlToHandle)
-			protocolPayload = unquote(urlToHandle).replace(self.PROTOCOL_SCHEME, '')
+			protocolPayload = unquote(urlToHandle).replace(self.PROTOCOL_SCHEME, '').strip(' /')
 			self.txtSearchComputer.setText(protocolPayload)
 			self.OnClickSearch(None)
 

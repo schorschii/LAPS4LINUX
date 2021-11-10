@@ -30,7 +30,11 @@ class LapsCli():
 	connection  = None
 	tmpDn       = ''
 
-	cfgPresetPath = '/etc/laps-client.json'
+	cfgPresetDirWindows = sys.path[0]
+	cfgPresetDirUnix    = '/etc'
+	cfgPresetFile       = 'laps-client.json'
+	cfgPresetPath       = (cfgPresetDirWindows if sys.platform.lower()=='win32' else cfgPresetDirUnix)+'/'+cfgPresetFile 
+
 	cfgPath     = str(Path.home())+'/.laps-client.json'
 	cfgServer   = []
 	cfgDomain   = ''

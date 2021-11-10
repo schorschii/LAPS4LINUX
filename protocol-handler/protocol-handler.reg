@@ -1,0 +1,12 @@
+Windows Registry Editor Version 5.00
+
+[HKEY_CLASSES_ROOT\laps]
+@="URL:LAPS"
+"URL Protocol"=""
+
+[HKEY_CLASSES_ROOT\laps\shell]
+
+[HKEY_CLASSES_ROOT\laps\shell\open]
+
+[HKEY_CLASSES_ROOT\laps\shell\open\command]
+@="\"C:\\Program Files\\LAPS4WINDOWS\\laps-gui.exe\" %1"
