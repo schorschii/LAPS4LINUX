@@ -4,28 +4,6 @@ Linux implementation of the Local Administrator Password Solution (LAPS) from Mi
 ## Management Client
 ### Command Line Interface (CLI)
 ```
-$ ./laps-cli.py notebook01
-LAPS4LINUX CLI v1.0.0
-https://github.com/schorschii/laps4linux
-
-🔑 Password for »ldapuser«:
-Connection:     ldapserver01: user@example.com
-Found:          CN=NOTEBOOK01,OU=NOTEBOOKS,DC=example,DC=com
-Password:       abc123
-Expiration:     132641316610000000 (2021-04-29 01:01:01)
-
-
-$ ./laps-cli.py "*"
-LAPS4LINUX CLI v1.0.0
-https://github.com/schorschii/laps4linux
-
-🔑 Password for »ldapuser«:
-Connection: ldapserver01: user@example.com
-NOTEBOOK01$ : abc123
-NOTEBOOK02$ : 123abc
-...
-
-
 $ ./laps-cli.py notebook01 --set-expiry "2021-04-28 01:01:01"
 LAPS4LINUX CLI v1.0.0
 https://github.com/schorschii/laps4linux
@@ -37,6 +15,17 @@ Password:       abc123
 Expiration:     132641316610000000 (2021-04-29 01:01:01)
 New Expiration: 132640452610000000 (2021-04-28 01:01:01)
 Expiration Date Changed Successfully.
+
+
+$ ./laps-cli.py "*"
+LAPS4LINUX CLI v1.0.0
+https://github.com/schorschii/laps4linux
+
+🔑 Password for »ldapuser«:
+Connection: ldapserver01: user@example.com
+NOTEBOOK01$ : abc123
+NOTEBOOK02$ : 123abc
+...
 ```
 
 ### Graphical User Interface (GUI)
@@ -77,6 +66,9 @@ You can create a preset config file `/etc/laps-client.json` which will be loaded
 
 ### `laps://` Protocol Scheme
 The GUI supports the protocol scheme `laps://`, which means you can call the GUI like `laps-gui.py laps://HOSTNAME` to automatically search `HOSTNAME` after startup. This feature is mainly intended to use with the [OCO server](https://github.com/schorschii/OCO-Server) web frontend ("[COMPUTER_COMMANDS](https://github.com/schorschii/OCO-Server/blob/master/docs/Computers.md#client-commands)").
+
+### Windows and macOS
+The GUI is also executable under Windows and macOS. It's ported to Windows because of the additional features that the original LAPS GUI did not have (query custom attributes, OCO integration).
 
 ## Runner
 The runner is responsible for automatically changing the admin password of a Linux client and updating it in the LDAP directory. This assumes that Kerberos (`krb5-user`) is installed and that the machine is already joined to your domain using Samba's `net ads join`, PBIS' `domainjoin-cli join` or the modern `adcli join` command (recommended).
