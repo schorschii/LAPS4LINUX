@@ -25,6 +25,7 @@ class LapsCli():
 	PRODUCT_VERSION   = '1.5.0'
 	PRODUCT_WEBSITE   = 'https://github.com/schorschii/laps4linux'
 
+	useKerberos = True
 	gcModeOn    = False
 	server      = None
 	connection  = None
@@ -47,10 +48,11 @@ class LapsCli():
 	cfgLdapAttributePasswordExpiry = 'ms-MCS-AdmPwdExpirationTime'
 
 
-	def __init__(self, *args, **kwargs):
+	def __init__(self, useKerberos):
 		self.LoadSettings()
+		self.useKerberos = useKerberos
 
-		# Show Note
+		# Show Version Information
 		print(self.PRODUCT_NAME+' v'+self.PRODUCT_VERSION)
 		print(self.PRODUCT_WEBSITE)
 
@@ -220,15 +222,16 @@ class LapsCli():
 
 		# try to bind to server via Kerberos
 		try:
-			self.connection = ldap3.Connection(
-				self.server,
-				authentication=ldap3.SASL,
-				sasl_mechanism=ldap3.KERBEROS,
-				auto_referrals=True,
-				auto_bind=True
-			)
-			#self.connection.bind()
-			return True # return if connection created successfully
+			if(self.useKerberos):
+				self.connection = ldap3.Connection(
+					self.server,
+					authentication=ldap3.SASL,
+					sasl_mechanism=ldap3.KERBEROS,
+					auto_referrals=True,
+					auto_bind=True
+				)
+				#self.connection.bind()
+				return True # return if connection created successfully
 		except Exception as e:
 			print('Unable to connect via Kerberos: '+str(e))
 
@@ -278,13 +281,14 @@ class LapsCli():
 		server = ldap3.ServerPool(serverArray, ldap3.ROUND_ROBIN, active=True, exhaust=True)
 		# try to bind to server via Kerberos
 		try:
-			self.connection = ldap3.Connection(server,
-				authentication=ldap3.SASL,
-				sasl_mechanism=ldap3.KERBEROS,
-				auto_referrals=True,
-				auto_bind=True
-			)
-			return True
+			if(self.useKerberos):
+				self.connection = ldap3.Connection(server,
+					authentication=ldap3.SASL,
+					sasl_mechanism=ldap3.KERBEROS,
+					auto_referrals=True,
+					auto_bind=True
+				)
+				return True
 		except Exception as e:
 			print('Unable to connect via Kerberos: '+str(e))
 		# try to bind to server with username and password
@@ -340,12 +344,13 @@ class LapsCli():
 			print('Error saving settings file: '+str(e))
 
 def main():
-	cli = LapsCli()
-
 	parser = argparse.ArgumentParser()
 	parser.add_argument('search', default=None, metavar='COMPUTERNAME', help='Search for this computer and display the admin password. Use "*" to display all computer passwords found in LDAP directory.')
 	parser.add_argument('-e', '--set-expiry', default=None, metavar='"2020-01-01 00:00:00"', help='Set new expiration date for computer found by search string.')
+	parser.add_argument('-K', '--no-kerberos', action='store_true', help='Do not use Kerberos authentication if available, ask for LDAP simple bind credentials.')
 	args = parser.parse_args()
+
+	cli = LapsCli(not args.no_kerberos)
 
 	if args.search and args.search.strip() == '*':
 		cli.SearchComputer('*')

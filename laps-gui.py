@@ -137,6 +137,7 @@ class LapsMainWindow(QMainWindow):
 	PRODUCT_WEBSITE   = 'https://github.com/schorschii/laps4linux'
 	PROTOCOL_SCHEME   = 'laps://'
 
+	useKerberos = True
 	gcModeOn    = False
 	server      = None
 	connection  = None
@@ -180,6 +181,13 @@ class LapsMainWindow(QMainWindow):
 		setExpirationDateAction.setShortcut('F3')
 		setExpirationDateAction.triggered.connect(self.OnClickSetExpiry)
 		fileMenu.addAction(setExpirationDateAction)
+		fileMenu.addSeparator()
+		kerberosAction = QAction('&Kerberos Authentication', self)
+		kerberosAction.setShortcut('Ctrl+K')
+		kerberosAction.setCheckable(True)
+		kerberosAction.setChecked(True)
+		kerberosAction.triggered.connect(self.OnClickKerberos)
+		fileMenu.addAction(kerberosAction)
 		fileMenu.addSeparator()
 		quitAction = QAction('&Quit', self)
 		quitAction.setShortcut('Ctrl+Q')
@@ -267,6 +275,9 @@ class LapsMainWindow(QMainWindow):
 
 	def OnQuit(self, e):
 		sys.exit()
+
+	def OnClickKerberos(self, e):
+		self.useKerberos = not self.useKerberos
 
 	def OnOpenAboutDialog(self, e):
 		dlg = LapsAboutWindow(self)
@@ -406,15 +417,16 @@ class LapsMainWindow(QMainWindow):
 
 		# try to bind to server via Kerberos
 		try:
-			self.connection = ldap3.Connection(
-				self.server,
-				authentication=ldap3.SASL,
-				sasl_mechanism=ldap3.KERBEROS,
-				auto_referrals=True,
-				auto_bind=True
-			)
-			#self.connection.bind()
-			return True # return if connection created successfully
+			if(self.useKerberos):
+				self.connection = ldap3.Connection(
+					self.server,
+					authentication=ldap3.SASL,
+					sasl_mechanism=ldap3.KERBEROS,
+					auto_referrals=True,
+					auto_bind=True
+				)
+				#self.connection.bind()
+				return True # return if connection created successfully
 		except Exception as e:
 			print('Unable to connect via Kerberos: '+str(e))
 
@@ -467,13 +479,14 @@ class LapsMainWindow(QMainWindow):
 		server = ldap3.ServerPool(serverArray, ldap3.ROUND_ROBIN, active=True, exhaust=True)
 		# try to bind to server via Kerberos
 		try:
-			self.connection = ldap3.Connection(server,
-				authentication=ldap3.SASL,
-				sasl_mechanism=ldap3.KERBEROS,
-				auto_referrals=True,
-				auto_bind=True
-			)
-			return True
+			if(self.useKerberos):
+				self.connection = ldap3.Connection(server,
+					authentication=ldap3.SASL,
+					sasl_mechanism=ldap3.KERBEROS,
+					auto_referrals=True,
+					auto_bind=True
+				)
+				return True
 		except Exception as e:
 			print('Unable to connect via Kerberos: '+str(e))
 		# try to bind to server with username and password
