@@ -44,8 +44,8 @@ coll = COLLECT(exe,
                name='laps-gui')
 app = BUNDLE(coll,
              name='LAPS4MAC.app',
-             icon=None,
-             bundle_identifier=None,
+             icon='laps.icns',
+             bundle_identifier='systems.sieber.laps4mac',
              version='1.5.0',
              info_plist={
                'CFBundleURLTypes': [
