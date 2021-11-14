@@ -136,6 +136,8 @@ class LapsMainWindow(QMainWindow):
 	PRODUCT_VERSION   = '1.5.1'
 	PRODUCT_WEBSITE   = 'https://github.com/schorschii/laps4linux'
 	PROTOCOL_SCHEME   = 'laps://'
+	PRODUCT_ICON      = 'laps.png'
+	PRODUCT_ICON_PATH = '/usr/share/pixmaps'
 
 	useKerberos = True
 	gcModeOn    = False
@@ -167,6 +169,15 @@ class LapsMainWindow(QMainWindow):
 		self.InitUI()
 
 	def InitUI(self):
+		# Icon Selection
+		if(getattr(sys, 'frozen', False)):
+			# included via pyinstaller (Windows & macOS)
+			self.PRODUCT_ICON_PATH = sys._MEIPASS
+		self.iconPath = path.join(self.PRODUCT_ICON_PATH, self.PRODUCT_ICON)
+		if(path.exists(self.iconPath)):
+			self.icon = QIcon(self.iconPath)
+			self.setWindowIcon(self.icon)
+
 		# Menubar
 		mainMenu = self.menuBar()
 
