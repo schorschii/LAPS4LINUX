@@ -1,0 +1,2 @@
+The laps:// protocol under macOS is registered using the Info.plist file (setting "CFBundleURLTypes") in the app directory.
+Please use laps-gui.macos.spec with pyinstaller to automatically create an .app directory which registers itself for the laps:// protocol on first launch.
