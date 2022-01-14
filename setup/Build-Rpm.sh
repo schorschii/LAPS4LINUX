@@ -18,7 +18,7 @@ else
 fi
 chown 600 ../laps-runner.json
 echo '#!/bin/sh' > laps4linux-$VERSION/etc/cron.hourly/laps-runner
-echo '/usr/sbin/laps-runner --config /etc/laps-runner.json' >> laps4linux-$VERSION/etc/cron.hourly/laps-runner
+echo '/usr/sbin/laps-runner.py --config /etc/laps-runner.json' >> laps4linux-$VERSION/etc/cron.hourly/laps-runner
 chmod +x laps4linux-$VERSION/etc/cron.hourly/laps-runner
 tar --create --file laps4linux-$VERSION.tar.gz laps4linux-$VERSION
 if [ ! -f laps4linux-$VERSION.tar.gz ]; then
