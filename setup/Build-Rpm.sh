@@ -7,8 +7,8 @@ VERSION=$(awk '/PRODUCT_VERSION\s+=/ { print $3 }' ../../laps-runner.py | tr -d 
 # Generate and fill the source folders
 mkdir -p laps4linux-$VERSION/usr/sbin
 mkdir -p laps4linux-$VERSION/etc/cron.hourly
-cp ../../laps-runner.py laps4linux-$VERSION/usr/sbin
-chmod +x laps4linux-$VERSION/usr/sbin/laps-runner.py
+cp ../../laps-runner.py laps4linux-$VERSION/usr/sbin/laps-runner
+chmod +x laps4linux-$VERSION/usr/sbin/laps-runner
 # Test if we have our own laps-runner config
 if [ -f ../laps-runner.json ]; then
     cp ../laps-runner.json laps4linux-$VERSION/etc
@@ -18,7 +18,7 @@ else
 fi
 chown 600 ../laps-runner.json
 echo '#!/bin/sh' > laps4linux-$VERSION/etc/cron.hourly/laps-runner
-echo '/usr/sbin/laps-runner.py --config /etc/laps-runner.json' >> laps4linux-$VERSION/etc/cron.hourly/laps-runner
+echo '/usr/sbin/laps-runner --config /etc/laps-runner.json' >> laps4linux-$VERSION/etc/cron.hourly/laps-runner
 chmod +x laps4linux-$VERSION/etc/cron.hourly/laps-runner
 tar --create --file laps4linux-$VERSION.tar.gz laps4linux-$VERSION
 if [ ! -f laps4linux-$VERSION.tar.gz ]; then

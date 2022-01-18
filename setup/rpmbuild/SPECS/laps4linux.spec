@@ -22,7 +22,7 @@ This RPM contains the script and personalized config to run the lap4linux python
 %install
 rpm -fr $RPM_BUILD_ROOT
 mkdir -p $RPM_BUILD_ROOT/%{_sbindir}
-cp usr/sbin/laps-runner.py $RPM_BUILD_ROOT/%{_sbindir}
+cp usr/sbin/laps-runner.py $RPM_BUILD_ROOT/%{_sbindir}/laps-runner
 mkdir -p $RPM_BUILD_ROOT/%{_sysconfdir}
 cp etc/laps-runner.json $RPM_BUILD_ROOT/%{_sysconfdir}
 mkdir -p $RPM_BUILD_ROOT/%{_sysconfdir}/cron.hourly/
@@ -33,7 +33,7 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %files
-%{_sbindir}/laps-runner.py
+%{_sbindir}/laps-runner
 %{_sysconfdir}/laps-runner.json
 %{_sysconfdir}/cron.hourly/laps-runner
 
