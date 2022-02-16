@@ -156,10 +156,10 @@ class LapsMainWindow(QMainWindow):
 	cfgUsername = ''
 	cfgPassword = ''
 	cfgLdapAttributes              = {
-		'Administrator Password': 'ms-MCS-AdmPwd',
-		'Password Expiration Date': 'ms-MCS-AdmPwdExpirationTime'
+		'Administrator Password': 'ms-Mcs-AdmPwd',
+		'Password Expiration Date': 'ms-Mcs-AdmPwdExpirationTime'
 	}
-	cfgLdapAttributePasswordExpiry = 'ms-MCS-AdmPwdExpirationTime'
+	cfgLdapAttributePasswordExpiry = 'ms-Mcs-AdmPwdExpirationTime'
 	refLdapAttributesTextBoxes     = {}
 
 

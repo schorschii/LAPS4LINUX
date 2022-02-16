@@ -18,11 +18,11 @@
     ],
     "domain": "example.com",
     "username": "johndoe",
-    "ldap-attribute-password-expiry": "ms-MCS-AdmPwdExpirationTime",
+    "ldap-attribute-password-expiry": "ms-Mcs-AdmPwdExpirationTime",
     "ldap-attributes": {
         "Operating System": "operatingSystem",
         "lastLogonTimestamp": "lastLogonTimestamp",
-        "Administrator Password": "ms-MCS-AdmPwd",
-        "Password Expiration Date": "ms-MCS-AdmPwdExpirationTime"
+        "Administrator Password": "ms-Mcs-AdmPwd",
+        "Password Expiration Date": "ms-Mcs-AdmPwdExpirationTime"
     }
 }

@@ -50,8 +50,8 @@ class LapsRunner():
 	cfgLength           = 15 # the generated password length
 	cfgAlphabet         = string.ascii_letters+string.digits # allowed chars for the new password
 
-	cfgLdapAttributePassword       = 'ms-MCS-AdmPwd'
-	cfgLdapAttributePasswordExpiry = 'ms-MCS-AdmPwdExpirationTime'
+	cfgLdapAttributePassword       = 'ms-Mcs-AdmPwd'
+	cfgLdapAttributePasswordExpiry = 'ms-Mcs-AdmPwdExpirationTime'
 
 	tmpDn         = ''
 	tmpPassword   = ''
