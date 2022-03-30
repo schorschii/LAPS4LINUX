@@ -22,10 +22,11 @@ def filetime_to_dt(ft): # ft is in UTC, fromtimestamp() converts to local time
 
 class LapsCli():
 	PRODUCT_NAME      = 'LAPS4LINUX CLI'
-	PRODUCT_VERSION   = '1.5.2'
+	PRODUCT_VERSION   = '1.5.3'
 	PRODUCT_WEBSITE   = 'https://github.com/schorschii/laps4linux'
 
 	useKerberos = True
+	useSSL = True
 	gcModeOn    = False
 	server      = None
 	connection  = None
@@ -46,11 +47,14 @@ class LapsCli():
 		'Password Expiration Date': 'ms-Mcs-AdmPwdExpirationTime'
 	}
 	cfgLdapAttributePasswordExpiry = 'ms-Mcs-AdmPwdExpirationTime'
+	cfgLdapAttributePassword = 'ms-Mcs-AdmPwd'
 
 
-	def __init__(self, useKerberos):
+
+	def __init__(self, useKerberos, useSSL):
 		self.LoadSettings()
 		self.useKerberos = useKerberos
+		self.useSSL = useSSL
 
 		# Show Version Information
 		print(self.PRODUCT_NAME+' v'+self.PRODUCT_VERSION)
@@ -140,6 +144,28 @@ class LapsCli():
 			self.server = None
 			self.connection = None
 
+	def SetPassword(self, newPasswordString):
+		# check if dn of target computer object is known
+		if self.tmpDn.strip() == '': return
+
+		try:
+			self.printResult('New Password', str(newPasswordString))
+
+			# start LDAP modify
+			self.connection.modify(self.tmpDn, { self.cfgLdapAttributePassword: [(ldap3.MODIFY_REPLACE, [str(newPasswordString)])] })
+			if self.connection.result['result'] == 0:
+				print('Password Changed Successfully.')
+			else:
+				print('Unable to change password. '+str(self.connection.result['message']))
+
+		except Exception as e:
+			# display error
+			self.printResult('Error', str(e))
+			# reset connection
+			self.server = None
+			self.connection = None
+    
+
 	def queryAttributes(self):
 		if(not self.reconnectForAttributeQuery()):
 			self.btnSetExpirationTime.setEnabled(False)
@@ -184,12 +210,20 @@ class LapsCli():
 			# query domain controllers by dns lookup
 			try:
 				res = resolver.query(qname=f"_ldap._tcp.{self.cfgDomain}", rdtype=rdatatype.SRV, lifetime=10)
+				# res = resolver.query(qname=f"_ldap._tcp.{self.cfgDomain}", rdtype=rdatatype.SRV)
 				for srv in res.rrset:
-					serverEntry = {
-						'address': str(srv.target),
-						'port': srv.port,
-						'ssl': (srv.port == 636)
-					}
+					if(self.useSSL):
+						serverEntry = {
+							'address': str(srv.target),
+							'port': 636,
+							'ssl': True
+						}
+					else:
+						serverEntry = {
+							'address': str(srv.target),
+							'port': srv.port,
+							'ssl': (srv.port == 636)
+						}
 					print('DNS auto discovery found server: '+json.dumps(serverEntry))
 					self.cfgServer.append(serverEntry)
 			except Exception as e: print('DNS auto discovery failed: '+str(e))
@@ -197,11 +231,18 @@ class LapsCli():
 			if len(self.cfgServer) == 0:
 				item = input('💻 LDAP Server Address: ')
 				if item and item.strip() != "":
-					self.cfgServer.append({
-						'address': item,
-						'port': 389,
-						'ssl': False
-					})
+					if(self.useSSL):
+						self.cfgServer.append({
+							'address': item,
+							'port': 636,
+							'ssl': True
+						})
+					else:
+						self.cfgServer.append({
+							'address': item,
+							'port': 389,
+							'ssl': False
+						})
 					self.server = None
 		self.SaveSettings()
 
@@ -324,6 +365,7 @@ class LapsCli():
 				self.cfgDomain = cfgJson.get('domain', '')
 				self.cfgUsername = cfgJson.get('username', '')
 				self.cfgLdapAttributePasswordExpiry = str(cfgJson.get('ldap-attribute-password-expiry', self.cfgLdapAttributePasswordExpiry))
+				self.cfgLdapAttributePassword = str(cfgJson.get('ldap-attribute-password', self.cfgLdapAttributePassword))
 				tmpLdapAttributes = cfgJson.get('ldap-attributes', self.cfgLdapAttributes)
 				if(isinstance(tmpLdapAttributes, list) or isinstance(tmpLdapAttributes, dict)):
 					self.cfgLdapAttributes = tmpLdapAttributes
@@ -338,6 +380,7 @@ class LapsCli():
 					'domain': self.cfgDomain,
 					'username': self.cfgUsername,
 					'ldap-attribute-password-expiry': self.cfgLdapAttributePasswordExpiry,
+					'ldap-attribute-password': self.cfgLdapAttributePassword,
 					'ldap-attributes': self.cfgLdapAttributes
 				}, json_file, indent=4)
 		except Exception as e:
@@ -347,10 +390,12 @@ def main():
 	parser = argparse.ArgumentParser()
 	parser.add_argument('search', default=None, metavar='COMPUTERNAME', help='Search for this computer and display the admin password. Use "*" to display all computer passwords found in LDAP directory.')
 	parser.add_argument('-e', '--set-expiry', default=None, metavar='"2020-01-01 00:00:00"', help='Set new expiration date for computer found by search string.')
+	parser.add_argument('-p', '--set-password', default=None, metavar='"fakenews"', help='Set new laps password for computer found by search string.')
 	parser.add_argument('-K', '--no-kerberos', action='store_true', help='Do not use Kerberos authentication if available, ask for LDAP simple bind credentials.')
+	parser.add_argument('-S', '--no-ssl', action='store_true', help='Allow usage of insecure ssl for ldap.')
 	args = parser.parse_args()
 
-	cli = LapsCli(not args.no_kerberos)
+	cli = LapsCli(not args.no_kerberos, not args.no_ssl)
 
 	if args.search and args.search.strip() == '*':
 		cli.SearchComputer('*')
@@ -361,6 +406,9 @@ def main():
 
 		if args.set_expiry and args.set_expiry.strip() != '':
 			cli.SetExpiry(args.set_expiry.strip())
+
+		if args.set_password and args.set_password.strip() != '':
+			cli.SetPassword(args.set_password.strip())
 
 		return
 
