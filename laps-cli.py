@@ -11,6 +11,7 @@ import argparse
 import json
 import sys
 
+
 # Microsoft Timestamp Conversion
 EPOCH_TIMESTAMP = 11644473600  # January 1, 1970 as MS file time
 HUNDREDS_OF_NANOSECONDS = 10000000
