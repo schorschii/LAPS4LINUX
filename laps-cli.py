@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from pathlib import Path
-from os import path
+from os import path, makedirs, rename
 from datetime import datetime
 from dns import resolver, rdatatype
 import ldap3
@@ -36,7 +36,8 @@ class LapsCli():
 	cfgPresetFile       = 'laps-client.json'
 	cfgPresetPath       = (cfgPresetDirWindows if sys.platform.lower()=='win32' else cfgPresetDirUnix)+'/'+cfgPresetFile 
 
-	cfgPath     = str(Path.home())+'/.laps-client.json'
+	cfgPath     = str(Path.home())+'/.config/laps-client/settings.json'
+	cfgPathOld  = str(Path.home())+'/.laps-client.json'
 	cfgServer   = []
 	cfgDomain   = ''
 	cfgUsername = ''
@@ -314,9 +315,15 @@ class LapsCli():
 		return search_base[:-1]
 
 	def LoadSettings(self):
+		if(not path.isdir(path.dirname(self.cfgPath))):
+			makedirs(path.dirname(self.cfgPath), exist_ok=True)
+		if(path.exists(self.cfgPathOld)):
+			rename(self.cfgPathOld, self.cfgPath)
+
 		if(path.isfile(self.cfgPath)): cfgPath = self.cfgPath
 		elif(path.isfile(self.cfgPresetPath)): cfgPath = self.cfgPresetPath
 		else: return
+
 		try:
 			with open(cfgPath) as f:
 				cfgJson = json.load(f)

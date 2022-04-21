@@ -4,15 +4,17 @@
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
+
 from urllib.parse import unquote
 from pathlib import Path
-from os import path
+from os import path, makedirs, rename
 from datetime import datetime
 from dns import resolver, rdatatype
 import ldap3
 import getpass
 import json
 import sys
+
 
 # Microsoft Timestamp Conversion
 EPOCH_TIMESTAMP = 11644473600  # January 1, 1970 as MS file time
@@ -150,7 +152,8 @@ class LapsMainWindow(QMainWindow):
 	cfgPresetFile       = 'laps-client.json'
 	cfgPresetPath       = (cfgPresetDirWindows if PLATFORM=='win32' else cfgPresetDirUnix)+'/'+cfgPresetFile
 
-	cfgPath     = str(Path.home())+'/.laps-client.json'
+	cfgPath     = str(Path.home())+'/.config/laps-client/settings.json'
+	cfgPathOld  = str(Path.home())+'/.laps-client.json'
 	cfgServer   = []
 	cfgDomain   = ''
 	cfgUsername = ''
@@ -523,9 +526,15 @@ class LapsMainWindow(QMainWindow):
 		return search_base[:-1]
 
 	def LoadSettings(self):
+		if(not path.isdir(path.dirname(self.cfgPath))):
+			makedirs(path.dirname(self.cfgPath), exist_ok=True)
+		if(path.exists(self.cfgPathOld)):
+			rename(self.cfgPathOld, self.cfgPath)
+
 		if(path.isfile(self.cfgPath)): cfgPath = self.cfgPath
 		elif(path.isfile(self.cfgPresetPath)): cfgPath = self.cfgPresetPath
 		else: return
+
 		try:
 			with open(cfgPath) as f:
 				cfgJson = json.load(f)
