@@ -10,6 +10,7 @@ import getpass
 import argparse
 import json
 import sys
+import os
 
 
 # Microsoft Timestamp Conversion
@@ -22,6 +23,8 @@ def filetime_to_dt(ft): # ft is in UTC, fromtimestamp() converts to local time
 
 
 class LapsCli():
+	PLATFORM          = sys.platform.lower()
+
 	PRODUCT_NAME      = 'LAPS4LINUX CLI'
 	PRODUCT_VERSION   = '1.5.2'
 	PRODUCT_WEBSITE   = 'https://github.com/schorschii/laps4linux'
@@ -37,7 +40,8 @@ class LapsCli():
 	cfgPresetFile       = 'laps-client.json'
 	cfgPresetPath       = (cfgPresetDirWindows if sys.platform.lower()=='win32' else cfgPresetDirUnix)+'/'+cfgPresetFile 
 
-	cfgPath     = str(Path.home())+'/.config/laps-client/settings.json'
+	cfgDir      = str(Path.home())+'/.config/laps-client'
+	cfgPath     = cfgDir+'/settings.json'
 	cfgPathOld  = str(Path.home())+'/.laps-client.json'
 	cfgServer   = []
 	cfgDomain   = ''
@@ -316,8 +320,10 @@ class LapsCli():
 		return search_base[:-1]
 
 	def LoadSettings(self):
-		if(not path.isdir(path.dirname(self.cfgPath))):
-			makedirs(path.dirname(self.cfgPath), exist_ok=True)
+		if(not path.isdir(self.cfgDir)):
+			makedirs(self.cfgDir, exist_ok=True)
+		# protect temporary .remmina file by limiting access to our config folder
+		if(self.PLATFORM == 'linux'): os.chmod(self.cfgDir, 0o700)
 		if(path.exists(self.cfgPathOld)):
 			rename(self.cfgPathOld, self.cfgPath)
 

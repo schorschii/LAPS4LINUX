@@ -10,15 +10,12 @@ from pathlib import Path
 from os import path, makedirs, rename
 from datetime import datetime
 from dns import resolver, rdatatype
-import tempfile
 import ldap3
 import getpass
 import json
 import sys
 import os
 
-
-REMMINA_CFG_PATH = tempfile.gettempdir()+'/laps.remmina'
 
 # Microsoft Timestamp Conversion
 EPOCH_TIMESTAMP = 11644473600  # January 1, 1970 as MS file time
@@ -156,14 +153,16 @@ class LapsMainWindow(QMainWindow):
 	cfgPresetFile       = 'laps-client.json'
 	cfgPresetPath       = (cfgPresetDirWindows if PLATFORM=='win32' else cfgPresetDirUnix)+'/'+cfgPresetFile
 
-	cfgPath     = str(Path.home())+'/.config/laps-client/settings.json'
-	cfgPathOld  = str(Path.home())+'/.laps-client.json'
-	cfgServer   = []
-	cfgDomain   = ''
-	cfgUsername = ''
-	cfgPassword = ''
+	cfgDir         = str(Path.home())+'/.config/laps-client'
+	cfgPath        = cfgDir+'/settings.json'
+	cfgPathRemmina = cfgDir+'/laps.remmina'
+	cfgPathOld     = str(Path.home())+'/.laps-client.json'
+	cfgServer      = []
+	cfgDomain      = ''
+	cfgUsername    = ''
+	cfgPassword    = ''
 	cfgLdapAttributes              = {
-		'Administrator Password': 'ms-Mcs-AdmPwd',
+		'Administrator Password':   'ms-Mcs-AdmPwd',
 		'Password Expiration Date': 'ms-Mcs-AdmPwdExpirationTime'
 	}
 	cfgLdapAttributePassword       = 'ms-Mcs-AdmPwd'
@@ -216,7 +215,7 @@ class LapsMainWindow(QMainWindow):
 
 		# Connection Menu
 		# only available on linux as there is no reasonable way to open remote connections with password on other OSes
-		if(self.PLATFORM=='linux'):
+		if(self.PLATFORM == 'linux'):
 			connectMenu = mainMenu.addMenu('&Connect')
 
 			rdpAction = QAction('&RDP', self)
@@ -361,9 +360,10 @@ class LapsMainWindow(QMainWindow):
 				password = ''
 				self.statusBar.showMessage('Unable to find remmina.pref')
 
-			os.umask(0)
+			# creating remmina files with permissions 400 is currently useless as remmina re-creates the file with 664 on exit with updated settings
+			# protection is done by limiting access to our config dir
 			if(protocol == 'RDP'):
-				with open(os.open(REMMINA_CFG_PATH, os.O_CREAT | os.O_WRONLY, 0o400), 'w') as f:
+				with open(os.open(self.cfgPathRemmina, os.O_CREAT | os.O_WRONLY, 0o400), 'w') as f:
 					f.write(
 						"[remmina]\n"+
 						"name="+self.txtSearchComputer.text()+"\n"+
@@ -379,7 +379,7 @@ class LapsMainWindow(QMainWindow):
 					f.close()
 				time.sleep(0.2)
 			elif(protocol == 'SSH'):
-				with open(os.open(REMMINA_CFG_PATH, os.O_CREAT | os.O_WRONLY, 0o400), 'w') as f:
+				with open(os.open(self.cfgPathRemmina, os.O_CREAT | os.O_WRONLY, 0o400), 'w') as f:
 					f.write(
 						"[remmina]\n"+
 						"name="+self.txtSearchComputer.text()+"\n"+
@@ -390,7 +390,7 @@ class LapsMainWindow(QMainWindow):
 					)
 					f.close()
 				time.sleep(0.2)
-			subprocess.Popen(['remmina', '-c', REMMINA_CFG_PATH])
+			subprocess.Popen(['remmina', '-c', self.cfgPathRemmina])
 		except Exception as e:
 			# display error
 			self.statusBar.showMessage(str(e))
@@ -622,8 +622,10 @@ class LapsMainWindow(QMainWindow):
 		return search_base[:-1]
 
 	def LoadSettings(self):
-		if(not path.isdir(path.dirname(self.cfgPath))):
-			makedirs(path.dirname(self.cfgPath), exist_ok=True)
+		if(not path.isdir(self.cfgDir)):
+			makedirs(self.cfgDir, exist_ok=True)
+		# protect temporary .remmina file by limiting access to our config folder
+		if(self.PLATFORM == 'linux'): os.chmod(self.cfgDir, 0o700)
 		if(path.exists(self.cfgPathOld)):
 			rename(self.cfgPathOld, self.cfgPath)
 
@@ -682,13 +684,7 @@ def main():
 	app = QApplication(sys.argv)
 	window = LapsMainWindow()
 	window.show()
-	ret = app.exec_()
-
-	# cleanup remmina file
-	if(os.path.exists(REMMINA_CFG_PATH)):
-		os.remove(REMMINA_CFG_PATH)
-
-	sys.exit(ret)
+	sys.exit(app.exec_())
 
 if __name__ == '__main__':
 	main()
