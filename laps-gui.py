@@ -10,11 +10,15 @@ from pathlib import Path
 from os import path, makedirs, rename
 from datetime import datetime
 from dns import resolver, rdatatype
+import tempfile
 import ldap3
 import getpass
 import json
 import sys
+import os
 
+
+REMMINA_CFG_PATH = tempfile.gettempdir()+'/laps.remmina'
 
 # Microsoft Timestamp Conversion
 EPOCH_TIMESTAMP = 11644473600  # January 1, 1970 as MS file time
@@ -162,6 +166,7 @@ class LapsMainWindow(QMainWindow):
 		'Administrator Password': 'ms-Mcs-AdmPwd',
 		'Password Expiration Date': 'ms-Mcs-AdmPwdExpirationTime'
 	}
+	cfgLdapAttributePassword       = 'ms-Mcs-AdmPwd'
 	cfgLdapAttributePasswordExpiry = 'ms-Mcs-AdmPwdExpirationTime'
 	refLdapAttributesTextBoxes     = {}
 
@@ -207,6 +212,20 @@ class LapsMainWindow(QMainWindow):
 		quitAction.setShortcut('Ctrl+Q')
 		quitAction.triggered.connect(self.OnQuit)
 		fileMenu.addAction(quitAction)
+
+		# Connection Menu
+		# only available on linux as there is no reasonable way to open remote connections with password on other OSes
+		if(self.PLATFORM=='linux'):
+			connectMenu = mainMenu.addMenu('&Connect')
+
+			rdpAction = QAction('&RDP', self)
+			rdpAction.setShortcut('F5')
+			rdpAction.triggered.connect(self.OnClickRDP)
+			connectMenu.addAction(rdpAction)
+			sshAction = QAction('&SSH', self)
+			sshAction.setShortcut('F6')
+			sshAction.triggered.connect(self.OnClickSSH)
+			connectMenu.addAction(sshAction)
 
 		# Help Menu
 		helpMenu = mainMenu.addMenu('&Help')
@@ -299,6 +318,81 @@ class LapsMainWindow(QMainWindow):
 
 	def OnReturnSearch(self):
 		self.OnClickSearch(None)
+
+	def OnClickRDP(self, e):
+		self.RemoteConnection('RDP')
+
+	def OnClickSSH(self, e):
+		self.RemoteConnection('SSH')
+
+	def RemoteConnection(self, protocol):
+		if(self.txtSearchComputer.text().strip() == ''): return
+
+		try:
+			import subprocess
+			import time
+			import configparser
+			import base64
+			from shutil import which
+			from Crypto.Cipher import DES3
+
+			password = ''
+			for title, attribute in self.GetAttributesAsDict().items():
+				if(self.cfgLdapAttributePassword == attribute):
+					if(title in self.refLdapAttributesTextBoxes):
+						password = self.refLdapAttributesTextBoxes[title].text()
+
+			if(which('remmina') is None): raise Exception('Remmina is not installed')
+			# passwords must be encrypted in remmina connection files using the secret found in remmina.pref
+			remminaPrefPath = str(Path.home())+'/.remmina/remmina.pref'
+			if(os.path.exists(remminaPrefPath)):
+				config = configparser.ConfigParser()
+				config.read(remminaPrefPath)
+				if(config.has_section('remmina_pref') and 'secret' in config['remmina_pref'] and config['remmina_pref']['secret'].strip() != ''):
+					secret = base64.b64decode(config['remmina_pref']['secret'])
+					padding = chr(0) * (8 - len(password) % 8)
+					password = base64.b64encode( DES3.new(secret[:24], DES3.MODE_CBC, secret[24:]).encrypt(password+padding) ).decode('utf-8')
+				else:
+					password = ''
+					self.statusBar.showMessage('Unable to find secret in remmina_pref')
+			else:
+				password = ''
+				self.statusBar.showMessage('Unable to find remmina.pref')
+
+			os.umask(0)
+			if(protocol == 'RDP'):
+				with open(os.open(REMMINA_CFG_PATH, os.O_CREAT | os.O_WRONLY, 0o400), 'w') as f:
+					f.write(
+						"[remmina]\n"+
+						"name="+self.txtSearchComputer.text()+"\n"+
+						"server="+self.txtSearchComputer.text()+"\n"+
+						"username=administrator\n"+
+						"password="+password+"\n"
+						"protocol=RDP\n"+
+						"scale=2\n"+
+						"window_width=1092\n"+
+						"window_height=720\n"+
+						"colordepth=0\n"
+					)
+					f.close()
+				time.sleep(0.2)
+			elif(protocol == 'SSH'):
+				with open(os.open(REMMINA_CFG_PATH, os.O_CREAT | os.O_WRONLY, 0o400), 'w') as f:
+					f.write(
+						"[remmina]\n"+
+						"name="+self.txtSearchComputer.text()+"\n"+
+						"server="+self.txtSearchComputer.text()+"\n"+
+						"username=administrator\n"+
+						"password="+password+"\n"
+						"protocol=SSH\n"
+					)
+					f.close()
+				time.sleep(0.2)
+			subprocess.Popen(['remmina', '-c', REMMINA_CFG_PATH])
+		except Exception as e:
+			# display error
+			self.statusBar.showMessage(str(e))
+			print(str(e))
 
 	def OnClickSearch(self, e):
 		# check and escape input
@@ -541,6 +635,7 @@ class LapsMainWindow(QMainWindow):
 				self.cfgServer = cfgJson.get('server', '')
 				self.cfgDomain = cfgJson.get('domain', '')
 				self.cfgUsername = cfgJson.get('username', '')
+				self.cfgLdapAttributePassword = str(cfgJson.get('ldap-attribute-password', self.cfgLdapAttributePassword))
 				self.cfgLdapAttributePasswordExpiry = str(cfgJson.get('ldap-attribute-password-expiry', self.cfgLdapAttributePasswordExpiry))
 				tmpLdapAttributes = cfgJson.get('ldap-attributes', self.cfgLdapAttributes)
 				if(isinstance(tmpLdapAttributes, list) or isinstance(tmpLdapAttributes, dict)):
@@ -555,6 +650,7 @@ class LapsMainWindow(QMainWindow):
 					'server': self.cfgServer,
 					'domain': self.cfgDomain,
 					'username': self.cfgUsername,
+					'ldap-attribute-password': self.cfgLdapAttributePassword,
 					'ldap-attribute-password-expiry': self.cfgLdapAttributePasswordExpiry,
 					'ldap-attributes': self.cfgLdapAttributes
 				}, json_file, indent=4)
@@ -584,7 +680,13 @@ def main():
 	app = QApplication(sys.argv)
 	window = LapsMainWindow()
 	window.show()
-	sys.exit(app.exec_())
+	ret = app.exec_()
+
+	# cleanup remmina file
+	if(os.path.exists(REMMINA_CFG_PATH)):
+		os.remove(REMMINA_CFG_PATH)
+
+	sys.exit(ret)
 
 if __name__ == '__main__':
 	main()
