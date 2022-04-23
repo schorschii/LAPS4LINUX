@@ -543,7 +543,7 @@ class LapsMainWindow(QMainWindow):
 		# ask for username and password for NTLM bind
 		sslHint = ''
 		if len(self.cfgServer) > 0 and self.cfgServer[0]['ssl'] == False:
-			sslHint = '\n\nPlease consider enabling SSL in the config file (~/.laps-client.json).'
+			sslHint = '\n\nPlease consider enabling SSL in the config file (~/.config/laps-client/settings.json).'
 		if self.cfgUsername == "":
 			item, ok = QInputDialog.getText(self, '👤 Username', 'Please enter the username which should be used to connect to:\n'+str(self.cfgServer), QLineEdit.Normal, getpass.getuser())
 			if ok and item:
