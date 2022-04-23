@@ -196,10 +196,11 @@ class LapsMainWindow(QMainWindow):
 		searchAction.setShortcut('F2')
 		searchAction.triggered.connect(self.OnClickSearch)
 		fileMenu.addAction(searchAction)
-		setExpirationDateAction = QAction('Set &Expiration', self)
-		setExpirationDateAction.setShortcut('F3')
-		setExpirationDateAction.triggered.connect(self.OnClickSetExpiry)
-		fileMenu.addAction(setExpirationDateAction)
+		if(self.cfgLdapAttributePasswordExpiry.strip() != ''):
+			setExpirationDateAction = QAction('Set &Expiration', self)
+			setExpirationDateAction.setShortcut('F3')
+			setExpirationDateAction.triggered.connect(self.OnClickSetExpiry)
+			fileMenu.addAction(setExpirationDateAction)
 		fileMenu.addSeparator()
 		kerberosAction = QAction('&Kerberos Authentication', self)
 		kerberosAction.setShortcut('Ctrl+K')
@@ -273,8 +274,9 @@ class LapsMainWindow(QMainWindow):
 		self.btnSetExpirationTime = QPushButton('Set New Expiration Date')
 		self.btnSetExpirationTime.setEnabled(False)
 		self.btnSetExpirationTime.clicked.connect(self.OnClickSetExpiry)
-		grid.addWidget(self.btnSetExpirationTime, gridLine, 0)
-		gridLine += 1
+		if(self.cfgLdapAttributePasswordExpiry.strip() != ''):
+			grid.addWidget(self.btnSetExpirationTime, gridLine, 0)
+			gridLine += 1
 
 		widget = QWidget(self)
 		widget.setLayout(grid)
