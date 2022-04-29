@@ -58,11 +58,9 @@ class LapsCli():
 		self.LoadSettings()
 		self.useKerberos = useKerberos
 
-		# Show Version Information
+		# show version information
 		print(self.PRODUCT_NAME+' v'+self.PRODUCT_VERSION)
 		print(self.PRODUCT_WEBSITE)
-
-		print('')
 
 	def GetAttributesAsDict(self):
 		finalDict = {}
@@ -79,7 +77,8 @@ class LapsCli():
 		if computerName.strip() == '': return
 		if not computerName == '*': computerName = ldap3.utils.conv.escape_filter_chars(computerName)
 
-		# ask for credentials
+		# ask for credentials and print connection details
+		print('')
 		if not self.checkCredentialsAndConnect(): return
 		self.printResult('Connection', str(self.connection.server)+' '+self.cfgUsername+'@'+self.cfgDomain)
 
@@ -267,6 +266,7 @@ class LapsCli():
 				auto_bind=True
 			)
 			#self.connection.bind()
+			print('') # separate user input from results by newline
 		except Exception as e:
 			self.cfgUsername = ''
 			self.cfgPassword = ''
@@ -359,27 +359,41 @@ class LapsCli():
 
 def main():
 	parser = argparse.ArgumentParser()
-	parser.add_argument('search', default=None, metavar='COMPUTERNAME', help='Search for this computer and display the admin password. Use "*" to display all computer passwords found in LDAP directory.')
+	parser.add_argument('search', default=None, nargs='*', metavar='COMPUTERNAME', help='Search for this computer and display the admin password. Use "*" to display all computer passwords found in LDAP directory. If you omit this parameter, the interactive shell will be started, which allows you to do multiple queries in one session.')
 	parser.add_argument('-e', '--set-expiry', default=None, metavar='"2020-01-01 00:00:00"', help='Set new expiration date for computer found by search string.')
 	parser.add_argument('-K', '--no-kerberos', action='store_true', help='Do not use Kerberos authentication if available, ask for LDAP simple bind credentials.')
 	args = parser.parse_args()
 
 	cli = LapsCli(not args.no_kerberos)
 
-	if args.search and args.search.strip() == '*':
-		cli.SearchComputer('*')
-		return
+	# do LDAP search by command line arguments
+	if(args.search):
+		validSearches = 0
+		for term in args.search:
+			if(term.strip() == '*'):
+				cli.SearchComputer('*')
+				return
 
-	if args.search and args.search.strip() != '':
-		cli.SearchComputer(args.search)
+			if(term.strip() != ''):
+				validSearches += 1
+				cli.SearchComputer(term.strip())
+				if(args.set_expiry and args.set_expiry.strip() != ''):
+					cli.SetExpiry(args.set_expiry.strip())
 
-		if args.set_expiry and args.set_expiry.strip() != '':
-			cli.SetExpiry(args.set_expiry.strip())
+		# if at least one computername was given, we do not start the interactive shell
+		if(validSearches > 0): return
 
-		return
-
-	print('Please tell me what to do. Use --help for more information.')
-	return
+	# do LDAP search by interactive shell input
+	print('')
+	print('Welcome to interactive shell. Please enter a computer name to search for.')
+	print('Parameter --help provides more information.')
+	while 1:
+		# get keyboard input
+		cmd = input('>> ')
+		if(cmd == 'exit' or cmd == 'quit'):
+			return
+		else:
+			cli.SearchComputer(cmd.strip())
 
 if __name__ == '__main__':
 	main()
