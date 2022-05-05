@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from pathlib import Path
-from os import path
+from os import path, makedirs, rename
 from datetime import datetime
 from dns import resolver, rdatatype
 import ldap3
@@ -10,6 +10,8 @@ import getpass
 import argparse
 import json
 import sys
+import os
+
 
 # Microsoft Timestamp Conversion
 EPOCH_TIMESTAMP = 11644473600  # January 1, 1970 as MS file time
@@ -21,12 +23,13 @@ def filetime_to_dt(ft): # ft is in UTC, fromtimestamp() converts to local time
 
 
 class LapsCli():
+	PLATFORM          = sys.platform.lower()
+
 	PRODUCT_NAME      = 'LAPS4LINUX CLI'
-	PRODUCT_VERSION   = '1.5.3'
+	PRODUCT_VERSION   = '1.5.2'
 	PRODUCT_WEBSITE   = 'https://github.com/schorschii/laps4linux'
 
 	useKerberos = True
-	useSSL = True
 	gcModeOn    = False
 	server      = None
 	connection  = None
@@ -37,7 +40,9 @@ class LapsCli():
 	cfgPresetFile       = 'laps-client.json'
 	cfgPresetPath       = (cfgPresetDirWindows if sys.platform.lower()=='win32' else cfgPresetDirUnix)+'/'+cfgPresetFile 
 
-	cfgPath     = str(Path.home())+'/.laps-client.json'
+	cfgDir      = str(Path.home())+'/.config/laps-client'
+	cfgPath     = cfgDir+'/settings.json'
+	cfgPathOld  = str(Path.home())+'/.laps-client.json'
 	cfgServer   = []
 	cfgDomain   = ''
 	cfgUsername = ''
@@ -46,21 +51,17 @@ class LapsCli():
 		'Administrator Password': 'ms-Mcs-AdmPwd',
 		'Password Expiration Date': 'ms-Mcs-AdmPwdExpirationTime'
 	}
-	cfgLdapAttributePasswordExpiry = 'ms-Mcs-AdmPwdExpirationTime'
 	cfgLdapAttributePassword = 'ms-Mcs-AdmPwd'
+	cfgLdapAttributePasswordExpiry = 'ms-Mcs-AdmPwdExpirationTime'
 
 
-
-	def __init__(self, useKerberos, useSSL):
+	def __init__(self, useKerberos):
 		self.LoadSettings()
 		self.useKerberos = useKerberos
-		self.useSSL = useSSL
 
-		# Show Version Information
+		# show version information
 		print(self.PRODUCT_NAME+' v'+self.PRODUCT_VERSION)
 		print(self.PRODUCT_WEBSITE)
-
-		print('')
 
 	def GetAttributesAsDict(self):
 		finalDict = {}
@@ -77,7 +78,8 @@ class LapsCli():
 		if computerName.strip() == '': return
 		if not computerName == '*': computerName = ldap3.utils.conv.escape_filter_chars(computerName)
 
-		# ask for credentials
+		# ask for credentials and print connection details
+		print('')
 		if not self.checkCredentialsAndConnect(): return
 		self.printResult('Connection', str(self.connection.server)+' '+self.cfgUsername+'@'+self.cfgDomain)
 
@@ -210,20 +212,12 @@ class LapsCli():
 			# query domain controllers by dns lookup
 			try:
 				res = resolver.query(qname=f"_ldap._tcp.{self.cfgDomain}", rdtype=rdatatype.SRV, lifetime=10)
-				# res = resolver.query(qname=f"_ldap._tcp.{self.cfgDomain}", rdtype=rdatatype.SRV)
 				for srv in res.rrset:
-					if(self.useSSL):
-						serverEntry = {
-							'address': str(srv.target),
-							'port': 636,
-							'ssl': True
-						}
-					else:
-						serverEntry = {
-							'address': str(srv.target),
-							'port': srv.port,
-							'ssl': (srv.port == 636)
-						}
+					serverEntry = {
+						'address': str(srv.target),
+						'port': srv.port,
+						'ssl': (srv.port == 636)
+					}
 					print('DNS auto discovery found server: '+json.dumps(serverEntry))
 					self.cfgServer.append(serverEntry)
 			except Exception as e: print('DNS auto discovery failed: '+str(e))
@@ -231,18 +225,11 @@ class LapsCli():
 			if len(self.cfgServer) == 0:
 				item = input('💻 LDAP Server Address: ')
 				if item and item.strip() != "":
-					if(self.useSSL):
-						self.cfgServer.append({
-							'address': item,
-							'port': 636,
-							'ssl': True
-						})
-					else:
-						self.cfgServer.append({
-							'address': item,
-							'port': 389,
-							'ssl': False
-						})
+					self.cfgServer.append({
+						'address': item,
+						'port': 389,
+						'ssl': False
+					})
 					self.server = None
 		self.SaveSettings()
 
@@ -302,6 +289,7 @@ class LapsCli():
 				auto_bind=True
 			)
 			#self.connection.bind()
+			print('') # separate user input from results by newline
 		except Exception as e:
 			self.cfgUsername = ''
 			self.cfgPassword = ''
@@ -355,9 +343,17 @@ class LapsCli():
 		return search_base[:-1]
 
 	def LoadSettings(self):
+		if(not path.isdir(self.cfgDir)):
+			makedirs(self.cfgDir, exist_ok=True)
+		# protect temporary .remmina file by limiting access to our config folder
+		if(self.PLATFORM == 'linux'): os.chmod(self.cfgDir, 0o700)
+		if(path.exists(self.cfgPathOld)):
+			rename(self.cfgPathOld, self.cfgPath)
+
 		if(path.isfile(self.cfgPath)): cfgPath = self.cfgPath
 		elif(path.isfile(self.cfgPresetPath)): cfgPath = self.cfgPresetPath
 		else: return
+
 		try:
 			with open(cfgPath) as f:
 				cfgJson = json.load(f)
@@ -387,33 +383,52 @@ class LapsCli():
 			print('Error saving settings file: '+str(e))
 
 def main():
-	parser = argparse.ArgumentParser()
-	parser.add_argument('search', default=None, metavar='COMPUTERNAME', help='Search for this computer and display the admin password. Use "*" to display all computer passwords found in LDAP directory.')
+	parser = argparse.ArgumentParser(epilog='© 2021-2022 Georg Sieber - https://georg-sieber.de')
+	parser.add_argument('search', default=None, nargs='*', metavar='COMPUTERNAME', help='Search for this computer(s) and display the admin password. Use "*" to display all computer passwords found in LDAP directory. If you omit this parameter, the interactive shell will be started, which allows you to do multiple queries in one session.')
 	parser.add_argument('-e', '--set-expiry', default=None, metavar='"2020-01-01 00:00:00"', help='Set new expiration date for computer found by search string.')
 	parser.add_argument('-p', '--set-password', default=None, metavar='"fakenews"', help='Set new laps password for computer found by search string.')
 	parser.add_argument('-K', '--no-kerberos', action='store_true', help='Do not use Kerberos authentication if available, ask for LDAP simple bind credentials.')
-	parser.add_argument('-S', '--no-ssl', action='store_true', help='Allow usage of insecure ssl for ldap.')
+	parser.add_argument('--version', action='store_true', help='Print version and exit.')
 	args = parser.parse_args()
 
 	cli = LapsCli(not args.no_kerberos, not args.no_ssl)
 
-	if args.search and args.search.strip() == '*':
-		cli.SearchComputer('*')
+	if(args.version):
 		return
 
-	if args.search and args.search.strip() != '':
-		cli.SearchComputer(args.search)
+	# do LDAP search by command line arguments
+	if(args.search):
+		validSearches = 0
 
-		if args.set_expiry and args.set_expiry.strip() != '':
-			cli.SetExpiry(args.set_expiry.strip())
+		for term in args.search:
+			if(term.strip() == '*'):
+				cli.SearchComputer('*')
+				return
 
-		if args.set_password and args.set_password.strip() != '':
-			cli.SetPassword(args.set_password.strip())
+			if(term.strip() != ''):
+				validSearches += 1
+				cli.SearchComputer(term.strip())
 
-		return
+				if(args.set_expiry and args.set_expiry.strip() != ''):
+					cli.SetExpiry(args.set_expiry.strip())
 
-	print('Please tell me what to do. Use --help for more information.')
-	return
+				if(args.set_password and args.set_password.strip() != ''):
+					cli.SetPassword(args.set_password.strip())
+
+		# if at least one computername was given, we do not start the interactive shell
+		if(validSearches > 0): return
+
+	# do LDAP search by interactive shell input
+	print('')
+	print('Welcome to interactive shell. Please enter a computer name to search for.')
+	print('Parameter --help provides more information.')
+	while 1:
+		# get keyboard input
+		cmd = input('>> ')
+		if(cmd == 'exit' or cmd == 'quit'):
+			return
+		else:
+			cli.SearchComputer(cmd.strip())
 
 if __name__ == '__main__':
 	main()

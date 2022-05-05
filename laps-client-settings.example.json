@@ -18,6 +18,7 @@
     ],
     "domain": "example.com",
     "username": "johndoe",
+    "ldap-attribute-password": "ms-Mcs-AdmPwd",
     "ldap-attribute-password-expiry": "ms-Mcs-AdmPwdExpirationTime",
     "ldap-attributes": {
         "Operating System": "operatingSystem",

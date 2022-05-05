@@ -4,15 +4,18 @@
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
+
 from urllib.parse import unquote
 from pathlib import Path
-from os import path
+from os import path, makedirs, rename
 from datetime import datetime
 from dns import resolver, rdatatype
 import ldap3
 import getpass
 import json
 import sys
+import os
+
 
 # Microsoft Timestamp Conversion
 EPOCH_TIMESTAMP = 11644473600  # January 1, 1970 as MS file time
@@ -43,7 +46,7 @@ class LapsAboutWindow(QDialog):
 		labelCopyright = QLabel(self)
 		labelCopyright.setText(
 			"<br>"
-			"© 2021 <a href='https://georg-sieber.de'>Georg Sieber</a>"
+			"© 2021-2022 <a href='https://georg-sieber.de'>Georg Sieber</a>"
 			"<br>"
 			"<br>"
 			"GNU General Public License v3.0"
@@ -150,15 +153,19 @@ class LapsMainWindow(QMainWindow):
 	cfgPresetFile       = 'laps-client.json'
 	cfgPresetPath       = (cfgPresetDirWindows if PLATFORM=='win32' else cfgPresetDirUnix)+'/'+cfgPresetFile
 
-	cfgPath     = str(Path.home())+'/.laps-client.json'
-	cfgServer   = []
-	cfgDomain   = ''
-	cfgUsername = ''
-	cfgPassword = ''
+	cfgDir         = str(Path.home())+'/.config/laps-client'
+	cfgPath        = cfgDir+'/settings.json'
+	cfgPathRemmina = cfgDir+'/laps.remmina'
+	cfgPathOld     = str(Path.home())+'/.laps-client.json'
+	cfgServer      = []
+	cfgDomain      = ''
+	cfgUsername    = ''
+	cfgPassword    = ''
 	cfgLdapAttributes              = {
-		'Administrator Password': 'ms-Mcs-AdmPwd',
+		'Administrator Password':   'ms-Mcs-AdmPwd',
 		'Password Expiration Date': 'ms-Mcs-AdmPwdExpirationTime'
 	}
+	cfgLdapAttributePassword       = 'ms-Mcs-AdmPwd'
 	cfgLdapAttributePasswordExpiry = 'ms-Mcs-AdmPwdExpirationTime'
 	refLdapAttributesTextBoxes     = {}
 
@@ -188,10 +195,11 @@ class LapsMainWindow(QMainWindow):
 		searchAction.setShortcut('F2')
 		searchAction.triggered.connect(self.OnClickSearch)
 		fileMenu.addAction(searchAction)
-		setExpirationDateAction = QAction('Set &Expiration', self)
-		setExpirationDateAction.setShortcut('F3')
-		setExpirationDateAction.triggered.connect(self.OnClickSetExpiry)
-		fileMenu.addAction(setExpirationDateAction)
+		if(self.cfgLdapAttributePasswordExpiry.strip() != ''):
+			setExpirationDateAction = QAction('Set &Expiration', self)
+			setExpirationDateAction.setShortcut('F3')
+			setExpirationDateAction.triggered.connect(self.OnClickSetExpiry)
+			fileMenu.addAction(setExpirationDateAction)
 		fileMenu.addSeparator()
 		kerberosAction = QAction('&Kerberos Authentication', self)
 		kerberosAction.setShortcut('Ctrl+K')
@@ -204,6 +212,20 @@ class LapsMainWindow(QMainWindow):
 		quitAction.setShortcut('Ctrl+Q')
 		quitAction.triggered.connect(self.OnQuit)
 		fileMenu.addAction(quitAction)
+
+		# Connection Menu
+		# only available on linux as there is no reasonable way to open remote connections with password on other OSes
+		if(self.PLATFORM == 'linux'):
+			connectMenu = mainMenu.addMenu('&Connect')
+
+			rdpAction = QAction('&RDP', self)
+			rdpAction.setShortcut('F5')
+			rdpAction.triggered.connect(self.OnClickRDP)
+			connectMenu.addAction(rdpAction)
+			sshAction = QAction('&SSH', self)
+			sshAction.setShortcut('F6')
+			sshAction.triggered.connect(self.OnClickSSH)
+			connectMenu.addAction(sshAction)
 
 		# Help Menu
 		helpMenu = mainMenu.addMenu('&Help')
@@ -251,8 +273,9 @@ class LapsMainWindow(QMainWindow):
 		self.btnSetExpirationTime = QPushButton('Set New Expiration Date')
 		self.btnSetExpirationTime.setEnabled(False)
 		self.btnSetExpirationTime.clicked.connect(self.OnClickSetExpiry)
-		grid.addWidget(self.btnSetExpirationTime, gridLine, 0)
-		gridLine += 1
+		if(self.cfgLdapAttributePasswordExpiry.strip() != ''):
+			grid.addWidget(self.btnSetExpirationTime, gridLine, 0)
+			gridLine += 1
 
 		widget = QWidget(self)
 		widget.setLayout(grid)
@@ -296,6 +319,82 @@ class LapsMainWindow(QMainWindow):
 
 	def OnReturnSearch(self):
 		self.OnClickSearch(None)
+
+	def OnClickRDP(self, e):
+		self.RemoteConnection('RDP')
+
+	def OnClickSSH(self, e):
+		self.RemoteConnection('SSH')
+
+	def RemoteConnection(self, protocol):
+		if(self.txtSearchComputer.text().strip() == ''): return
+
+		try:
+			import subprocess
+			import time
+			import configparser
+			import base64
+			from shutil import which
+			from Crypto.Cipher import DES3
+
+			password = ''
+			for title, attribute in self.GetAttributesAsDict().items():
+				if(self.cfgLdapAttributePassword == attribute):
+					if(title in self.refLdapAttributesTextBoxes):
+						password = self.refLdapAttributesTextBoxes[title].text()
+
+			if(which('remmina') is None): raise Exception('Remmina is not installed')
+			# passwords must be encrypted in remmina connection files using the secret found in remmina.pref
+			remminaPrefPath = str(Path.home())+'/.remmina/remmina.pref'
+			if(os.path.exists(remminaPrefPath)):
+				config = configparser.ConfigParser()
+				config.read(remminaPrefPath)
+				if(config.has_section('remmina_pref') and 'secret' in config['remmina_pref'] and config['remmina_pref']['secret'].strip() != ''):
+					secret = base64.b64decode(config['remmina_pref']['secret'])
+					padding = chr(0) * (8 - len(password) % 8)
+					password = base64.b64encode( DES3.new(secret[:24], DES3.MODE_CBC, secret[24:]).encrypt(password+padding) ).decode('utf-8')
+				else:
+					password = ''
+					self.statusBar.showMessage('Unable to find secret in remmina_pref')
+			else:
+				password = ''
+				self.statusBar.showMessage('Unable to find remmina.pref')
+
+			# creating remmina files with permissions 400 is currently useless as remmina re-creates the file with 664 on exit with updated settings
+			# protection is done by limiting access to our config dir
+			if(protocol == 'RDP'):
+				with open(os.open(self.cfgPathRemmina, os.O_CREAT | os.O_WRONLY, 0o400), 'w') as f:
+					f.write(
+						"[remmina]\n"+
+						"name="+self.txtSearchComputer.text()+"\n"+
+						"server="+self.txtSearchComputer.text()+"\n"+
+						"username=administrator\n"+
+						"password="+password+"\n"
+						"protocol=RDP\n"+
+						"scale=2\n"+
+						"window_width=1092\n"+
+						"window_height=720\n"+
+						"colordepth=0\n"
+					)
+					f.close()
+				time.sleep(0.2)
+			elif(protocol == 'SSH'):
+				with open(os.open(self.cfgPathRemmina, os.O_CREAT | os.O_WRONLY, 0o400), 'w') as f:
+					f.write(
+						"[remmina]\n"+
+						"name="+self.txtSearchComputer.text()+"\n"+
+						"server="+self.txtSearchComputer.text()+"\n"+
+						"username=administrator\n"+
+						"password="+password+"\n"
+						"protocol=SSH\n"
+					)
+					f.close()
+				time.sleep(0.2)
+			subprocess.Popen(['remmina', '-c', self.cfgPathRemmina])
+		except Exception as e:
+			# display error
+			self.statusBar.showMessage(str(e))
+			print(str(e))
 
 	def OnClickSearch(self, e):
 		# check and escape input
@@ -444,7 +543,7 @@ class LapsMainWindow(QMainWindow):
 		# ask for username and password for NTLM bind
 		sslHint = ''
 		if len(self.cfgServer) > 0 and self.cfgServer[0]['ssl'] == False:
-			sslHint = '\n\nPlease consider enabling SSL in the config file (~/.laps-client.json).'
+			sslHint = '\n\nPlease consider enabling SSL in the config file (~/.config/laps-client/settings.json).'
 		if self.cfgUsername == "":
 			item, ok = QInputDialog.getText(self, '👤 Username', 'Please enter the username which should be used to connect to:\n'+str(self.cfgServer), QLineEdit.Normal, getpass.getuser())
 			if ok and item:
@@ -523,15 +622,24 @@ class LapsMainWindow(QMainWindow):
 		return search_base[:-1]
 
 	def LoadSettings(self):
+		if(not path.isdir(self.cfgDir)):
+			makedirs(self.cfgDir, exist_ok=True)
+		# protect temporary .remmina file by limiting access to our config folder
+		if(self.PLATFORM == 'linux'): os.chmod(self.cfgDir, 0o700)
+		if(path.exists(self.cfgPathOld)):
+			rename(self.cfgPathOld, self.cfgPath)
+
 		if(path.isfile(self.cfgPath)): cfgPath = self.cfgPath
 		elif(path.isfile(self.cfgPresetPath)): cfgPath = self.cfgPresetPath
 		else: return
+
 		try:
 			with open(cfgPath) as f:
 				cfgJson = json.load(f)
 				self.cfgServer = cfgJson.get('server', '')
 				self.cfgDomain = cfgJson.get('domain', '')
 				self.cfgUsername = cfgJson.get('username', '')
+				self.cfgLdapAttributePassword = str(cfgJson.get('ldap-attribute-password', self.cfgLdapAttributePassword))
 				self.cfgLdapAttributePasswordExpiry = str(cfgJson.get('ldap-attribute-password-expiry', self.cfgLdapAttributePasswordExpiry))
 				tmpLdapAttributes = cfgJson.get('ldap-attributes', self.cfgLdapAttributes)
 				if(isinstance(tmpLdapAttributes, list) or isinstance(tmpLdapAttributes, dict)):
@@ -546,6 +654,7 @@ class LapsMainWindow(QMainWindow):
 					'server': self.cfgServer,
 					'domain': self.cfgDomain,
 					'username': self.cfgUsername,
+					'ldap-attribute-password': self.cfgLdapAttributePassword,
 					'ldap-attribute-password-expiry': self.cfgLdapAttributePasswordExpiry,
 					'ldap-attributes': self.cfgLdapAttributes
 				}, json_file, indent=4)
