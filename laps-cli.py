@@ -57,7 +57,6 @@ class LapsCli():
 
 
 	def __init__(self, useKerberos):
-		# self.LoadSettings()
 		self.useKerberos = useKerberos
 
 		# show version information
