@@ -43,6 +43,8 @@ class LapsCli():
 	cfgDir      = str(Path.home())+'/.config/laps-client'
 	cfgPath     = cfgDir+'/settings.json'
 	cfgPathOld  = str(Path.home())+'/.laps-client.json'
+	cfgCredCacheFile    = '/tmp/laps.temp'
+	cfgClientKeytabFile = '/etc/krb5.keytab'
 	cfgServer   = []
 	cfgDomain   = ''
 	cfgUsername = ''
@@ -55,7 +57,7 @@ class LapsCli():
 
 
 	def __init__(self, useKerberos):
-		self.LoadSettings()
+		# self.LoadSettings()
 		self.useKerberos = useKerberos
 
 		# show version information
@@ -71,6 +73,18 @@ class LapsCli():
 			for title, attribute in self.cfgLdapAttributes.items():
 				finalDict[str(title)] = str(attribute)
 		return finalDict
+
+	def getHostname(self):
+		if(self.cfgHostname == None or self.cfgHostname.strip() == ''):
+			return socket.gethostname().upper()
+		else:
+			return self.cfgHostname.strip().upper()
+
+	def initKerberos(self):
+		# query new kerberos ticket
+		cmd = ['kinit', '-k', '-c', self.cfgCredCacheFile, self.getHostname()+'$']
+		res = subprocess.run(cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL, universal_newlines=True)
+		if res.returncode != 0: raise Exception(' '.join(cmd)+' returned non-zero exit code '+str(res.returncode))
 
 	def SearchComputer(self, computerName):
 		# check and escape input
@@ -178,6 +192,10 @@ class LapsCli():
 		print((attribute+':').ljust(26)+value)
 
 	def checkCredentialsAndConnect(self):
+		# set environment variables for kerberos operations
+		os.environ['KRB5CCNAME'] = self.cfgCredCacheFile
+		os.environ['KRB5_CLIENT_KTNAME'] = self.cfgClientKeytabFile
+
 		# ask for server address and domain name if not already set via config file
 		if self.cfgDomain == "":
 			item = input('♕ Domain Name (e.g. example.com): ')
@@ -336,6 +354,8 @@ class LapsCli():
 				cfgJson = json.load(f)
 				self.cfgServer = cfgJson.get('server', '')
 				self.cfgDomain = cfgJson.get('domain', '')
+				self.cfgCredCacheFile = cfgJson.get('cred-cache-file', self.cfgCredCacheFile)
+				self.cfgClientKeytabFile = cfgJson.get('client-keytab-file', self.cfgClientKeytabFile)
 				self.cfgUsername = cfgJson.get('username', '')
 				self.cfgLdapAttributePasswordExpiry = str(cfgJson.get('ldap-attribute-password-expiry', self.cfgLdapAttributePasswordExpiry))
 				tmpLdapAttributes = cfgJson.get('ldap-attributes', self.cfgLdapAttributes)
@@ -350,6 +370,8 @@ class LapsCli():
 				json.dump({
 					'server': self.cfgServer,
 					'domain': self.cfgDomain,
+					'cred-cache-file': self.cfgCredCacheFile,
+					'client-keytab-file': self.cfgClientKeytabFile,
 					'username': self.cfgUsername,
 					'ldap-attribute-password-expiry': self.cfgLdapAttributePasswordExpiry,
 					'ldap-attributes': self.cfgLdapAttributes
@@ -366,6 +388,10 @@ def main():
 	args = parser.parse_args()
 
 	cli = LapsCli(not args.no_kerberos)
+
+	cli.LoadSettings()
+	if args.no_kerberos is None:
+		cli.initKerberos()
 
 	if(args.version):
 		return
