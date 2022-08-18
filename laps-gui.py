@@ -283,7 +283,7 @@ class LapsMainWindow(QMainWindow):
 
 		# Window Settings
 		self.setMinimumSize(480, 300)
-		self.setWindowTitle(self.PRODUCT_NAME+' v'+self.PRODUCT_VERSION)
+		self.setWindowTitle(self.PRODUCT_NAME)
 		self.statusBar.showMessage('Settings file: '+self.cfgPath)
 
 		# Handle Parameter - Automatic Search
@@ -417,6 +417,7 @@ class LapsMainWindow(QMainWindow):
 			)
 			for entry in self.connection.entries:
 				self.statusBar.showMessage('Found: '+str(entry['distinguishedName'])+' ('+str(self.connection.server)+')')
+				self.setWindowTitle(str(entry['SAMAccountname'])+' - '+self.PRODUCT_NAME)
 				self.tmpDn = str(entry['distinguishedName'])
 				self.queryAttributes()
 				return
