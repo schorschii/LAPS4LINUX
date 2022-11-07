@@ -32,7 +32,7 @@ NOTEBOOK02$ : 123abc
 ![screenshot](.github/screenshot.png)
 
 ### Kerberos Authentication
-The client (both GUI and CLI) supports Kerberos authentication which means that you can use the client without entering a password if you are logged in with a domain account and have a valid Kerberos ticket. If not, ldap3's "simple" authentication is used as fallback and the client will ask you for username and password.
+The client (both GUI and CLI) supports Kerberos authentication which means that you can use the client without entering a password if you are logged in with a domain account and have a valid Kerberos ticket (for this, an SSL connection is required). If not, ldap3's "simple" authentication is used as fallback and the client will ask you for username and password.
 
 ### SSL Connection
 It is highly recommended to turn on SSL in the config file (`~/.config/laps-client/settings.json`) if your LDAP server has a valid certificate (set `ssl` to `true` and `port` to `636`). You can also configure multiple LDAP server in the config file.

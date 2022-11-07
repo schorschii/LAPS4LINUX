@@ -94,7 +94,7 @@ class LapsRunner():
 		serverArray = []
 		if(len(self.cfgServer) == 0):
 			# query domain controllers by dns lookup
-			res = resolver.query(qname=f"_ldap._tcp.{self.cfgDomain}", rdtype=rdatatype.SRV, lifetime=10)
+			res = resolver.query(qname=f'_ldap._tcp.{self.cfgDomain}', rdtype=rdatatype.SRV, lifetime=10)
 			for srv in res.rrset:
 				serverArray.append(ldap3.Server(host=str(srv.target), port=636, use_ssl=True, get_info=ldap3.ALL))
 		else:
@@ -178,10 +178,10 @@ class LapsRunner():
 		return ''.join(secrets.choice(self.cfgAlphabet) for i in range(self.cfgLength))
 
 	def createLdapBase(self, domain):
-		search_base = ""
-		base = domain.split(".")
+		search_base = ''
+		base = domain.split('.')
 		for b in base:
-			search_base += "DC=" + b + ","
+			search_base += 'DC=' + b + ','
 		return search_base[:-1]
 
 	def LoadSettings(self):

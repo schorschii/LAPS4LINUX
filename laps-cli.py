@@ -179,16 +179,16 @@ class LapsCli():
 
 	def checkCredentialsAndConnect(self):
 		# ask for server address and domain name if not already set via config file
-		if self.cfgDomain == "":
+		if self.cfgDomain == '':
 			item = input('♕ Domain Name (e.g. example.com): ')
-			if item and item.strip() != "":
+			if item and item.strip() != '':
 				self.cfgDomain = item
 				self.server = None
 			else: return False
 		if len(self.cfgServer) == 0:
 			# query domain controllers by dns lookup
 			try:
-				res = resolver.query(qname=f"_ldap._tcp.{self.cfgDomain}", rdtype=rdatatype.SRV, lifetime=10)
+				res = resolver.query(qname=f'_ldap._tcp.{self.cfgDomain}', rdtype=rdatatype.SRV, lifetime=10)
 				for srv in res.rrset:
 					serverEntry = {
 						'address': str(srv.target),
@@ -201,7 +201,7 @@ class LapsCli():
 			# ask user to enter server names if auto discovery was not successful
 			if len(self.cfgServer) == 0:
 				item = input('💻 LDAP Server Address: ')
-				if item and item.strip() != "":
+				if item and item.strip() != '':
 					self.cfgServer.append({
 						'address': item,
 						'port': 389,
@@ -241,15 +241,15 @@ class LapsCli():
 			print('Unable to connect via Kerberos: '+str(e))
 
 		# ask for username and password for NTLM bind
-		if self.cfgUsername == "":
+		if self.cfgUsername == '':
 			item = input('👤 Username ['+getpass.getuser()+']: ') or getpass.getuser()
-			if item and item.strip() != "":
+			if item and item.strip() != '':
 				self.cfgUsername = item
 				self.connection = None
 			else: return False
-		if self.cfgPassword == "":
+		if self.cfgPassword == '':
 			item = getpass.getpass('🔑 Password for »'+self.cfgUsername+'«: ')
-			if item and item.strip() != "":
+			if item and item.strip() != '':
 				self.cfgPassword = item
 				self.connection = None
 			else: return False
@@ -313,10 +313,10 @@ class LapsCli():
 
 	def createLdapBase(self, domain):
 		# convert FQDN "example.com" to LDAP path notation "DC=example,DC=com"
-		search_base = ""
-		base = domain.split(".")
+		search_base = ''
+		base = domain.split('.')
 		for b in base:
-			search_base += "DC=" + b + ","
+			search_base += 'DC=' + b + ','
 		return search_base[:-1]
 
 	def LoadSettings(self):

@@ -38,24 +38,24 @@ class LapsAboutWindow(QDialog):
 		self.layout = QVBoxLayout(self)
 
 		labelAppName = QLabel(self)
-		labelAppName.setText(self.parentWidget().PRODUCT_NAME + " v" + self.parentWidget().PRODUCT_VERSION)
-		labelAppName.setStyleSheet("font-weight:bold")
+		labelAppName.setText(self.parentWidget().PRODUCT_NAME + ' v' + self.parentWidget().PRODUCT_VERSION)
+		labelAppName.setStyleSheet('font-weight:bold')
 		labelAppName.setAlignment(Qt.AlignCenter)
 		self.layout.addWidget(labelAppName)
 
 		labelCopyright = QLabel(self)
 		labelCopyright.setText(
-			"<br>"
-			"© 2021-2022 <a href='https://georg-sieber.de'>Georg Sieber</a>"
-			"<br>"
-			"<br>"
-			"GNU General Public License v3.0"
-			"<br>"
-			"<a href='"+self.parentWidget().PRODUCT_WEBSITE+"'>"+self.parentWidget().PRODUCT_WEBSITE+"</a>"
-			"<br>"
-			"<br>"
-			"If you like LAPS4LINUX please consider<br>making a donation to support further development."
-			"<br>"
+			'<br>'
+			'© 2021-2022 <a href="https://georg-sieber.de">Georg Sieber</a>'
+			'<br>'
+			'<br>'
+			'GNU General Public License v3.0'
+			'<br>'
+			'<a href="'+self.parentWidget().PRODUCT_WEBSITE+'">'+self.parentWidget().PRODUCT_WEBSITE+'</a>'
+			'<br>'
+			'<br>'
+			'If you like LAPS4LINUX please consider<br>making a donation to support further development.'
+			'<br>'
 		)
 		labelCopyright.setOpenExternalLinks(True)
 		labelCopyright.setAlignment(Qt.AlignCenter)
@@ -63,11 +63,13 @@ class LapsAboutWindow(QDialog):
 
 		labelDescription = QLabel(self)
 		labelDescription.setText(
-			"""LAPS4LINUX client allows you to query local administrator passwords for LAPS runner managed workstations in your domain from your LDAP (Active Directory) server.\n\n"""
-			"""The LAPS runner periodically sets a new administrator password and saves it into the LDAP directory.\n\n"""
-			"""LAPS was originally developed by Microsoft, this is an inofficial Linux/Unix implementation with some enhancements (e.g. the CLI/GUI client can display additional attributes)."""
+			'LAPS4LINUX client allows you to query local administrator passwords for LAPS runner managed workstations in your domain from your LDAP (Active Directory) server.'
+			'\n\n'
+			'The LAPS runner periodically sets a new administrator password and saves it into the LDAP directory.'
+			'\n\n'
+			'LAPS was originally developed by Microsoft, this is an inofficial Linux/Unix implementation with some enhancements (e.g. the CLI/GUI client can display additional attributes).'
 		)
-		labelDescription.setStyleSheet("opacity:0.8")
+		labelDescription.setStyleSheet('opacity:0.8')
 		labelDescription.setFixedWidth(450)
 		labelDescription.setWordWrap(True)
 		self.layout.addWidget(labelDescription)
@@ -75,7 +77,7 @@ class LapsAboutWindow(QDialog):
 		self.layout.addWidget(self.buttonBox)
 
 		self.setLayout(self.layout)
-		self.setWindowTitle("About")
+		self.setWindowTitle('About')
 
 class LapsCalendarWindow(QDialog):
 	def __init__(self, *args, **kwargs):
@@ -95,7 +97,7 @@ class LapsCalendarWindow(QDialog):
 		self.layout.addWidget(self.buttonBox)
 
 		self.setLayout(self.layout)
-		self.setWindowTitle("Set New Expiration Date")
+		self.setWindowTitle('Set New Expiration Date')
 
 	def OnClickAccept(self):
 		parentWidget = self.parentWidget()
@@ -120,7 +122,10 @@ class LapsCalendarWindow(QDialog):
 				parentWidget.OnClickSearch(None)
 				self.close()
 			else:
-				parentWidget.showErrorDialog('Error', 'Unable to change expiration date to '+str(newExpirationDateTime)+'.'+"\n\n"+str(parentWidget.connection.result['message']), parentWidget.tmpDn+' ('+str(parentWidget.connection.server)+')')
+				parentWidget.showErrorDialog('Error',
+					'Unable to change expiration date to '+str(newExpirationDateTime)+'.'
+					+'\n\n'+str(parentWidget.connection.result['message']), parentWidget.tmpDn+' ('+str(parentWidget.connection.server)+')'
+				)
 
 		except Exception as e:
 			# display error
@@ -365,28 +370,28 @@ class LapsMainWindow(QMainWindow):
 			if(protocol == 'RDP'):
 				with open(os.open(self.cfgPathRemmina, os.O_CREAT | os.O_WRONLY, 0o400), 'w') as f:
 					f.write(
-						"[remmina]\n"+
-						"name="+self.txtSearchComputer.text()+"\n"+
-						"server="+self.txtSearchComputer.text()+"\n"+
-						"username=administrator\n"+
-						"password="+password+"\n"
-						"protocol=RDP\n"+
-						"scale=2\n"+
-						"window_width=1092\n"+
-						"window_height=720\n"+
-						"colordepth=0\n"
+						'[remmina]\n'+
+						'name='+self.txtSearchComputer.text()+'\n'+
+						'server='+self.txtSearchComputer.text()+'\n'+
+						'username=administrator\n'+
+						'password='+password+'\n'
+						'protocol=RDP\n'+
+						'scale=2\n'+
+						'window_width=1092\n'+
+						'window_height=720\n'+
+						'colordepth=0\n'
 					)
 					f.close()
 				time.sleep(0.2)
 			elif(protocol == 'SSH'):
 				with open(os.open(self.cfgPathRemmina, os.O_CREAT | os.O_WRONLY, 0o400), 'w') as f:
 					f.write(
-						"[remmina]\n"+
-						"name="+self.txtSearchComputer.text()+"\n"+
-						"server="+self.txtSearchComputer.text()+"\n"+
-						"username=administrator\n"+
-						"password="+password+"\n"
-						"protocol=SSH\n"
+						'[remmina]\n'+
+						'name='+self.txtSearchComputer.text()+'\n'+
+						'server='+self.txtSearchComputer.text()+'\n'+
+						'username=administrator\n'+
+						'password='+password+'\n'
+						'protocol=SSH\n'
 					)
 					f.close()
 				time.sleep(0.2)
@@ -399,7 +404,7 @@ class LapsMainWindow(QMainWindow):
 	def OnClickSearch(self, e):
 		# check and escape input
 		computerName = self.txtSearchComputer.text()
-		if computerName.strip() == "": return
+		if computerName.strip() == '': return
 		computerName = ldap3.utils.conv.escape_filter_chars(computerName)
 
 		# ask for credentials
@@ -480,7 +485,7 @@ class LapsMainWindow(QMainWindow):
 
 	def checkCredentialsAndConnect(self):
 		# ask for server address and domain name if not already set via config file
-		if self.cfgDomain == "":
+		if self.cfgDomain == '':
 			item, ok = QInputDialog.getText(self, '♕ Domain', 'Please enter your Domain name (e.g. example.com).')
 			if ok and item:
 				self.cfgDomain = item
@@ -489,7 +494,7 @@ class LapsMainWindow(QMainWindow):
 		if len(self.cfgServer) == 0:
 			# query domain controllers by dns lookup
 			try:
-				res = resolver.query(qname=f"_ldap._tcp.{self.cfgDomain}", rdtype=rdatatype.SRV, lifetime=10)
+				res = resolver.query(qname=f'_ldap._tcp.{self.cfgDomain}', rdtype=rdatatype.SRV, lifetime=10)
 				for srv in res.rrset:
 					serverEntry = {
 						'address': str(srv.target),
@@ -545,13 +550,13 @@ class LapsMainWindow(QMainWindow):
 		sslHint = ''
 		if len(self.cfgServer) > 0 and self.cfgServer[0]['ssl'] == False:
 			sslHint = '\n\nPlease consider enabling SSL in the config file (~/.config/laps-client/settings.json).'
-		if self.cfgUsername == "":
+		if self.cfgUsername == '':
 			item, ok = QInputDialog.getText(self, '👤 Username', 'Please enter the username which should be used to connect to:\n'+str(self.cfgServer), QLineEdit.Normal, getpass.getuser())
 			if ok and item:
 				self.cfgUsername = item
 				self.connection = None
 			else: return False
-		if self.cfgPassword == "":
+		if self.cfgPassword == '':
 			item, ok = QInputDialog.getText(self, '🔑 Password for »'+self.cfgUsername+'«', 'Please enter the password which should be used to connect to:\n'+str(self.cfgServer)+sslHint, QLineEdit.Password)
 			if ok and item:
 				self.cfgPassword = item
@@ -616,10 +621,10 @@ class LapsMainWindow(QMainWindow):
 
 	def createLdapBase(self, domain):
 		# convert FQDN "example.com" to LDAP path notation "DC=example,DC=com"
-		search_base = ""
-		base = domain.split(".")
+		search_base = ''
+		base = domain.split('.')
 		for b in base:
-			search_base += "DC=" + b + ","
+			search_base += 'DC=' + b + ','
 		return search_base[:-1]
 
 	def LoadSettings(self):
