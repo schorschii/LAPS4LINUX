@@ -220,7 +220,7 @@ class LapsCli():
 						port = server['gc-port']
 						self.gcModeOn = True
 					serverArray.append(ldap3.Server(server['address'], port=port, use_ssl=server['ssl'], get_info=ldap3.ALL))
-				self.server = ldap3.ServerPool(serverArray, ldap3.ROUND_ROBIN, active=True, exhaust=True)
+				self.server = ldap3.ServerPool(serverArray, ldap3.FIRST, active=True, exhaust=True)
 			except Exception as e:
 				print('Error connecting to LDAP server: ', str(e))
 				return False
@@ -284,7 +284,7 @@ class LapsCli():
 		serverArray = []
 		for server in self.cfgServer:
 			serverArray.append(ldap3.Server(server['address'], port=server['port'], use_ssl=server['ssl'], get_info=ldap3.ALL))
-		server = ldap3.ServerPool(serverArray, ldap3.ROUND_ROBIN, active=True, exhaust=True)
+		server = ldap3.ServerPool(serverArray, ldap3.FIRST, active=True, exhaust=True)
 		# try to bind to server via Kerberos
 		try:
 			if(self.useKerberos):
