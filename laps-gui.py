@@ -494,7 +494,7 @@ class LapsMainWindow(QMainWindow):
 		if len(self.cfgServer) == 0:
 			# query domain controllers by dns lookup
 			try:
-				res = resolver.query(qname=f'_ldap._tcp.{self.cfgDomain}', rdtype=rdatatype.SRV, lifetime=10)
+				res = resolver.resolve(qname=f'_ldap._tcp.{self.cfgDomain}', rdtype=rdatatype.SRV, lifetime=10)
 				for srv in res.rrset:
 					serverEntry = {
 						'address': str(srv.target),
