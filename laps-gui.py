@@ -46,7 +46,7 @@ class LapsAboutWindow(QDialog):
 		labelCopyright = QLabel(self)
 		labelCopyright.setText(
 			'<br>'
-			'© 2021-2022 <a href="https://georg-sieber.de">Georg Sieber</a>'
+			'© 2021-2023 <a href="https://georg-sieber.de">Georg Sieber</a>'
 			'<br>'
 			'<br>'
 			'GNU General Public License v3.0'

@@ -358,7 +358,7 @@ class LapsCli():
 			print('Error saving settings file: '+str(e))
 
 def main():
-	parser = argparse.ArgumentParser(epilog='© 2021-2022 Georg Sieber - https://georg-sieber.de')
+	parser = argparse.ArgumentParser(epilog='© 2021-2023 Georg Sieber - https://georg-sieber.de')
 	parser.add_argument('search', default=None, nargs='*', metavar='COMPUTERNAME', help='Search for this computer(s) and display the admin password. Use "*" to display all computer passwords found in LDAP directory. If you omit this parameter, the interactive shell will be started, which allows you to do multiple queries in one session.')
 	parser.add_argument('-e', '--set-expiry', default=None, metavar='"2020-01-01 00:00:00"', help='Set new expiration date for computer found by search string.')
 	parser.add_argument('-K', '--no-kerberos', action='store_true', help='Do not use Kerberos authentication if available, ask for LDAP simple bind credentials.')
