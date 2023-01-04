@@ -172,7 +172,7 @@ class LapsRunner():
 		if self.connection.result['result'] == 0:
 			print('Password and expiration date changed successfully in LDAP directory (new expiration '+str(newExpirationDate)+').')
 		else:
-			raise Exception('Could not update password in LDAP directory.')
+			raise Exception('Could not update password in LDAP directory: '+str(self.connection.result))
 
 	def generatePassword(self):
 		return ''.join(secrets.choice(self.cfgAlphabet) for i in range(self.cfgLength))
