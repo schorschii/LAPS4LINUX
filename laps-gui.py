@@ -486,15 +486,15 @@ class LapsMainWindow(QMainWindow):
 	def checkCredentialsAndConnect(self):
 		# ask for server address and domain name if not already set via config file
 		if self.cfgDomain == '':
-			item, ok = QInputDialog.getText(self, '♕ Domain', 'Please enter your Domain name (e.g. example.com).')
+			item, ok = QInputDialog.getText(self, '♕ Domain', 'Please enter your Domain name (e.g. example.com, leave empty to try auto discovery).')
 			if ok and item:
 				self.cfgDomain = item
 				self.server = None
-			else: return False
 		if len(self.cfgServer) == 0:
 			# query domain controllers by dns lookup
+			searchDomain = '.'+self.cfgDomain if self.cfgDomain!='' else ''
 			try:
-				res = resolver.resolve(qname=f'_ldap._tcp.{self.cfgDomain}', rdtype=rdatatype.SRV, lifetime=10)
+				res = resolver.resolve(qname=f'_ldap._tcp{searchDomain}', rdtype=rdatatype.SRV, lifetime=10, search=True)
 				for srv in res.rrset:
 					serverEntry = {
 						'address': str(srv.target),

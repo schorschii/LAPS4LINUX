@@ -94,7 +94,7 @@ class LapsRunner():
 		serverArray = []
 		if(len(self.cfgServer) == 0):
 			# query domain controllers by dns lookup
-			res = resolver.resolve(qname=f'_ldap._tcp.{self.cfgDomain}', rdtype=rdatatype.SRV, lifetime=10)
+			res = resolver.resolve(qname=f'_ldap._tcp.{self.cfgDomain}', rdtype=rdatatype.SRV, lifetime=10, search=True)
 			for srv in res.rrset:
 				serverArray.append(ldap3.Server(host=str(srv.target), port=636, use_ssl=True, get_info=ldap3.ALL))
 		else:
