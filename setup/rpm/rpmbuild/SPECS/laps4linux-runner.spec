@@ -46,5 +46,9 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Wed Jan 04 2023 schorschii
+- Renamed packages to laps4linux-client and laps4linux-runner
+- Adjusted dependencies for CentOS 9
+
 * Thu Jan 13 2022 novaksam
 - Initial build
