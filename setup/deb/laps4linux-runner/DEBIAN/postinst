@@ -1,0 +1,10 @@
+#!/bin/bash
+
+# Exit on error
+set -e
+
+# Source debconf library.
+#. /usr/share/debconf/confmodule
+
+# we need the newest version from pyPI
+sudo -H pip3 install ldap3

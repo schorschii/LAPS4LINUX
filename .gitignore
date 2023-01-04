@@ -1,0 +1,12 @@
+.DS_Store
+
+__pycache__/
+
+build/
+dist/
+
+setup/windows/*.exe
+setup/macos/target/*
+setup/deb/*.deb
+setup/deb/laps4linux-*/*
+!setup/deb/laps4linux-*/DEBIAN/

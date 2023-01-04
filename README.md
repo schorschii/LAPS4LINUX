@@ -72,6 +72,36 @@ On Linux, the GUI allows you to directly open RDP or SSH connections via Remmina
 ### `laps://` Protocol Scheme
 The GUI supports the protocol scheme `laps://`, which means you can call the GUI like `laps-gui.py laps://HOSTNAME` to automatically search `HOSTNAME` after startup. This feature is mainly intended to use with the [OCO server](https://github.com/schorschii/OCO-Server) web frontend ("[COMPUTER_COMMANDS](https://github.com/schorschii/OCO-Server/blob/master/docs/Computers.md#client-commands)").
 
+On Linux, you need to create file `/usr/share/applications/LAPS4LINUX-protocol-handler.desktop` with the following content and execute `update-desktop-database`.
+```
+[Desktop Entry]
+Type=Application
+Name=LAPS4LINUX Protocol Handler
+Exec=/usr/bin/laps-gui %u
+StartupNotify=false
+MimeType=x-scheme-handler/laps;
+NoDisplay=true
+```
+
+On Windows, you need to set the following registry values:
+```
+Windows Registry Editor Version 5.00
+
+[HKEY_CLASSES_ROOT\laps]
+@="URL:LAPS"
+"URL Protocol"=""
+
+[HKEY_CLASSES_ROOT\laps\shell]
+
+[HKEY_CLASSES_ROOT\laps\shell\open]
+
+[HKEY_CLASSES_ROOT\laps\shell\open\command]
+@="\"C:\\Program Files\\LAPS4WINDOWS\\laps-gui.exe\" %1"
+```
+
+On macOS, the protocol handler is registered using the Info.plist file (setting "CFBundleURLTypes") in the .app directory.
+Please use laps-gui.macos.spec with pyinstaller to automatically create an .app directory which registers itself for the laps:// protocol on first launch.
+
 ### Windows and macOS
 The GUI is also executable under Windows and macOS. It's ported to Windows because of the additional features that the original LAPS GUI did not have (query custom attributes, OCO integration).
 

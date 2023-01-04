@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=LAPS4LINUX
+Exec=/usr/bin/laps-gui %u
+Terminal=false
+MimeType=x-scheme-handler/laps;
+Icon=/usr/share/pixmaps/laps.png
+Categories=Application;Utility
+Comment=Linux implementation of the Local Administrator Password Solution (LAPS) GUI from Microsoft.
+
+# execute `update-desktop-database` after copying into /usr/share/applications

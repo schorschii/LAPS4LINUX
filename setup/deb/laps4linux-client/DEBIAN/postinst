@@ -1,0 +1,13 @@
+#!/bin/bash
+
+# Exit on error
+set -e
+
+# Source debconf library.
+#. /usr/share/debconf/confmodule
+
+# register protocol scheme handler
+update-desktop-database
+
+# we need the newest version from pyPI
+sudo -H pip3 install ldap3

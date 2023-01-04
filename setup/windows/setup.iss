@@ -18,17 +18,20 @@ AppPublisher={#MyAppPublisher}
 AppPublisherURL={#MyAppURL}
 AppSupportURL={#MyAppURL}
 AppUpdatesURL={#MyAppURL}
+WizardSmallImageFile="installer-top-img.bmp"
+UninstallDisplayName={#MyAppName}
+UninstallDisplayIcon="{#MyAppDir}\oco-agent.exe,0"
 DefaultDirName=C:\Program Files\{#MyAppName}
 DisableDirPage=yes
 DisableProgramGroupPage=yes
 ; Uncomment the following line to run in non administrative install mode (install for current user only.)
 ;PrivilegesRequired=lowest
-OutputDir=C:\Users\vm2\Desktop\laps4linux\setup
+OutputDir=.
 OutputBaseFilename=laps4windows-client
 Compression=lzma
 SolidCompression=yes
 WizardStyle=modern
-SetupIconFile=C:\Users\vm2\Desktop\laps4linux\setup\setup2.ico
+SetupIconFile=..\..\assets\setup.ico
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
@@ -45,8 +48,8 @@ Root: HKCR; Subkey: "laps\shell\open"; Flags: uninsdeletekey
 Root: HKCR; Subkey: "laps\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """C:\Program Files\LAPS4WINDOWS\laps-gui.exe"" %1"
 
 [Files]
-Source: "C:\Users\vm2\Desktop\laps4linux\dist\laps-gui\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
-Source: "C:\Users\vm2\Desktop\laps4linux\dist\laps-gui\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "..\..\dist\LAPS4WINDOWS\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\..\dist\LAPS4WINDOWS\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
 [Icons]
@@ -55,4 +58,3 @@ Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: de
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
-
