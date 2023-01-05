@@ -1,5 +1,6 @@
 {
-    "server": [
+    "COMMENT": "If you want to use static servers, please remove the '-EXAMPLE' from the following setting items and enter your custom values. Otherwise, laps-runner will try to auto discover the settings via DNS.",
+    "server-EXAMPLE": [
         {
             "address": "dc1.example.com",
             "port": 389,
@@ -17,11 +18,15 @@
         }
     ],
     "domain": "example.com",
+
     "cred-cache-file": "/tmp/laps.temp",
     "client-keytab-file": "/etc/krb5.keytab",
+
     "ldap-attribute-password": "ms-Mcs-AdmPwd",
     "ldap-attribute-password-expiry": "ms-Mcs-AdmPwdExpirationTime",
+
     "hostname": null,
+
     "password-change-user": "root",
     "password-days-valid": 30,
     "password-length": 15,
