@@ -6,6 +6,7 @@ from os import path
 from crypt import crypt
 from datetime import datetime, timedelta
 from dns import resolver, rdatatype
+import ssl
 import ldap3
 import subprocess
 import secrets
@@ -90,19 +91,28 @@ class LapsRunner():
 		os.environ['KRB5CCNAME'] = self.cfgCredCacheFile
 		os.environ['KRB5_CLIENT_KTNAME'] = self.cfgClientKeytabFile
 
+		# set TLS options
+		tlssettings = ldap3.Tls(
+			ca_certs_path={self.ca_certs_path},
+			validate=ssl.CERT_REQUIRED,
+			version=ssl.PROTOCOL_TLSv1_2
+		)
+
 		# connect to server with kerberos ticket
 		serverArray = []
 		if(len(self.cfgServer) == 0):
 			# query domain controllers by dns lookup
 			res = resolver.resolve(qname=f'_ldap._tcp.{self.cfgDomain}', rdtype=rdatatype.SRV, lifetime=10, search=True)
+
 			for srv in res.rrset:
-				serverArray.append(ldap3.Server(host=str(srv.target), port=636, use_ssl=True, get_info=ldap3.ALL))
+				serverArray.append(ldap3.Server(host=str(srv.target), port=389, use_ssl=True, tls=tlssettings, get_info=ldap3.ALL))
 		else:
 			# use servers given in config file
 			for server in self.cfgServer:
 				serverArray.append(ldap3.Server(server['address'], port=server['port'], use_ssl=server['ssl'], get_info=ldap3.ALL))
 		self.server = ldap3.ServerPool(serverArray, ldap3.ROUND_ROBIN, active=True, exhaust=True)
 		self.connection = ldap3.Connection(self.server, authentication=ldap3.SASL, sasl_mechanism=ldap3.KERBEROS, auto_bind=True)
+		self.connection.start_tls()
 		print('Connected as: '+str(self.connection.server)+' '+self.connection.extend.standard.who_am_i()+'@'+self.cfgDomain)
 
 	def searchComputer(self):
