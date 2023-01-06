@@ -46,6 +46,9 @@ class LapsRunner():
 	cfgServer           = []
 	cfgDomain           = ''
 
+	cfgCACertsPath      = '/etc/ssl/certs'
+	cfgStartTLS         = True
+
 	cfgHostname         = None
 	cfgUsername         = 'root' # the user, whose password should be changed
 	cfgDaysValid        = 30 # how long the new password should be valid
@@ -93,7 +96,7 @@ class LapsRunner():
 
 		# set TLS options
 		tlssettings = ldap3.Tls(
-			ca_certs_path={self.ca_certs_path},
+			ca_certs_path=self.cfgCACertsPath,
 			validate=ssl.CERT_REQUIRED,
 			version=ssl.PROTOCOL_TLSv1_2
 		)
@@ -112,7 +115,8 @@ class LapsRunner():
 				serverArray.append(ldap3.Server(server['address'], port=server['port'], use_ssl=server['ssl'], get_info=ldap3.ALL))
 		self.server = ldap3.ServerPool(serverArray, ldap3.ROUND_ROBIN, active=True, exhaust=True)
 		self.connection = ldap3.Connection(self.server, authentication=ldap3.SASL, sasl_mechanism=ldap3.KERBEROS, auto_bind=True)
-		self.connection.start_tls()
+		if (self.cfgStartTLS):
+			self.connection.start_tls()
 		print('Connected as: '+str(self.connection.server)+' '+self.connection.extend.standard.who_am_i()+'@'+self.cfgDomain)
 
 	def searchComputer(self):
