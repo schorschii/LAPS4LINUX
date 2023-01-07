@@ -109,7 +109,7 @@ class LapsRunner():
 					# strip the trailing . from the dns resolver for certificate verification reasons.
 					serverArray.append(ldap3.Server(host=str(srv.target).rstrip('.'), port=389, tls=tlssettings, get_info=ldap3.ALL))
 				else:
-					serverArray.append(ldap3.Server(host=str(srv.target).rstrip('.'), port=636, tls=tlssettings, get_info=ldap3.ALL))
+					serverArray.append(ldap3.Server(host=str(srv.target).rstrip('.'), port=636, use_ssl=True, tls=tlssettings, get_info=ldap3.ALL))
 		else:
 			# use servers given in config file
 			for server in self.cfgServer:
