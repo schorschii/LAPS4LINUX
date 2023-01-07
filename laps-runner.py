@@ -105,8 +105,11 @@ class LapsRunner():
 			res = resolver.resolve(qname=f'_ldap._tcp.{self.cfgDomain}', rdtype=rdatatype.SRV, lifetime=10, search=True)
 
 			for srv in res.rrset:
-				# strip the trailing . from the dns resolver for certificate verification reasons.
-				serverArray.append(ldap3.Server(host=str(srv.target).rstrip('.'), port=389, tls=tlssettings, get_info=ldap3.ALL))
+				if (self.cfgStartTLS):
+					# strip the trailing . from the dns resolver for certificate verification reasons.
+					serverArray.append(ldap3.Server(host=str(srv.target).rstrip('.'), port=389, tls=tlssettings, get_info=ldap3.ALL))
+				else:
+					serverArray.append(ldap3.Server(host=str(srv.target).rstrip('.'), port=636, tls=tlssettings, get_info=ldap3.ALL))
 		else:
 			# use servers given in config file
 			for server in self.cfgServer:
