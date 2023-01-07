@@ -46,14 +46,13 @@ class LapsRunner():
 	cfgServer           = []
 	cfgDomain           = ''
 
-	cfgCACertsPath      = '/etc/ssl/certs'
 	cfgStartTLS         = True
 
 	cfgHostname         = None
 	cfgUsername         = 'root' # the user, whose password should be changed
 	cfgDaysValid        = 30 # how long the new password should be valid
 	cfgLength           = 15 # the generated password length
-	cfgAlphabet         = string.ascii_letters+string.digits # allowed chars for the new password
+	cfgAlphabet         = string.ascii_letters+string.digits+string.punctuation # allowed chars for the new password
 
 	cfgLdapAttributePassword       = 'ms-Mcs-AdmPwd'
 	cfgLdapAttributePasswordExpiry = 'ms-Mcs-AdmPwdExpirationTime'
@@ -79,7 +78,7 @@ class LapsRunner():
 
 	def getHostname(self):
 		if(self.cfgHostname == None or self.cfgHostname.strip() == ''):
-			return socket.gethostname().upper()
+			return socket.gethostname().split('.', 1)[0].upper()
 		else:
 			return self.cfgHostname.strip().upper()
 
@@ -96,7 +95,6 @@ class LapsRunner():
 
 		# set TLS options
 		tlssettings = ldap3.Tls(
-			ca_certs_path=self.cfgCACertsPath,
 			validate=ssl.CERT_REQUIRED,
 			version=ssl.PROTOCOL_TLSv1_2
 		)
@@ -108,15 +106,18 @@ class LapsRunner():
 			res = resolver.resolve(qname=f'_ldap._tcp.{self.cfgDomain}', rdtype=rdatatype.SRV, lifetime=10, search=True)
 
 			for srv in res.rrset:
-				serverArray.append(ldap3.Server(host=str(srv.target), port=389, use_ssl=True, tls=tlssettings, get_info=ldap3.ALL))
+				# strip the trailing . from the dns resolver for certificate verification reasons.
+				serverArray.append(ldap3.Server(host=str(srv.target).rstrip('.'), port=389, tls=tlssettings, get_info=ldap3.ALL))
 		else:
 			# use servers given in config file
 			for server in self.cfgServer:
 				serverArray.append(ldap3.Server(server['address'], port=server['port'], use_ssl=server['ssl'], get_info=ldap3.ALL))
 		self.server = ldap3.ServerPool(serverArray, ldap3.ROUND_ROBIN, active=True, exhaust=True)
-		self.connection = ldap3.Connection(self.server, authentication=ldap3.SASL, sasl_mechanism=ldap3.KERBEROS, auto_bind=True)
 		if (self.cfgStartTLS):
+			self.connection = ldap3.Connection(self.server, version=3, authentication=ldap3.SASL, sasl_mechanism=ldap3.GSSAPI, auto_bind=ldap3.AUTO_BIND_TLS_BEFORE_BIND)
 			self.connection.start_tls()
+		else:
+			self.connection = ldap3.Connection(self.server, version=3, authentication=ldap3.SASL, sasl_mechanism=ldap3.KERBEROS, auto_bind=True)
 		print('Connected as: '+str(self.connection.server)+' '+self.connection.extend.standard.who_am_i()+'@'+self.cfgDomain)
 
 	def searchComputer(self):
@@ -255,3 +256,4 @@ def main():
 
 if __name__ == '__main__':
 	main()
+
