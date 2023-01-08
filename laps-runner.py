@@ -35,6 +35,8 @@ class LapsRunner():
 	PRODUCT_VERSION   = '1.5.2'
 	PRODUCT_WEBSITE   = 'https://github.com/schorschii/laps4linux'
 
+	useStartTls       = True
+
 	server     = None
 	connection = None
 	logger     = None
@@ -45,8 +47,6 @@ class LapsRunner():
 	cfgClientKeytabFile = '/etc/krb5.keytab'
 	cfgServer           = []
 	cfgDomain           = ''
-
-	cfgStartTLS         = True
 
 	cfgHostname         = None
 	cfgUsername         = 'root' # the user, whose password should be changed
@@ -105,7 +105,7 @@ class LapsRunner():
 			res = resolver.resolve(qname=f'_ldap._tcp.{self.cfgDomain}', rdtype=rdatatype.SRV, lifetime=10, search=True)
 
 			for srv in res.rrset:
-				if (self.cfgStartTLS):
+				if(self.useStartTls):
 					# strip the trailing . from the dns resolver for certificate verification reasons.
 					serverArray.append(ldap3.Server(host=str(srv.target).rstrip('.'), port=389, tls=tlssettings, get_info=ldap3.ALL))
 				else:
@@ -115,7 +115,7 @@ class LapsRunner():
 			for server in self.cfgServer:
 				serverArray.append(ldap3.Server(server['address'], port=server['port'], use_ssl=server['ssl'], get_info=ldap3.ALL))
 		self.server = ldap3.ServerPool(serverArray, ldap3.ROUND_ROBIN, active=True, exhaust=True)
-		if (self.cfgStartTLS):
+		if(self.useStartTls):
 			self.connection = ldap3.Connection(self.server, version=3, authentication=ldap3.SASL, sasl_mechanism=ldap3.GSSAPI, auto_bind=ldap3.AUTO_BIND_TLS_BEFORE_BIND)
 			self.connection.start_tls()
 		else:
