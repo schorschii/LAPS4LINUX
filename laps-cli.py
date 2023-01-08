@@ -6,6 +6,7 @@ from os import path, makedirs, rename
 from datetime import datetime
 from dns import resolver, rdatatype
 import ldap3
+import ssl
 import getpass
 import argparse
 import json
@@ -30,10 +31,13 @@ class LapsCli():
 	PRODUCT_WEBSITE   = 'https://github.com/schorschii/laps4linux'
 
 	useKerberos = True
+	useStartTls = True
 	gcModeOn    = False
 	server      = None
 	connection  = None
 	tmpDn       = ''
+
+	tlsSettings = ldap3.Tls(validate=ssl.CERT_REQUIRED)
 
 	cfgPresetDirWindows = sys.path[0]
 	cfgPresetDirUnix    = '/etc'
@@ -191,7 +195,8 @@ class LapsCli():
 				res = resolver.resolve(qname='_ldap._tcp'+searchDomain, rdtype=rdatatype.SRV, lifetime=10, search=True)
 				for srv in res.rrset:
 					serverEntry = {
-						'address': str(srv.target),
+						# strip the trailing . from the dns resolver for certificate verification reasons.
+						'address': str(srv.target).rstrip('.'),
 						'port': srv.port,
 						'ssl': (srv.port == 636)
 					}
@@ -219,7 +224,7 @@ class LapsCli():
 					if('gc-port' in server):
 						port = server['gc-port']
 						self.gcModeOn = True
-					serverArray.append(ldap3.Server(server['address'], port=port, use_ssl=server['ssl'], get_info=ldap3.ALL))
+					serverArray.append(ldap3.Server(server['address'], port=port, use_ssl=server['ssl'], tls=self.tlsSettings, get_info=ldap3.ALL))
 				self.server = ldap3.ServerPool(serverArray, ldap3.FIRST, active=True, exhaust=True)
 			except Exception as e:
 				print('Error connecting to LDAP server: ', str(e))
@@ -233,14 +238,14 @@ class LapsCli():
 					authentication=ldap3.SASL,
 					sasl_mechanism=ldap3.GSSAPI,
 					auto_referrals=True,
-					auto_bind=True
+					auto_bind=(ldap3.AUTO_BIND_TLS_BEFORE_BIND if self.useStartTls else True)
 				)
-				#self.connection.bind()
+				if(self.useStartTls): self.connection.start_tls()
 				return True # return if connection created successfully
 		except Exception as e:
 			print('Unable to connect via Kerberos: '+str(e))
 
-		# ask for username and password for NTLM bind
+		# ask for username and password for SIMPLE bind
 		if self.cfgUsername == '':
 			item = input('👤 Username ['+getpass.getuser()+']: ') or getpass.getuser()
 			if item and item.strip() != '':
@@ -263,9 +268,9 @@ class LapsCli():
 				password=self.cfgPassword,
 				authentication=ldap3.SIMPLE,
 				auto_referrals=True,
-				auto_bind=True
+				auto_bind=(ldap3.AUTO_BIND_TLS_BEFORE_BIND if self.useStartTls else True)
 			)
-			#self.connection.bind()
+			if(self.useStartTls): self.connection.start_tls()
 			print('') # separate user input from results by newline
 		except Exception as e:
 			self.cfgUsername = ''
@@ -283,7 +288,7 @@ class LapsCli():
 		# LDAP referrals to the correct (sub)domain controller is handled automatically by ldap3
 		serverArray = []
 		for server in self.cfgServer:
-			serverArray.append(ldap3.Server(server['address'], port=server['port'], use_ssl=server['ssl'], get_info=ldap3.ALL))
+			serverArray.append(ldap3.Server(server['address'], port=server['port'], use_ssl=server['ssl'], tls=self.tlsSettings, get_info=ldap3.ALL))
 		server = ldap3.ServerPool(serverArray, ldap3.FIRST, active=True, exhaust=True)
 		# try to bind to server via Kerberos
 		try:
@@ -292,8 +297,9 @@ class LapsCli():
 					authentication=ldap3.SASL,
 					sasl_mechanism=ldap3.GSSAPI,
 					auto_referrals=True,
-					auto_bind=True
+					auto_bind=(ldap3.AUTO_BIND_TLS_BEFORE_BIND if self.useStartTls else True)
 				)
+				if(self.useStartTls): self.connection.start_tls()
 				return True
 		except Exception as e:
 			print('Unable to connect via Kerberos: '+str(e))
@@ -304,8 +310,9 @@ class LapsCli():
 				password=self.cfgPassword,
 				authentication=ldap3.SIMPLE,
 				auto_referrals=True,
-				auto_bind=True
+				auto_bind=(ldap3.AUTO_BIND_TLS_BEFORE_BIND if self.useStartTls else True)
 			)
+			if(self.useStartTls): self.connection.start_tls()
 			return True
 		except Exception as e:
 			print('Error binding to LDAP server: '+str(e))

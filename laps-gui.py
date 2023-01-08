@@ -11,6 +11,7 @@ from os import path, makedirs, rename
 from datetime import datetime
 from dns import resolver, rdatatype
 import ldap3
+import ssl
 import getpass
 import json
 import sys
@@ -147,7 +148,10 @@ class LapsMainWindow(QMainWindow):
 	PRODUCT_ICON      = 'laps.png'
 	PRODUCT_ICON_PATH = '/usr/share/pixmaps'
 
+	tlsSettings = ldap3.Tls(validate=ssl.CERT_REQUIRED)
+
 	useKerberos = True
+	useStartTls = True
 	gcModeOn    = False
 	server      = None
 	connection  = None
@@ -162,6 +166,7 @@ class LapsMainWindow(QMainWindow):
 	cfgPath        = cfgDir+'/settings.json'
 	cfgPathRemmina = cfgDir+'/laps.remmina'
 	cfgPathOld     = str(Path.home())+'/.laps-client.json'
+	cfgStartTLS    = True
 	cfgServer      = []
 	cfgDomain      = ''
 	cfgUsername    = ''
@@ -497,7 +502,8 @@ class LapsMainWindow(QMainWindow):
 				res = resolver.resolve(qname='_ldap._tcp'+searchDomain, rdtype=rdatatype.SRV, lifetime=10, search=True)
 				for srv in res.rrset:
 					serverEntry = {
-						'address': str(srv.target),
+						# strip the trailing . from the dns resolver for certificate verification reasons.
+						'address': str(srv.target).rstrip('.'),
 						'port': srv.port,
 						'ssl': (srv.port == 636)
 					}
@@ -525,7 +531,7 @@ class LapsMainWindow(QMainWindow):
 					if('gc-port' in server):
 						port = server['gc-port']
 						self.gcModeOn = True
-					serverArray.append(ldap3.Server(server['address'], port=port, use_ssl=server['ssl'], get_info=ldap3.ALL))
+					serverArray.append(ldap3.Server(server['address'], port=port, use_ssl=server['ssl'], tls=self.tlsSettings, get_info=ldap3.ALL))
 				self.server = ldap3.ServerPool(serverArray, ldap3.FIRST, active=True, exhaust=True)
 			except Exception as e:
 				self.showErrorDialog('Error connecting to LDAP server', str(e))
@@ -539,17 +545,14 @@ class LapsMainWindow(QMainWindow):
 					authentication=ldap3.SASL,
 					sasl_mechanism=ldap3.GSSAPI,
 					auto_referrals=True,
-					auto_bind=True
+					auto_bind=(ldap3.AUTO_BIND_TLS_BEFORE_BIND if self.useStartTls else True)
 				)
-				#self.connection.bind()
+				if(self.useStartTls): self.connection.start_tls()
 				return True # return if connection created successfully
 		except Exception as e:
 			print('Unable to connect via Kerberos: '+str(e))
 
-		# ask for username and password for NTLM bind
-		sslHint = ''
-		if len(self.cfgServer) > 0 and self.cfgServer[0]['ssl'] == False:
-			sslHint = '\n\nPlease consider enabling SSL in the config file (~/.config/laps-client/settings.json).'
+		# ask for username and password for SIMPLE bind
 		if self.cfgUsername == '':
 			item, ok = QInputDialog.getText(self, '👤 Username', 'Please enter the username which should be used to connect to:\n'+str(self.cfgServer), QLineEdit.Normal, getpass.getuser())
 			if ok and item:
@@ -557,7 +560,7 @@ class LapsMainWindow(QMainWindow):
 				self.connection = None
 			else: return False
 		if self.cfgPassword == '':
-			item, ok = QInputDialog.getText(self, '🔑 Password for »'+self.cfgUsername+'«', 'Please enter the password which should be used to connect to:\n'+str(self.cfgServer)+sslHint, QLineEdit.Password)
+			item, ok = QInputDialog.getText(self, '🔑 Password for »'+self.cfgUsername+'«', 'Please enter the password which should be used to connect to:\n'+str(self.cfgServer), QLineEdit.Password)
 			if ok and item:
 				self.cfgPassword = item
 				self.connection = None
@@ -572,9 +575,9 @@ class LapsMainWindow(QMainWindow):
 				password=self.cfgPassword,
 				authentication=ldap3.SIMPLE,
 				auto_referrals=True,
-				auto_bind=True
+				auto_bind=(ldap3.AUTO_BIND_TLS_BEFORE_BIND if self.useStartTls else True)
 			)
-			#self.connection.bind()
+			if(self.useStartTls): self.connection.start_tls()
 		except Exception as e:
 			self.cfgUsername = ''
 			self.cfgPassword = ''
@@ -591,7 +594,7 @@ class LapsMainWindow(QMainWindow):
 		# LDAP referrals to the correct (sub)domain controller is handled automatically by ldap3
 		serverArray = []
 		for server in self.cfgServer:
-			serverArray.append(ldap3.Server(server['address'], port=server['port'], use_ssl=server['ssl'], get_info=ldap3.ALL))
+			serverArray.append(ldap3.Server(server['address'], port=server['port'], use_ssl=server['ssl'], tls=self.tlsSettings, get_info=ldap3.ALL))
 		server = ldap3.ServerPool(serverArray, ldap3.FIRST, active=True, exhaust=True)
 		# try to bind to server via Kerberos
 		try:
@@ -600,8 +603,9 @@ class LapsMainWindow(QMainWindow):
 					authentication=ldap3.SASL,
 					sasl_mechanism=ldap3.GSSAPI,
 					auto_referrals=True,
-					auto_bind=True
+					auto_bind=(ldap3.AUTO_BIND_TLS_BEFORE_BIND if self.useStartTls else True)
 				)
+				if(self.useStartTls): self.connection.start_tls()
 				return True
 		except Exception as e:
 			print('Unable to connect via Kerberos: '+str(e))
@@ -612,8 +616,9 @@ class LapsMainWindow(QMainWindow):
 				password=self.cfgPassword,
 				authentication=ldap3.SIMPLE,
 				auto_referrals=True,
-				auto_bind=True
+				auto_bind=(ldap3.AUTO_BIND_TLS_BEFORE_BIND if self.useStartTls else True)
 			)
+			if(self.useStartTls): self.connection.start_tls()
 			return True
 		except Exception as e:
 			self.showErrorDialog('Error binding to LDAP server', str(e))
