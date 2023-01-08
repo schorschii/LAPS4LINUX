@@ -84,7 +84,7 @@ class LapsCli():
 		# ask for credentials and print connection details
 		print('')
 		if not self.checkCredentialsAndConnect(): return
-		self.printResult('Connection', str(self.connection.server)+' '+self.cfgUsername+'@'+self.cfgDomain)
+		self.printResult('Connection', self.GetConnectionString())
 
 		try:
 			# compile query attributes
@@ -330,6 +330,9 @@ class LapsCli():
 			return search_base[:-1]
 		else:
 			raise Exception('Could not create LDAP search base: reading defaultNamingContext from LDAP directory failed and no domain given.')
+
+	def GetConnectionString(self):
+		return str(self.connection.server.host)+' '+str(self.connection.user)
 
 	def LoadSettings(self):
 		if(not path.isdir(self.cfgDir)):

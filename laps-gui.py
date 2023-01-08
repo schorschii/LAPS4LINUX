@@ -117,7 +117,7 @@ class LapsCalendarWindow(QDialog):
 			if parentWidget.connection.result['result'] == 0:
 				parentWidget.showInfoDialog('Success',
 					'Expiration date successfully changed to '+str(newExpirationDate)+'.',
-					parentWidget.tmpDn+' ('+str(parentWidget.connection.server)+')'
+					parentWidget.tmpDn+' ('+parentWidget.GetConnectionString()+')'
 				)
 				# update values in main window
 				parentWidget.OnClickSearch(None)
@@ -125,7 +125,7 @@ class LapsCalendarWindow(QDialog):
 			else:
 				parentWidget.showErrorDialog('Error',
 					'Unable to change expiration date to '+str(newExpirationDateTime)+'.'
-					+'\n\n'+str(parentWidget.connection.result['message']), parentWidget.tmpDn+' ('+str(parentWidget.connection.server)+')'
+					+'\n\n'+str(parentWidget.connection.result['message']), parentWidget.tmpDn+' ('+parentWidget.GetConnectionString()+')'
 				)
 
 		except Exception as e:
@@ -426,14 +426,14 @@ class LapsMainWindow(QMainWindow):
 				attributes=['SAMAccountname', 'distinguishedName']
 			)
 			for entry in self.connection.entries:
-				self.statusBar.showMessage('Found: '+str(entry['distinguishedName'])+' ('+str(self.connection.server)+')')
+				self.statusBar.showMessage('Found: '+str(entry['distinguishedName'])+' ('+self.GetConnectionString()+')')
 				self.setWindowTitle(str(entry['SAMAccountname'])+' - '+self.PRODUCT_NAME)
 				self.tmpDn = str(entry['distinguishedName'])
 				self.queryAttributes()
 				return
 
 			# no result found
-			self.statusBar.showMessage('No Result For: '+computerName+' ('+str(self.connection.server)+')')
+			self.statusBar.showMessage('No Result For: '+computerName+' ('+self.GetConnectionString()+')')
 			for title, attribute in self.GetAttributesAsDict().items():
 				self.refLdapAttributesTextBoxes[str(title)].setText('')
 		except Exception as e:
@@ -636,6 +636,9 @@ class LapsMainWindow(QMainWindow):
 			return search_base[:-1]
 		else:
 			raise Exception('Could not create LDAP search base: reading defaultNamingContext from LDAP directory failed and no domain given.')
+
+	def GetConnectionString(self):
+		return str(self.connection.server.host)+' '+str(self.connection.user)
 
 	def LoadSettings(self):
 		if(not path.isdir(self.cfgDir)):
