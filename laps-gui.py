@@ -416,7 +416,7 @@ class LapsMainWindow(QMainWindow):
 		try:
 			# start LDAP search
 			self.connection.search(
-				search_base=self.createLdapBase(self.cfgDomain),
+				search_base=self.createLdapBase(self.connection),
 				search_filter='(&(objectCategory=computer)(name='+computerName+'))',
 				attributes=['SAMAccountname', 'distinguishedName']
 			)
@@ -494,7 +494,7 @@ class LapsMainWindow(QMainWindow):
 			# query domain controllers by dns lookup
 			searchDomain = '.'+self.cfgDomain if self.cfgDomain!='' else ''
 			try:
-				res = resolver.resolve(qname=f'_ldap._tcp{searchDomain}', rdtype=rdatatype.SRV, lifetime=10, search=True)
+				res = resolver.resolve(qname='_ldap._tcp'+searchDomain, rdtype=rdatatype.SRV, lifetime=10, search=True)
 				for srv in res.rrset:
 					serverEntry = {
 						'address': str(srv.target),
@@ -619,13 +619,18 @@ class LapsMainWindow(QMainWindow):
 			self.showErrorDialog('Error binding to LDAP server', str(e))
 			return False
 
-	def createLdapBase(self, domain):
-		# convert FQDN "example.com" to LDAP path notation "DC=example,DC=com"
-		search_base = ''
-		base = domain.split('.')
-		for b in base:
-			search_base += 'DC=' + b + ','
-		return search_base[:-1]
+	def createLdapBase(self, conn):
+		if conn.server.info:
+			return conn.server.info.raw['defaultNamingContext'][0].decode('utf-8')
+		elif self.cfgDomain != '':
+			# convert FQDN "example.com" to LDAP path notation "DC=example,DC=com"
+			search_base = ''
+			base = self.cfgDomain.split('.')
+			for b in base:
+				search_base += 'DC=' + b + ','
+			return search_base[:-1]
+		else:
+			raise Exception('Could not create LDAP search base: reading defaultNamingContext from LDAP directory failed and no domain given.')
 
 	def LoadSettings(self):
 		if(not path.isdir(self.cfgDir)):
