@@ -537,7 +537,7 @@ class LapsMainWindow(QMainWindow):
 				self.connection = ldap3.Connection(
 					self.server,
 					authentication=ldap3.SASL,
-					sasl_mechanism=ldap3.KERBEROS,
+					sasl_mechanism=ldap3.GSSAPI,
 					auto_referrals=True,
 					auto_bind=True
 				)
@@ -598,7 +598,7 @@ class LapsMainWindow(QMainWindow):
 			if(self.useKerberos):
 				self.connection = ldap3.Connection(server,
 					authentication=ldap3.SASL,
-					sasl_mechanism=ldap3.KERBEROS,
+					sasl_mechanism=ldap3.GSSAPI,
 					auto_referrals=True,
 					auto_bind=True
 				)
