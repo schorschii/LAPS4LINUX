@@ -168,7 +168,7 @@ class LapsMainWindow(QMainWindow):
 	cfgPathOld     = str(Path.home())+'/.laps-client.json'
 	cfgStartTLS    = True
 	cfgServer      = []
-	cfgDomain      = ''
+	cfgDomain      = None
 	cfgUsername    = ''
 	cfgPassword    = ''
 	cfgLdapAttributes              = {
@@ -490,9 +490,9 @@ class LapsMainWindow(QMainWindow):
 
 	def checkCredentialsAndConnect(self):
 		# ask for server address and domain name if not already set via config file
-		if self.cfgDomain == '':
+		if self.cfgDomain == None:
 			item, ok = QInputDialog.getText(self, '♕ Domain', 'Please enter your Domain name (e.g. example.com, leave empty to try auto discovery).')
-			if ok and item:
+			if ok and item != None:
 				self.cfgDomain = item
 				self.server = None
 		if len(self.cfgServer) == 0:
@@ -655,9 +655,9 @@ class LapsMainWindow(QMainWindow):
 		try:
 			with open(cfgPath) as f:
 				cfgJson = json.load(f)
-				self.cfgServer = cfgJson.get('server', '')
-				self.cfgDomain = cfgJson.get('domain', '')
-				self.cfgUsername = cfgJson.get('username', '')
+				self.cfgServer = cfgJson.get('server', self.cfgServer)
+				self.cfgDomain = cfgJson.get('domain', self.cfgDomain)
+				self.cfgUsername = cfgJson.get('username', self.cfgUsername)
 				self.cfgLdapAttributePassword = str(cfgJson.get('ldap-attribute-password', self.cfgLdapAttributePassword))
 				self.cfgLdapAttributePasswordExpiry = str(cfgJson.get('ldap-attribute-password-expiry', self.cfgLdapAttributePasswordExpiry))
 				tmpLdapAttributes = cfgJson.get('ldap-attributes', self.cfgLdapAttributes)
