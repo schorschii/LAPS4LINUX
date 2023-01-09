@@ -4,7 +4,7 @@ cd "$(dirname "$0")"
 
 DMG_FILE_TMP_MOUNT="/Volumes/LAPS4MAC"
 DMG_FILE_TMP="laps4mac-rw.dmg"
-DMG_FILE="laps4mac.dmg"
+DMG_FILE="laps4mac-client.dmg"
 
 # remove temp build folder
 rm -r "../../dist/LAPS4MAC"

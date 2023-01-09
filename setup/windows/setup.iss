@@ -6,6 +6,7 @@
 #define MyAppPublisher "Sieber Systems"
 #define MyAppURL "https://github.com/schorschii/LAPS4LINUX"
 #define MyAppExeName "laps-gui.exe"
+#define MyAppDir "C:\Program Files\"+MyAppName
 
 [Setup]
 ; NOTE: The value of AppId uniquely identifies this application. Do not use the same AppId value in installers for other applications.
@@ -20,8 +21,8 @@ AppSupportURL={#MyAppURL}
 AppUpdatesURL={#MyAppURL}
 WizardSmallImageFile="installer-top-img.bmp"
 UninstallDisplayName={#MyAppName}
-UninstallDisplayIcon="{#MyAppDir}\oco-agent.exe,0"
-DefaultDirName=C:\Program Files\{#MyAppName}
+UninstallDisplayIcon="{#MyAppDir}\\{#MyAppExeName},0"
+DefaultDirName={#MyAppDir}
 DisableDirPage=yes
 DisableProgramGroupPage=yes
 ; Uncomment the following line to run in non administrative install mode (install for current user only.)
