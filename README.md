@@ -31,11 +31,16 @@ NOTEBOOK02$ : 123abc
 ### Graphical User Interface (GUI)
 ![screenshot](.github/screenshot.png)
 
+### Configuration
+By default, the clients will try to auto-discover your domain and LDAP servers via DNS. If this does not succeed, the client will ask you for this values and write it to the config file `~/.config/laps-client/settings.json`.
+
 ### Kerberos Authentication
 The client (both GUI and CLI) supports Kerberos authentication which means that you can use the client without entering a password if you are logged in with a domain account and have a valid Kerberos ticket (for this, an SSL connection is required). If not, ldap3's "simple" authentication is used as fallback and the client will ask you for username and password.
 
 ### SSL Connection
-It is highly recommended to turn on SSL in the config file (`~/.config/laps-client/settings.json`) if your LDAP server has a valid certificate (set `ssl` to `true` and `port` to `636`). You can also configure multiple LDAP server in the config file.
+By default, LAPS4LINUX will connect via LDAP on port 389 to your Active Directory and upgrade the connection via STARTTLS to an encrypted one. This means that your server needs a valid certificate and STARTTLS enabled. This behavior can be disabled by modifying the `use-starttls` in the config file, but it is strongly discouraged to disable it since sensitive data is transferred.
+
+Alternatively, you can use LDAPS by editing the config file (`~/.config/laps-client/settings.json`): modify the server entry and set `ssl` to `true` and `port` to `636` (see example below). You can also configure multiple static LDAP servers in the config file.
 
 ### Domain Forest Searches
 If you are managing multiple domains, you probably want to search for a computer in all domains. Please use the global catalog for this. This means that you need to set the option `gc-port` in the configuration file of all servers, e.g. to `3268` (LDAP) or `3269` (LDAPS).

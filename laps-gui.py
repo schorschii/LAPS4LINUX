@@ -150,8 +150,6 @@ class LapsMainWindow(QMainWindow):
 
 	tlsSettings = ldap3.Tls(validate=ssl.CERT_REQUIRED)
 
-	useKerberos = True
-	useStartTls = True
 	gcModeOn    = False
 	server      = None
 	connection  = None
@@ -166,7 +164,8 @@ class LapsMainWindow(QMainWindow):
 	cfgPath        = cfgDir+'/settings.json'
 	cfgPathRemmina = cfgDir+'/laps.remmina'
 	cfgPathOld     = str(Path.home())+'/.laps-client.json'
-	cfgStartTLS    = True
+	cfgUseKerberos = True
+	cfgUseStartTls = True
 	cfgServer      = []
 	cfgDomain      = None
 	cfgUsername    = ''
@@ -214,7 +213,7 @@ class LapsMainWindow(QMainWindow):
 		kerberosAction = QAction('&Kerberos Authentication', self)
 		kerberosAction.setShortcut('Ctrl+K')
 		kerberosAction.setCheckable(True)
-		kerberosAction.setChecked(True)
+		kerberosAction.setChecked(self.cfgUseKerberos)
 		kerberosAction.triggered.connect(self.OnClickKerberos)
 		fileMenu.addAction(kerberosAction)
 		fileMenu.addSeparator()
@@ -321,7 +320,7 @@ class LapsMainWindow(QMainWindow):
 		sys.exit()
 
 	def OnClickKerberos(self, e):
-		self.useKerberos = not self.useKerberos
+		self.cfgUseKerberos = not self.cfgUseKerberos
 
 	def OnOpenAboutDialog(self, e):
 		dlg = LapsAboutWindow(self)
@@ -540,15 +539,15 @@ class LapsMainWindow(QMainWindow):
 
 		# try to bind to server via Kerberos
 		try:
-			if(self.useKerberos):
+			if(self.cfgUseKerberos):
 				self.connection = ldap3.Connection(
 					self.server,
 					authentication=ldap3.SASL,
 					sasl_mechanism=ldap3.GSSAPI,
 					auto_referrals=True,
-					auto_bind=(ldap3.AUTO_BIND_TLS_BEFORE_BIND if self.useStartTls else True)
+					auto_bind=(ldap3.AUTO_BIND_TLS_BEFORE_BIND if self.cfgUseStartTls else True)
 				)
-				if(self.useStartTls): self.connection.start_tls()
+				if(self.cfgUseStartTls): self.connection.start_tls()
 				return True # return if connection created successfully
 		except Exception as e:
 			print('Unable to connect via Kerberos: '+str(e))
@@ -576,9 +575,9 @@ class LapsMainWindow(QMainWindow):
 				password=self.cfgPassword,
 				authentication=ldap3.SIMPLE,
 				auto_referrals=True,
-				auto_bind=(ldap3.AUTO_BIND_TLS_BEFORE_BIND if self.useStartTls else True)
+				auto_bind=(ldap3.AUTO_BIND_TLS_BEFORE_BIND if self.cfgUseStartTls else True)
 			)
-			if(self.useStartTls): self.connection.start_tls()
+			if(self.cfgUseStartTls): self.connection.start_tls()
 		except Exception as e:
 			self.cfgUsername = ''
 			self.cfgPassword = ''
@@ -599,14 +598,14 @@ class LapsMainWindow(QMainWindow):
 		server = ldap3.ServerPool(serverArray, ldap3.FIRST, active=True, exhaust=True)
 		# try to bind to server via Kerberos
 		try:
-			if(self.useKerberos):
+			if(self.cfgUseKerberos):
 				self.connection = ldap3.Connection(server,
 					authentication=ldap3.SASL,
 					sasl_mechanism=ldap3.GSSAPI,
 					auto_referrals=True,
-					auto_bind=(ldap3.AUTO_BIND_TLS_BEFORE_BIND if self.useStartTls else True)
+					auto_bind=(ldap3.AUTO_BIND_TLS_BEFORE_BIND if self.cfgUseStartTls else True)
 				)
-				if(self.useStartTls): self.connection.start_tls()
+				if(self.cfgUseStartTls): self.connection.start_tls()
 				return True
 		except Exception as e:
 			print('Unable to connect via Kerberos: '+str(e))
@@ -617,9 +616,9 @@ class LapsMainWindow(QMainWindow):
 				password=self.cfgPassword,
 				authentication=ldap3.SIMPLE,
 				auto_referrals=True,
-				auto_bind=(ldap3.AUTO_BIND_TLS_BEFORE_BIND if self.useStartTls else True)
+				auto_bind=(ldap3.AUTO_BIND_TLS_BEFORE_BIND if self.cfgUseStartTls else True)
 			)
-			if(self.useStartTls): self.connection.start_tls()
+			if(self.cfgUseStartTls): self.connection.start_tls()
 			return True
 		except Exception as e:
 			self.showErrorDialog('Error binding to LDAP server', str(e))
@@ -656,6 +655,8 @@ class LapsMainWindow(QMainWindow):
 		try:
 			with open(cfgPath) as f:
 				cfgJson = json.load(f)
+				self.cfgUseKerberos = cfgJson.get('use-kerberos', self.cfgUseKerberos)
+				self.cfgUseStartTls = cfgJson.get('use-starttls', self.cfgUseStartTls)
 				self.cfgServer = cfgJson.get('server', self.cfgServer)
 				self.cfgDomain = cfgJson.get('domain', self.cfgDomain)
 				self.cfgUsername = cfgJson.get('username', self.cfgUsername)
@@ -677,6 +678,8 @@ class LapsMainWindow(QMainWindow):
 
 			with open(self.cfgPath, 'w') as json_file:
 				json.dump({
+					'use-kerberos': self.cfgUseKerberos,
+					'use-starttls': self.cfgUseStartTls,
 					'server': saveServers,
 					'domain': self.cfgDomain,
 					'username': self.cfgUsername,

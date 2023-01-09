@@ -30,8 +30,6 @@ class LapsCli():
 	PRODUCT_VERSION   = '1.5.2'
 	PRODUCT_WEBSITE   = 'https://github.com/schorschii/laps4linux'
 
-	useKerberos = True
-	useStartTls = True
 	gcModeOn    = False
 	server      = None
 	connection  = None
@@ -47,6 +45,8 @@ class LapsCli():
 	cfgDir      = str(Path.home())+'/.config/laps-client'
 	cfgPath     = cfgDir+'/settings.json'
 	cfgPathOld  = str(Path.home())+'/.laps-client.json'
+	cfgUseKerberos = True
+	cfgUseStartTls = True
 	cfgServer   = []
 	cfgDomain   = None
 	cfgUsername = ''
@@ -58,9 +58,9 @@ class LapsCli():
 	cfgLdapAttributePasswordExpiry = 'ms-Mcs-AdmPwdExpirationTime'
 
 
-	def __init__(self, useKerberos):
+	def __init__(self, useKerberos=None):
 		self.LoadSettings()
-		self.useKerberos = useKerberos
+		if(useKerberos != None): self.cfgUseKerberos = useKerberos
 
 		# show version information
 		print(self.PRODUCT_NAME+' v'+self.PRODUCT_VERSION)
@@ -233,15 +233,15 @@ class LapsCli():
 
 		# try to bind to server via Kerberos
 		try:
-			if(self.useKerberos):
+			if(self.cfgUseKerberos):
 				self.connection = ldap3.Connection(
 					self.server,
 					authentication=ldap3.SASL,
 					sasl_mechanism=ldap3.GSSAPI,
 					auto_referrals=True,
-					auto_bind=(ldap3.AUTO_BIND_TLS_BEFORE_BIND if self.useStartTls else True)
+					auto_bind=(ldap3.AUTO_BIND_TLS_BEFORE_BIND if self.cfgUseStartTls else True)
 				)
-				if(self.useStartTls): self.connection.start_tls()
+				if(self.cfgUseStartTls): self.connection.start_tls()
 				return True # return if connection created successfully
 		except Exception as e:
 			print('Unable to connect via Kerberos: '+str(e))
@@ -269,9 +269,9 @@ class LapsCli():
 				password=self.cfgPassword,
 				authentication=ldap3.SIMPLE,
 				auto_referrals=True,
-				auto_bind=(ldap3.AUTO_BIND_TLS_BEFORE_BIND if self.useStartTls else True)
+				auto_bind=(ldap3.AUTO_BIND_TLS_BEFORE_BIND if self.cfgUseStartTls else True)
 			)
-			if(self.useStartTls): self.connection.start_tls()
+			if(self.cfgUseStartTls): self.connection.start_tls()
 			print('') # separate user input from results by newline
 		except Exception as e:
 			self.cfgUsername = ''
@@ -293,14 +293,14 @@ class LapsCli():
 		server = ldap3.ServerPool(serverArray, ldap3.FIRST, active=True, exhaust=True)
 		# try to bind to server via Kerberos
 		try:
-			if(self.useKerberos):
+			if(self.cfgUseKerberos):
 				self.connection = ldap3.Connection(server,
 					authentication=ldap3.SASL,
 					sasl_mechanism=ldap3.GSSAPI,
 					auto_referrals=True,
-					auto_bind=(ldap3.AUTO_BIND_TLS_BEFORE_BIND if self.useStartTls else True)
+					auto_bind=(ldap3.AUTO_BIND_TLS_BEFORE_BIND if self.cfgUseStartTls else True)
 				)
-				if(self.useStartTls): self.connection.start_tls()
+				if(self.cfgUseStartTls): self.connection.start_tls()
 				return True
 		except Exception as e:
 			print('Unable to connect via Kerberos: '+str(e))
@@ -311,9 +311,9 @@ class LapsCli():
 				password=self.cfgPassword,
 				authentication=ldap3.SIMPLE,
 				auto_referrals=True,
-				auto_bind=(ldap3.AUTO_BIND_TLS_BEFORE_BIND if self.useStartTls else True)
+				auto_bind=(ldap3.AUTO_BIND_TLS_BEFORE_BIND if self.cfgUseStartTls else True)
 			)
-			if(self.useStartTls): self.connection.start_tls()
+			if(self.cfgUseStartTls): self.connection.start_tls()
 			return True
 		except Exception as e:
 			print('Error binding to LDAP server: '+str(e))
@@ -350,6 +350,8 @@ class LapsCli():
 		try:
 			with open(cfgPath) as f:
 				cfgJson = json.load(f)
+				self.cfgUseKerberos = cfgJson.get('use-kerberos', self.cfgUseKerberos)
+				self.cfgUseStartTls = cfgJson.get('use-starttls', self.cfgUseStartTls)
 				self.cfgServer = cfgJson.get('server', self.cfgServer)
 				self.cfgDomain = cfgJson.get('domain', self.cfgDomain)
 				self.cfgUsername = cfgJson.get('username', self.cfgUsername)
@@ -370,6 +372,8 @@ class LapsCli():
 
 			with open(self.cfgPath, 'w') as json_file:
 				json.dump({
+					'use-kerberos': self.cfgUseKerberos,
+					'use-starttls': self.cfgUseStartTls,
 					'server': saveServers,
 					'domain': self.cfgDomain,
 					'username': self.cfgUsername,
@@ -387,7 +391,7 @@ def main():
 	parser.add_argument('--version', action='store_true', help='Print version and exit.')
 	args = parser.parse_args()
 
-	cli = LapsCli(not args.no_kerberos)
+	cli = LapsCli(False if args.no_kerberos==True else None)
 
 	if(args.version):
 		return

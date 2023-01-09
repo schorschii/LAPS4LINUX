@@ -17,8 +17,10 @@
         }
     ],
     "domain": "example.com",
+    "use-starttls": true,
 
     "username": "johndoe",
+    "use-kerberos": true,
 
     "ldap-attribute-password": "ms-Mcs-AdmPwd",
     "ldap-attribute-password-expiry": "ms-Mcs-AdmPwdExpirationTime",
