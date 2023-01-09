@@ -71,7 +71,7 @@ app = BUNDLE(coll,
              name='LAPS4MAC.app',
              icon='assets/laps.icns',
              bundle_identifier='systems.sieber.laps4mac',
-             version='1.5.2',
+             version='1.6.0',
              info_plist={
                'CFBundleURLTypes': [
                   {

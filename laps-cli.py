@@ -27,7 +27,7 @@ class LapsCli():
 	PLATFORM          = sys.platform.lower()
 
 	PRODUCT_NAME      = 'LAPS4LINUX CLI'
-	PRODUCT_VERSION   = '1.5.2'
+	PRODUCT_VERSION   = '1.6.0'
 	PRODUCT_WEBSITE   = 'https://github.com/schorschii/laps4linux'
 
 	gcModeOn    = False
