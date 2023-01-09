@@ -121,7 +121,7 @@ class LapsRunner():
 			self.connection.start_tls()
 		else:
 			self.connection = ldap3.Connection(self.server, version=3, authentication=ldap3.SASL, sasl_mechanism=ldap3.GSSAPI, auto_bind=True)
-		print('Connected as: '+str(self.connection.server)+' '+self.connection.extend.standard.who_am_i()+'@'+self.cfgDomain)
+		print('Connected as: '+self.GetConnectionString())
 
 	def searchComputer(self):
 		if self.connection == None: raise Exception('No connection established')
@@ -131,7 +131,7 @@ class LapsRunner():
 
 		# start query
 		self.connection.search(
-			search_base = self.createLdapBase(self.cfgDomain),
+			search_base = self.createLdapBase(self.connection),
 			search_filter = '(&(objectCategory=computer)(name='+computerName+'))',
 			attributes = [ self.cfgLdapAttributePassword, self.cfgLdapAttributePasswordExpiry, 'SAMAccountname', 'distinguishedName' ]
 		)
@@ -195,12 +195,21 @@ class LapsRunner():
 	def generatePassword(self):
 		return ''.join(secrets.choice(self.cfgAlphabet) for i in range(self.cfgLength))
 
-	def createLdapBase(self, domain):
-		search_base = ''
-		base = domain.split('.')
-		for b in base:
-			search_base += 'DC=' + b + ','
-		return search_base[:-1]
+	def createLdapBase(self, conn):
+		if conn.server.info:
+			return conn.server.info.raw['defaultNamingContext'][0].decode('utf-8')
+		elif self.cfgDomain != '':
+			# convert FQDN "example.com" to LDAP path notation "DC=example,DC=com"
+			search_base = ''
+			base = self.cfgDomain.split('.')
+			for b in base:
+				search_base += 'DC=' + b + ','
+			return search_base[:-1]
+		else:
+			raise Exception('Could not create LDAP search base: reading defaultNamingContext from LDAP directory failed and no domain given.')
+
+	def GetConnectionString(self):
+		return str(self.connection.server.host)+' '+str(self.connection.user)
 
 	def LoadSettings(self):
 		if(not path.isfile(self.cfgPath)):
