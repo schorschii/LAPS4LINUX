@@ -198,7 +198,8 @@ class LapsCli():
 						# strip the trailing . from the dns resolver for certificate verification reasons.
 						'address': str(srv.target).rstrip('.'),
 						'port': srv.port,
-						'ssl': (srv.port == 636)
+						'ssl': (srv.port == 636),
+						'auto-discovered': True
 					}
 					print('DNS auto discovery found server: '+json.dumps(serverEntry))
 					self.cfgServer.append(serverEntry)
@@ -361,9 +362,15 @@ class LapsCli():
 
 	def SaveSettings(self):
 		try:
+			# do not save auto-discovered servers to config - should be queried every time
+			saveServers = []
+			for server in self.cfgServer:
+				if not server.get('auto-discovered', False):
+					saveServers.append(server)
+
 			with open(self.cfgPath, 'w') as json_file:
 				json.dump({
-					'server': self.cfgServer,
+					'server': saveServers,
 					'domain': self.cfgDomain,
 					'username': self.cfgUsername,
 					'ldap-attribute-password-expiry': self.cfgLdapAttributePasswordExpiry,
