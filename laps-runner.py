@@ -102,7 +102,8 @@ class LapsRunner():
 		serverArray = []
 		if(len(self.cfgServer) == 0):
 			# query domain controllers by dns lookup
-			res = resolver.resolve(qname=f'_ldap._tcp.{self.cfgDomain}', rdtype=rdatatype.SRV, lifetime=10, search=True)
+			searchDomain = '.'+self.cfgDomain if self.cfgDomain!='' else ''
+			res = resolver.resolve(qname=f'_ldap._tcp'+searchDomain, rdtype=rdatatype.SRV, lifetime=10, search=True)
 
 			for srv in res.rrset:
 				if(self.useStartTls):

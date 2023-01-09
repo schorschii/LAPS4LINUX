@@ -1,5 +1,5 @@
 {
-    "COMMENT": "If you want to use static servers, please remove the '-EXAMPLE' from the following setting items and enter your custom values. Otherwise, laps-runner will try to auto discover the settings via DNS.",
+    "COMMENT": "If you want to use static domain and servers, please remove the '-EXAMPLE' from the following setting items and enter your custom values. Otherwise, laps-runner will try to auto discover the settings via DNS.",
     "server-EXAMPLE": [
         {
             "address": "dc1.example.com",
@@ -17,7 +17,7 @@
             "ssl": false
         }
     ],
-    "domain": "example.com",
+    "domain-EXAMPLE": "example.com",
 
     "cred-cache-file": "/tmp/laps.temp",
     "client-keytab-file": "/etc/krb5.keytab",
