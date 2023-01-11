@@ -18,6 +18,7 @@
         }
     ],
     "domain-EXAMPLE": "example.com",
+    "use-starttls": true,
 
     "cred-cache-file": "/tmp/laps.temp",
     "client-keytab-file": "/etc/krb5.keytab",

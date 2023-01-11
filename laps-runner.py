@@ -35,8 +35,6 @@ class LapsRunner():
 	PRODUCT_VERSION   = '1.6.0'
 	PRODUCT_WEBSITE   = 'https://github.com/schorschii/laps4linux'
 
-	useStartTls       = True
-
 	server     = None
 	connection = None
 	logger     = None
@@ -45,6 +43,7 @@ class LapsRunner():
 
 	cfgCredCacheFile    = '/tmp/laps.temp'
 	cfgClientKeytabFile = '/etc/krb5.keytab'
+	cfgUseStartTls      = True
 	cfgServer           = []
 	cfgDomain           = ''
 
@@ -106,7 +105,7 @@ class LapsRunner():
 			res = resolver.resolve(qname=f'_ldap._tcp'+searchDomain, rdtype=rdatatype.SRV, lifetime=10, search=True)
 
 			for srv in res.rrset:
-				if(self.useStartTls):
+				if(self.cfgUseStartTls):
 					# strip the trailing . from the dns resolver for certificate verification reasons.
 					serverArray.append(ldap3.Server(host=str(srv.target).rstrip('.'), port=389, tls=tlssettings, get_info=ldap3.ALL))
 				else:
@@ -116,7 +115,7 @@ class LapsRunner():
 			for server in self.cfgServer:
 				serverArray.append(ldap3.Server(server['address'], port=server['port'], use_ssl=server['ssl'], get_info=ldap3.ALL))
 		self.server = ldap3.ServerPool(serverArray, ldap3.ROUND_ROBIN, active=True, exhaust=True)
-		if(self.useStartTls):
+		if(self.cfgUseStartTls):
 			self.connection = ldap3.Connection(self.server, version=3, authentication=ldap3.SASL, sasl_mechanism=ldap3.GSSAPI, auto_bind=ldap3.AUTO_BIND_TLS_BEFORE_BIND)
 			self.connection.start_tls()
 		else:
@@ -216,6 +215,7 @@ class LapsRunner():
 			raise Exception('Config file not found: '+self.cfgPath)
 		with open(self.cfgPath) as f:
 			cfgJson = json.load(f)
+			self.cfgUseStartTls = cfgJson.get('use-starttls', self.cfgUseStartTls)
 			for server in cfgJson.get('server', ''):
 				self.cfgServer.append({
 					'address': str(server['address']),
