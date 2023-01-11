@@ -32,7 +32,7 @@ def filetime_to_dt(ft): # ft is in UTC, fromtimestamp() converts to local time
 
 class LapsRunner():
 	PRODUCT_NAME      = 'LAPS4LINUX Runner'
-	PRODUCT_VERSION   = '1.6.0'
+	PRODUCT_VERSION   = '1.6.1'
 	PRODUCT_WEBSITE   = 'https://github.com/schorschii/laps4linux'
 
 	server     = None
