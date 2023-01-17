@@ -216,6 +216,10 @@ class LapsCli():
 					self.server = None
 		self.SaveSettings()
 
+		# disable STARTTLS if SSL is used (otherwise, ldap3 will try to do STARTTLS on port 636)
+		if len(self.cfgServer) > 0 and self.cfgServer[0]['ssl'] == True:
+			self.cfgUseStartTls = False
+
 		# establish server connection
 		if self.server == None:
 			try:
