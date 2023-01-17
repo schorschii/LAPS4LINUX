@@ -344,7 +344,7 @@ class LapsMainWindow(QMainWindow):
 			import configparser
 			import base64
 			from shutil import which
-			from Crypto.Cipher import DES3
+			from Cryptodome.Cipher import DES3
 
 			password = ''
 			for title, attribute in self.GetAttributesAsDict().items():
@@ -361,7 +361,7 @@ class LapsMainWindow(QMainWindow):
 				if(config.has_section('remmina_pref') and 'secret' in config['remmina_pref'] and config['remmina_pref']['secret'].strip() != ''):
 					secret = base64.b64decode(config['remmina_pref']['secret'])
 					padding = chr(0) * (8 - len(password) % 8)
-					password = base64.b64encode( DES3.new(secret[:24], DES3.MODE_CBC, secret[24:]).encrypt(password+padding) ).decode('utf-8')
+					password = base64.b64encode( DES3.new(secret[:24], DES3.MODE_CBC, secret[24:]).encrypt((password+padding).encode("utf8")) ).decode('utf-8')
 				else:
 					password = ''
 					self.statusBar.showMessage('Unable to find secret in remmina_pref')
