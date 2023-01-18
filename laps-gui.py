@@ -354,7 +354,8 @@ class LapsMainWindow(QMainWindow):
 
 			if(which('remmina') is None): raise Exception('Remmina is not installed')
 			# passwords must be encrypted in remmina connection files using the secret found in remmina.pref
-			remminaPrefPath = str(Path.home())+'/.remmina/remmina.pref'
+			remminaPrefPath = str(Path.home())+'/.remmina/remmina.pref' # Ubuntu 20.04
+			if(not os.path.exists(remminaPrefPath)): remminaPrefPath = str(Path.home())+'/.config/remmina/remmina.pref' # Ubuntu 22.04
 			if(os.path.exists(remminaPrefPath)):
 				config = configparser.ConfigParser()
 				config.read(remminaPrefPath)
