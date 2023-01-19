@@ -335,6 +335,9 @@ class LapsMainWindow(QMainWindow):
 	def OnClickSSH(self, e):
 		self.RemoteConnection('SSH')
 
+	def versionTuple(self, v):
+		return tuple(map(int, (v.split('.'))))
+
 	def RemoteConnection(self, protocol):
 		if(self.txtSearchComputer.text().strip() == ''): return
 
@@ -346,29 +349,37 @@ class LapsMainWindow(QMainWindow):
 			from shutil import which
 			from Cryptodome.Cipher import DES3
 
+			# check remmina existence and version
+			if(which('remmina') is None): raise Exception('Remmina is not installed')
+			newRemmina = False
+			res = subprocess.run('remmina --version | grep org.remmina.Remmina | cut -d- -f2 | cut -d"(" -f1 | xargs', shell=True, stdout=subprocess.PIPE, stdin=subprocess.DEVNULL)
+			if(self.versionTuple(res.stdout.decode('utf-8')) >= self.versionTuple('1.4.25')):
+				newRemmina = True
+
+			# get current admin password
 			password = ''
 			for title, attribute in self.GetAttributesAsDict().items():
-				if(self.cfgLdapAttributePassword == attribute):
+				if(self.cfgLdapAttributePassword.upper() == attribute.upper()):
 					if(title in self.refLdapAttributesTextBoxes):
 						password = self.refLdapAttributesTextBoxes[title].text()
 
-			if(which('remmina') is None): raise Exception('Remmina is not installed')
-			# passwords must be encrypted in remmina connection files using the secret found in remmina.pref
-			remminaPrefPath = str(Path.home())+'/.remmina/remmina.pref' # Ubuntu 20.04
-			if(not os.path.exists(remminaPrefPath)): remminaPrefPath = str(Path.home())+'/.config/remmina/remmina.pref' # Ubuntu 22.04
-			if(os.path.exists(remminaPrefPath)):
-				config = configparser.ConfigParser()
-				config.read(remminaPrefPath)
-				if(config.has_section('remmina_pref') and 'secret' in config['remmina_pref'] and config['remmina_pref']['secret'].strip() != ''):
-					secret = base64.b64decode(config['remmina_pref']['secret'])
-					padding = chr(0) * (8 - len(password) % 8)
-					password = base64.b64encode( DES3.new(secret[:24], DES3.MODE_CBC, secret[24:]).encrypt((password+padding).encode("utf8")) ).decode('utf-8')
+			# passwords must be encrypted in old remmina connection files using the secret found in remmina.pref
+			if(not newRemmina):
+				remminaPrefPath = str(Path.home())+'/.remmina/remmina.pref' # older remmina versions
+				if(not os.path.exists(remminaPrefPath)): remminaPrefPath = str(Path.home())+'/.config/remmina/remmina.pref' # newer remmina versions
+				if(os.path.exists(remminaPrefPath)):
+					config = configparser.ConfigParser()
+					config.read(remminaPrefPath)
+					if(config.has_section('remmina_pref') and 'secret' in config['remmina_pref'] and config['remmina_pref']['secret'].strip() != ''):
+						secret = base64.b64decode(config['remmina_pref']['secret'])
+						padding = chr(0) * (8 - len(password) % 8)
+						password = base64.b64encode( DES3.new(secret[:24], DES3.MODE_CBC, secret[24:]).encrypt((password+padding).encode("utf8")) ).decode('utf-8')
+					else:
+						password = ''
+						self.statusBar.showMessage('Unable to find secret in remmina_pref')
 				else:
 					password = ''
-					self.statusBar.showMessage('Unable to find secret in remmina_pref')
-			else:
-				password = ''
-				self.statusBar.showMessage('Unable to find remmina.pref')
+					self.statusBar.showMessage('Unable to find remmina.pref')
 
 			# creating remmina files with permissions 400 is currently useless as remmina re-creates the file with 664 on exit with updated settings
 			# protection is done by limiting access to our config dir
