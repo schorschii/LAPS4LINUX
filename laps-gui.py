@@ -176,6 +176,7 @@ class LapsMainWindow(QMainWindow):
 	}
 	cfgLdapAttributePassword       = 'ms-Mcs-AdmPwd'
 	cfgLdapAttributePasswordExpiry = 'ms-Mcs-AdmPwdExpirationTime'
+	cfgConnectUsername             = 'administrator'
 	refLdapAttributesTextBoxes     = {}
 
 
@@ -389,7 +390,7 @@ class LapsMainWindow(QMainWindow):
 						'[remmina]\n'+
 						'name='+self.txtSearchComputer.text()+'\n'+
 						'server='+self.txtSearchComputer.text()+'\n'+
-						'username=administrator\n'+
+						'username='+self.cfgConnectUsername+'\n'+
 						'password='+password+'\n'
 						'protocol=RDP\n'+
 						'scale=2\n'+
@@ -405,7 +406,7 @@ class LapsMainWindow(QMainWindow):
 						'[remmina]\n'+
 						'name='+self.txtSearchComputer.text()+'\n'+
 						'server='+self.txtSearchComputer.text()+'\n'+
-						'username=administrator\n'+
+						'username='+self.cfgConnectUsername+'\n'+
 						'password='+password+'\n'
 						'protocol=SSH\n'
 					)
@@ -679,6 +680,7 @@ class LapsMainWindow(QMainWindow):
 				self.cfgLdapAttributePassword = str(cfgJson.get('ldap-attribute-password', self.cfgLdapAttributePassword))
 				self.cfgLdapAttributePasswordExpiry = str(cfgJson.get('ldap-attribute-password-expiry', self.cfgLdapAttributePasswordExpiry))
 				tmpLdapAttributes = cfgJson.get('ldap-attributes', self.cfgLdapAttributes)
+				self.cfgConnectUsername = str(cfgJson.get('connect-username', self.cfgConnectUsername))
 				if(isinstance(tmpLdapAttributes, list) or isinstance(tmpLdapAttributes, dict)):
 					self.cfgLdapAttributes = tmpLdapAttributes
 		except Exception as e:
@@ -701,7 +703,8 @@ class LapsMainWindow(QMainWindow):
 					'username': self.cfgUsername,
 					'ldap-attribute-password': self.cfgLdapAttributePassword,
 					'ldap-attribute-password-expiry': self.cfgLdapAttributePasswordExpiry,
-					'ldap-attributes': self.cfgLdapAttributes
+					'ldap-attributes': self.cfgLdapAttributes,
+					'connect-username': self.cfgConnectUsername
 				}, json_file, indent=4)
 		except Exception as e:
 			self.showErrorDialog('Error saving settings file', str(e))

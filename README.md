@@ -74,7 +74,7 @@ If you like, you can hide the "Set Expiration" button by entering an empty strin
 You can create a preset config file `/etc/laps-client.json` which will be loaded if `~/.config/laps-client/settings.json` does not exist. With this, you can distribute default settings (all relevant LDAP attributes, SSL on etc.) for new users.
 
 ### Remote Access
-On Linux, the GUI allows you to directly open RDP or SSH connections via Remmina from the menu. Please make sure you have installed the latest Remmina with RDP and SSH extensions.
+On Linux, the GUI allows you to directly open RDP or SSH connections via Remmina from the menu. Please make sure you have installed the latest Remmina with RDP and SSH extensions. You can change the username which is used for the connection in the client config (`"connect-username": "administrator"`).
 
 ### Windows and macOS
 The clients (GUI and CLI) are also executable under Windows and macOS. It's ported to Windows because of the additional features that the original LAPS GUI did not have (query custom attributes, OCO integration).

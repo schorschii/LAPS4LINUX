@@ -29,5 +29,7 @@
         "lastLogonTimestamp": "lastLogonTimestamp",
         "Administrator Password": "ms-Mcs-AdmPwd",
         "Password Expiration Date": "ms-Mcs-AdmPwdExpirationTime"
-    }
+    },
+
+    "connect-username": "administrator"
 }
