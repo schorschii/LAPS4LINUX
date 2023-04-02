@@ -68,7 +68,7 @@ class LapsAboutWindow(QDialog):
 			'\n\n'
 			'The LAPS runner periodically sets a new administrator password and saves it into the LDAP directory.'
 			'\n\n'
-			'LAPS was originally developed by Microsoft, this is an inofficial Linux/Unix implementation with some enhancements (e.g. the CLI/GUI client can display additional attributes).'
+			'LAPS was originally developed by Microsoft, this is an unofficial Linux/Unix implementation with some enhancements (e.g. the CLI/GUI client can display additional attributes).'
 		)
 		labelDescription.setStyleSheet('opacity:0.8')
 		labelDescription.setFixedWidth(450)
