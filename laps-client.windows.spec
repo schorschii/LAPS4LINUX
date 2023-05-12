@@ -56,4 +56,4 @@ coll = COLLECT(gui_exe, gui_a.binaries, gui_a.zipfiles, gui_a.datas,
                strip=False,
                upx=True,
                upx_exclude=[],
-               name='LAPS4WINDOWS')
+               name='LAPS4LINUX')

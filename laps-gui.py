@@ -141,7 +141,7 @@ class LapsCalendarWindow(QDialog):
 class LapsMainWindow(QMainWindow):
 	PLATFORM          = sys.platform.lower()
 
-	PRODUCT_NAME      = 'LAPS4WINDOWS' if PLATFORM=='win32' else 'LAPS4MAC' if PLATFORM=='darwin' else 'LAPS4LINUX'
+	PRODUCT_NAME      = 'LAPS4LINUX'
 	PRODUCT_VERSION   = '1.6.3'
 	PRODUCT_WEBSITE   = 'https://github.com/schorschii/laps4linux'
 	PROTOCOL_SCHEME   = 'laps://'
@@ -466,7 +466,6 @@ class LapsMainWindow(QMainWindow):
 		if self.tmpDn.strip() == '': return
 
 		dlg = LapsCalendarWindow(self)
-		dlg.refMainWindows = self
 		dlg.exec_()
 
 	def queryAttributes(self):

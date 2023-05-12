@@ -65,10 +65,10 @@ coll = COLLECT(gui_exe, gui_a.binaries, gui_a.zipfiles, gui_a.datas,
                strip=False,
                upx=True,
                upx_exclude=[],
-               name='LAPS4MAC')
+               name='LAPS4LINUX')
 
 app = BUNDLE(coll,
-             name='LAPS4MAC.app',
+             name='LAPS4LINUX.app',
              icon='assets/laps.icns',
              bundle_identifier='systems.sieber.laps4mac',
              version='1.6.3',
