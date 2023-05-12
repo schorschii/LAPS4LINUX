@@ -52,10 +52,11 @@ class LapsCli():
 	cfgUsername = ''
 	cfgPassword = ''
 	cfgLdapAttributes              = {
-		'Administrator Password': 'ms-Mcs-AdmPwd',
-		'Password Expiration Date': 'ms-Mcs-AdmPwdExpirationTime'
+		'Administrator Password':   'msLAPS-Password',
+		'Password Expiration Date': 'msLAPS-PasswordExpirationTime'
 	}
-	cfgLdapAttributePasswordExpiry = 'ms-Mcs-AdmPwdExpirationTime'
+	cfgLdapAttributePassword       = 'msLAPS-Password'
+	cfgLdapAttributePasswordExpiry = 'msLAPS-PasswordExpirationTime'
 
 
 	def __init__(self, useKerberos=None):
@@ -64,7 +65,7 @@ class LapsCli():
 
 		# show version information
 		print(self.PRODUCT_NAME+' v'+self.PRODUCT_VERSION)
-		print(self.PRODUCT_WEBSITE)
+		print('If you like LAPS4LINUX please do not forget to give the repository a star ('+self.PRODUCT_WEBSITE+').')
 
 	def GetAttributesAsDict(self):
 		finalDict = {}
@@ -114,11 +115,10 @@ class LapsCli():
 					return
 
 			# no result found
-			if count == 0: self.printResult('No Result For', computerName)
+			if count == 0: eprint('No result for query »'+computerName+'«')
 		except Exception as e:
 			# display error
-			self.printResult('Error', str(e))
-			print(str(e))
+			eprint('Error:', str(e))
 			# reset connection
 			self.server = None
 			self.connection = None
@@ -144,7 +144,7 @@ class LapsCli():
 
 		except Exception as e:
 			# display error
-			self.printResult('Error', str(e))
+			eprint('Error:', str(e))
 			# reset connection
 			self.server = None
 			self.connection = None
@@ -168,14 +168,30 @@ class LapsCli():
 		for entry in self.connection.entries:
 			# display single result
 			for title, attribute in self.GetAttributesAsDict().items():
-				if(str(attribute) == self.cfgLdapAttributePasswordExpiry):
+				stringValue = str(entry[str(attribute)])
+
+				# if this is the password attribute -> try to parse Native LAPS JSON
+				if(str(attribute) == self.cfgLdapAttributePassword):
 					try:
-						self.printResult(str(title), str(entry[str(attribute)])+' ('+str(filetime_to_dt( int(str(entry[str(attribute)])) ))+')')
+						jsonValue = json.loads(stringValue)
+						if(not 'n' in jsonValue or not 'p' in jsonValue or not 't' in jsonValue):
+							raise Exception('Invalid LAPS JSON')
+						self.printResult(str(title), jsonValue['p']+' ('+jsonValue['n']+') ('+str(filetime_to_dt( int(jsonValue['t'], 16)) )+')')
 					except Exception as e:
-						self.printResult('Error', str(e))
-						self.printResult(str(title), str(entry[str(attribute)]))
+						self.printResult(str(title), stringValue)
+
+				# if this is the expiry date attribute -> format date
+				elif(str(attribute) == self.cfgLdapAttributePasswordExpiry):
+					try:
+						self.printResult(str(title), stringValue+' ('+str(filetime_to_dt( int(stringValue) ))+')')
+					except Exception as e:
+						eprint('Error:', str(e))
+						self.printResult(str(title), stringValue)
+
+				# display raw value
 				else:
-					self.printResult(str(title), str(entry[str(attribute)]))
+					self.printResult(str(title), stringValue)
+
 			return
 
 	def printResult(self, attribute, value):
@@ -359,6 +375,7 @@ class LapsCli():
 				self.cfgServer = cfgJson.get('server', self.cfgServer)
 				self.cfgDomain = cfgJson.get('domain', self.cfgDomain)
 				self.cfgUsername = cfgJson.get('username', self.cfgUsername)
+				self.cfgLdapAttributePassword = str(cfgJson.get('ldap-attribute-password', self.cfgLdapAttributePassword))
 				self.cfgLdapAttributePasswordExpiry = str(cfgJson.get('ldap-attribute-password-expiry', self.cfgLdapAttributePasswordExpiry))
 				tmpLdapAttributes = cfgJson.get('ldap-attributes', self.cfgLdapAttributes)
 				if(isinstance(tmpLdapAttributes, list) or isinstance(tmpLdapAttributes, dict)):
@@ -381,11 +398,15 @@ class LapsCli():
 					'server': saveServers,
 					'domain': self.cfgDomain,
 					'username': self.cfgUsername,
+					'ldap-attribute-password': self.cfgLdapAttributePassword,
 					'ldap-attribute-password-expiry': self.cfgLdapAttributePasswordExpiry,
 					'ldap-attributes': self.cfgLdapAttributes
 				}, json_file, indent=4)
 		except Exception as e:
 			print('Error saving settings file: '+str(e))
+
+def eprint(*args, **kwargs):
+	print(*args, file=sys.stderr, **kwargs)
 
 def main():
 	parser = argparse.ArgumentParser(epilog='© 2021-2023 Georg Sieber - https://georg-sieber.de')

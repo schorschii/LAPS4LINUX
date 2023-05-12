@@ -53,8 +53,9 @@ class LapsRunner():
 	cfgLength           = 15 # the generated password length
 	cfgAlphabet         = string.ascii_letters+string.digits+string.punctuation # allowed chars for the new password
 
-	cfgLdapAttributePassword       = 'ms-Mcs-AdmPwd'
-	cfgLdapAttributePasswordExpiry = 'ms-Mcs-AdmPwdExpirationTime'
+	cfgUseNativeLapsAttributeSchema = True
+	cfgLdapAttributePassword        = 'msLAPS-Password'
+	cfgLdapAttributePasswordExpiry  = 'msLAPS-PasswordExpirationTime'
 
 	tmpDn         = ''
 	tmpPassword   = ''
@@ -69,10 +70,7 @@ class LapsRunner():
 
 		# show note
 		print(self.PRODUCT_NAME+' v'+self.PRODUCT_VERSION)
-		if not 'slub' in self.cfgDomain:
-			print('If you like LAPS4LINUX please consider making a donation to support further development ('+self.PRODUCT_WEBSITE+').')
-		else:
-			print(self.PRODUCT_WEBSITE)
+		print('If you like LAPS4LINUX please do not forget to give the repository a star ('+self.PRODUCT_WEBSITE+').')
 		print('')
 
 	def getHostname(self):
@@ -181,6 +179,14 @@ class LapsRunner():
 		# calc new time
 		newExpirationDateTime = dt_to_filetime( newExpirationDate )
 
+		# apply Native LAPS JSON format
+		if(self.cfgUseNativeLapsAttributeSchema):
+			newPassword = json.dumps({
+				'p': newPassword,
+				'n': self.cfgUsername,
+				't': ('%0.2X' % newExpirationDateTime).lower()
+			})
+
 		# start query
 		self.connection.modify(self.tmpDn, {
 			self.cfgLdapAttributePasswordExpiry: [(ldap3.MODIFY_REPLACE, [str(newExpirationDateTime)])],
@@ -229,6 +235,7 @@ class LapsRunner():
 			self.cfgDaysValid = int(cfgJson.get('password-days-valid', self.cfgDaysValid))
 			self.cfgLength = int(cfgJson.get('password-length', self.cfgLength))
 			self.cfgAlphabet = str(cfgJson.get('password-alphabet', self.cfgAlphabet))
+			self.cfgUseNativeLapsAttributeSchema = str(cfgJson.get('native-laps', self.cfgUseNativeLapsAttributeSchema))
 			self.cfgLdapAttributePassword = str(cfgJson.get('ldap-attribute-password', self.cfgLdapAttributePassword))
 			self.cfgLdapAttributePasswordExpiry = str(cfgJson.get('ldap-attribute-password-expiry', self.cfgLdapAttributePasswordExpiry))
 			self.cfgHostname = cfgJson.get('hostname', self.cfgHostname)

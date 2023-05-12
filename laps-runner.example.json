@@ -23,8 +23,9 @@
     "cred-cache-file": "/tmp/laps.temp",
     "client-keytab-file": "/etc/krb5.keytab",
 
-    "ldap-attribute-password": "ms-Mcs-AdmPwd",
-    "ldap-attribute-password-expiry": "ms-Mcs-AdmPwdExpirationTime",
+    "native-laps": true,
+    "ldap-attribute-password": "msLAPS-Password",
+    "ldap-attribute-password-expiry": "msLAPS-PasswordExpirationTime",
 
     "hostname": null,
 

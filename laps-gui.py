@@ -171,11 +171,11 @@ class LapsMainWindow(QMainWindow):
 	cfgUsername    = ''
 	cfgPassword    = ''
 	cfgLdapAttributes              = {
-		'Administrator Password':   'ms-Mcs-AdmPwd',
-		'Password Expiration Date': 'ms-Mcs-AdmPwdExpirationTime'
+		'Administrator Password':   'msLAPS-Password',
+		'Password Expiration Date': 'msLAPS-PasswordExpirationTime'
 	}
-	cfgLdapAttributePassword       = 'ms-Mcs-AdmPwd'
-	cfgLdapAttributePasswordExpiry = 'ms-Mcs-AdmPwdExpirationTime'
+	cfgLdapAttributePassword       = 'msLAPS-Password'
+	cfgLdapAttributePasswordExpiry = 'msLAPS-PasswordExpirationTime'
 	cfgConnectUsername             = 'administrator'
 	refLdapAttributesTextBoxes     = {}
 
@@ -448,6 +448,7 @@ class LapsMainWindow(QMainWindow):
 			self.statusBar.showMessage('No Result For: '+computerName+' ('+self.GetConnectionString()+')')
 			for title, attribute in self.GetAttributesAsDict().items():
 				self.refLdapAttributesTextBoxes[str(title)].setText('')
+				self.refLdapAttributesTextBoxes[str(title)].setToolTip('')
 		except Exception as e:
 			# display error
 			self.statusBar.showMessage(str(e))
@@ -489,15 +490,33 @@ class LapsMainWindow(QMainWindow):
 			self.btnSetExpirationTime.setEnabled(True)
 			self.btnSearchComputer.setEnabled(True)
 			for title, attribute in self.GetAttributesAsDict().items():
+				stringValue = str(entry[str(attribute)])
 				textBox = self.refLdapAttributesTextBoxes[str(title)]
-				if(str(attribute) == self.cfgLdapAttributePasswordExpiry):
+
+				# if this is the password attribute -> try to parse Native LAPS JSON
+				if(str(attribute) == self.cfgLdapAttributePassword):
 					try:
-						textBox.setText( str(filetime_to_dt( int(str(entry[str(attribute)])) )) )
+						jsonValue = json.loads(stringValue)
+						if(not 'n' in jsonValue or not 'p' in jsonValue or not 't' in jsonValue):
+							raise Exception('Invalid LAPS JSON')
+						self.cfgConnectUsername = jsonValue['n']
+						textBox.setText( jsonValue['p'] )
+						textBox.setToolTip( jsonValue['n']+', '+str(filetime_to_dt( int(jsonValue['t'], 16)) ) )
+					except Exception as e:
+						textBox.setText( stringValue )
+
+				# if this is the expiry date attribute -> format date
+				elif(str(attribute) == self.cfgLdapAttributePasswordExpiry):
+					try:
+						textBox.setText( str(filetime_to_dt( int(stringValue) )) )
 					except Exception as e:
 						print(str(e))
-						textBox.setText( str(entry[str(attribute)]) )
+						textBox.setText( stringValue )
+
+				# display raw value
 				else:
-					textBox.setText( str(entry[str(attribute)]) )
+					textBox.setText( stringValue )
+
 			return
 
 	def checkCredentialsAndConnect(self):
