@@ -174,10 +174,11 @@ class LapsMainWindow(QMainWindow):
 		'Administrator Password':   'msLAPS-Password',
 		'Password Expiration Date': 'msLAPS-PasswordExpirationTime'
 	}
-	cfgLdapAttributePassword       = 'msLAPS-Password'
-	cfgLdapAttributePasswordExpiry = 'msLAPS-PasswordExpirationTime'
-	cfgConnectUsername             = 'administrator'
-	refLdapAttributesTextBoxes     = {}
+	cfgLdapAttributePassword        = 'msLAPS-Password'
+	cfgLdapAttributePasswordExpiry  = 'msLAPS-PasswordExpirationTime'
+	cfgLdapAttributePasswordHistory = 'msLAPS-EncryptedPasswordHistory'
+	cfgConnectUsername              = 'administrator'
+	refLdapAttributesTextBoxes      = {}
 
 
 	def __init__(self):
@@ -267,7 +268,11 @@ class LapsMainWindow(QMainWindow):
 			lblAdditionalAttribute = QLabel(str(title))
 			grid.addWidget(lblAdditionalAttribute, gridLine, 0)
 			gridLine += 1
-			txtAdditionalAttribute = QLineEdit()
+			if(attribute == self.cfgLdapAttributePasswordHistory):
+				txtAdditionalAttribute = QPlainTextEdit()
+				txtAdditionalAttribute.setLineWrapMode(QPlainTextEdit.LineWrapMode.NoWrap)
+			else:
+				txtAdditionalAttribute = QLineEdit()
 			txtAdditionalAttribute.setReadOnly(True)
 			if(self.PLATFORM=='win32'):
 				font = QFont('Consolas', 14)
@@ -492,16 +497,51 @@ class LapsMainWindow(QMainWindow):
 				stringValue = str(entry[str(attribute)])
 				textBox = self.refLdapAttributesTextBoxes[str(title)]
 
-				# if this is the password attribute -> try to parse Native LAPS JSON
+				# if this is the password attribute -> try to parse Native LAPS format
 				if(str(attribute) == self.cfgLdapAttributePassword):
 					try:
+						# decrypt if necessary
+						if(len(entry[str(attribute)]) > 0 and type(entry[str(attribute)].values[0]) is bytes):
+							decryptedValue = self.decryptPassword( entry[str(attribute)].values[0][16:] )
+							if(decryptedValue): stringValue = decryptedValue
+
+						# parse Native LAPS JSON
 						jsonValue = json.loads(stringValue)
 						if(not 'n' in jsonValue or not 'p' in jsonValue or not 't' in jsonValue):
 							raise Exception('Invalid LAPS JSON')
+
+						# update values in GUI
 						self.cfgConnectUsername = jsonValue['n']
 						textBox.setText( jsonValue['p'] )
 						textBox.setToolTip( jsonValue['n']+', '+str(filetime_to_dt( int(jsonValue['t'], 16)) ) )
 					except Exception as e:
+						# directly use LDAP value as password (Legacy LAPS)
+						textBox.setText( stringValue )
+
+				# if this is the encrypted password history attribute -> try to parse Native LAPS format
+				elif(str(attribute) == self.cfgLdapAttributePasswordHistory):
+					try:
+						lines = []
+						for value in entry[str(attribute)].values:
+							# decrypt if necessary
+							if(len(entry[str(attribute)]) > 0 and type(value) is bytes):
+								decryptedValue = self.decryptPassword(value[16:])
+								if(decryptedValue): stringValue = decryptedValue
+
+							# parse Native LAPS JSON
+							jsonValue = json.loads(stringValue)
+							if(not 'n' in jsonValue or not 'p' in jsonValue or not 't' in jsonValue):
+								raise Exception('Invalid LAPS JSON')
+							lines.append( jsonValue['p']+'  '+jsonValue['n']+'  '+str(filetime_to_dt( int(jsonValue['t'], 16)) ) )
+
+						# update values in GUI
+						if(type(textBox) is QPlainTextEdit):
+							textBox.setPlainText( "\n".join(lines) )
+						else:
+							textBox.setText( "\n".join(lines) )
+					except Exception as e:
+						# fallback
+						print(e)
 						textBox.setText( stringValue )
 
 				# if this is the expiry date attribute -> format date
@@ -517,6 +557,19 @@ class LapsMainWindow(QMainWindow):
 					textBox.setText( stringValue )
 
 			return
+
+	def decryptPassword(self, blob):
+		for server in self.cfgServer:
+			try:
+				import dpapi_ng
+				decrypted = dpapi_ng.ncrypt_unprotect_secret(
+					blob, server = server['address'],
+					username = None if self.cfgUsername=='' else self.cfgUsername,
+					password = None if self.cfgPassword=='' else self.cfgPassword
+				)
+				return decrypted.decode('utf-8').replace("\x00", "")
+			except Exception as e:
+				print(e)
 
 	def checkCredentialsAndConnect(self):
 		# ask for server address and domain name if not already set via config file
@@ -697,6 +750,7 @@ class LapsMainWindow(QMainWindow):
 				self.cfgUsername = cfgJson.get('username', self.cfgUsername)
 				self.cfgLdapAttributePassword = str(cfgJson.get('ldap-attribute-password', self.cfgLdapAttributePassword))
 				self.cfgLdapAttributePasswordExpiry = str(cfgJson.get('ldap-attribute-password-expiry', self.cfgLdapAttributePasswordExpiry))
+				self.cfgLdapAttributePasswordHistory = str(cfgJson.get('ldap-attribute-password-history', self.cfgLdapAttributePasswordHistory))
 				tmpLdapAttributes = cfgJson.get('ldap-attributes', self.cfgLdapAttributes)
 				self.cfgConnectUsername = str(cfgJson.get('connect-username', self.cfgConnectUsername))
 				if(isinstance(tmpLdapAttributes, list) or isinstance(tmpLdapAttributes, dict)):
@@ -721,6 +775,7 @@ class LapsMainWindow(QMainWindow):
 					'username': self.cfgUsername,
 					'ldap-attribute-password': self.cfgLdapAttributePassword,
 					'ldap-attribute-password-expiry': self.cfgLdapAttributePasswordExpiry,
+					'ldap-attribute-password-history': self.cfgLdapAttributePasswordHistory,
 					'ldap-attributes': self.cfgLdapAttributes,
 					'connect-username': self.cfgConnectUsername
 				}, json_file, indent=4)

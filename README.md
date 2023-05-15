@@ -2,7 +2,7 @@
 Linux implementation of the Local Administrator Password Solution (LAPS) from Microsoft.
 
 ## Legacy and Native LAPS
-Microsoft introducted the new "Native LAPS" in 2023. In contrast to Legacy LAPS, the new version uses different LDAP attributes and has the option to store the password encrypted in the LDAP directory. LAPS4LINUX supports both versions and you can switch between them by simply adjusting your configuration. Encrypted passwords are currently not supported.
+Microsoft introducted the new "Native LAPS" in 2023. In contrast to Legacy LAPS, the new version uses different LDAP attributes and has the option to store the password encrypted in the LDAP directory. LAPS4LINUX supports both versions and you can switch between them by simply adjusting your configuration. Encrypted passwords are currently supported only within the client, not within the runner.
 
 LAPS4LINUX uses the Native LAPS attributes as default. To upgrade to Native LAPS from a previous LAPS4LINUX version, please update your client and runner config file:
 
@@ -23,7 +23,7 @@ LAPS4LINUX uses the Native LAPS attributes as default. To upgrade to Native LAPS
 </details>
 
 <details>
-<summary>Native LAPS</summary>
+<summary>Native LAPS (not encrypted)</summary>
 
 ```
 .....
@@ -33,6 +33,24 @@ LAPS4LINUX uses the Native LAPS attributes as default. To upgrade to Native LAPS
 "ldap-attributes": {
     "Administrator Password": "msLAPS-Password",
     "Password Expiration Date": "msLAPS-PasswordExpirationTime"
+}
+.....
+```
+</details>
+
+<details>
+<summary>Native LAPS (encrypted, LAPS client only)</summary>
+
+```
+.....
+"native-laps": true,
+"ldap-attribute-password": "msLAPS-EncryptedPassword",
+"ldap-attribute-password-expiry": "msLAPS-PasswordExpirationTime",
+"ldap-attribute-password-history": "msLAPS-EncryptedPasswordHistory",
+"ldap-attributes": {
+    "Decrypted Administrator Password": "msLAPS-EncryptedPassword",
+    "Password Expiration Date": "msLAPS-PasswordExpirationTime",
+    "Administrator Password History": "msLAPS-EncryptedPasswordHistory"
 }
 .....
 ```
@@ -85,7 +103,7 @@ Alternatively, you can use LDAPS by editing the config file (`~/.config/laps-cli
 If you are managing multiple domains, you probably want to search for a computer in all domains. Please use the global catalog for this. This means that you need to set the option `gc-port` in the configuration file of all servers, e.g. to `3268` (LDAP) or `3269` (LDAPS).
 
 <details>
-<summary>Example:</summary>
+<summary>Example</summary>
 
 ```
 {

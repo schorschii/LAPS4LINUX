@@ -9,5 +9,5 @@ set -e
 # register protocol scheme handler
 update-desktop-database
 
-# we need the newest version from pyPI
-sudo -H pip3 install ldap3
+# we need the newest ldap3 version from pyPI
+sudo -H pip3 install ldap3 dpapi-ng[kerberos]

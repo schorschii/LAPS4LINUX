@@ -55,8 +55,9 @@ class LapsCli():
 		'Administrator Password':   'msLAPS-Password',
 		'Password Expiration Date': 'msLAPS-PasswordExpirationTime'
 	}
-	cfgLdapAttributePassword       = 'msLAPS-Password'
-	cfgLdapAttributePasswordExpiry = 'msLAPS-PasswordExpirationTime'
+	cfgLdapAttributePassword        = 'msLAPS-Password'
+	cfgLdapAttributePasswordExpiry  = 'msLAPS-PasswordExpirationTime'
+	cfgLdapAttributePasswordHistory = 'msLAPS-EncryptedPasswordHistory'
 
 
 	def __init__(self, useKerberos=None):
@@ -103,10 +104,24 @@ class LapsCli():
 				count += 1
 				# display result list
 				if computerName == '*':
-					displayValues = []
+					displayValues = [str(entry['SAMAccountname'])]
 					for title, attribute in self.GetAttributesAsDict().items():
-						displayValues.append(str(entry[str(attribute)]).ljust(25))
-					print(str(entry['SAMAccountname'])+' : '+str.join(' : ', displayValues))
+						stringValue = str(entry[str(attribute)])
+						try:
+							# decrypt if necessary
+							if(len(entry[str(attribute)]) > 0 and type(entry[str(attribute)][0]) is bytes):
+								decryptedValue = self.decryptPassword(entry[str(attribute)][0][16:])
+								if(decryptedValue): stringValue = decryptedValue
+							# parse Native LAPS JSON
+							jsonValue = json.loads(stringValue)
+							if(not 'n' in jsonValue or not 'p' in jsonValue or not 't' in jsonValue):
+								raise Exception('Invalid LAPS JSON')
+							# display values
+							displayValues.append(jsonValue['p']+'  ('+jsonValue['n']+')  ('+str(filetime_to_dt( int(jsonValue['t'], 16)) )+')')
+						except Exception as e:
+							displayValues.append(stringValue)
+					print("\t".join(displayValues))
+
 				# display single result
 				else:
 					self.printResult('Found', str(entry['distinguishedName']))
@@ -170,14 +185,44 @@ class LapsCli():
 			for title, attribute in self.GetAttributesAsDict().items():
 				stringValue = str(entry[str(attribute)])
 
-				# if this is the password attribute -> try to parse Native LAPS JSON
+				# if this is the password attribute -> try to parse Native LAPS format
 				if(str(attribute) == self.cfgLdapAttributePassword):
 					try:
+						# decrypt if necessary
+						if(len(entry[str(attribute)]) > 0 and type(entry[str(attribute)].values[0]) is bytes):
+							decryptedValue = self.decryptPassword( entry[str(attribute)].values[0][16:] )
+							if(decryptedValue): stringValue = decryptedValue
+
+						# parse Native LAPS JSON
 						jsonValue = json.loads(stringValue)
 						if(not 'n' in jsonValue or not 'p' in jsonValue or not 't' in jsonValue):
 							raise Exception('Invalid LAPS JSON')
-						self.printResult(str(title), jsonValue['p']+' ('+jsonValue['n']+') ('+str(filetime_to_dt( int(jsonValue['t'], 16)) )+')')
+
+						# display values
+						self.printResult(str(title), jsonValue['p']+'  ('+jsonValue['n']+')  ('+str(filetime_to_dt( int(jsonValue['t'], 16)) )+')')
 					except Exception as e:
+						# directly use LDAP value as password (Legacy LAPS)
+						self.printResult(str(title), stringValue)
+
+				# if this is the encrypted password history attribute -> try to parse Native LAPS format
+				elif(str(attribute) == self.cfgLdapAttributePasswordHistory):
+					try:
+						for value in entry[str(attribute)].values:
+							# decrypt if necessary
+							if(len(entry[str(attribute)]) > 0 and type(value) is bytes):
+								decryptedValue = self.decryptPassword(value[16:])
+								if(decryptedValue): stringValue = decryptedValue
+
+							# parse Native LAPS JSON
+							jsonValue = json.loads(stringValue)
+							if(not 'n' in jsonValue or not 'p' in jsonValue or not 't' in jsonValue):
+								raise Exception('Invalid LAPS JSON')
+
+							# update values in GUI
+							self.printResult(str(title), jsonValue['p']+'  ('+jsonValue['n']+')  ('+str(filetime_to_dt( int(jsonValue['t'], 16)) )+')')
+					except Exception as e:
+						# fallback
+						print(e)
 						self.printResult(str(title), stringValue)
 
 				# if this is the expiry date attribute -> format date
@@ -194,8 +239,21 @@ class LapsCli():
 
 			return
 
+	def decryptPassword(self, blob):
+		for server in self.cfgServer:
+			try:
+				import dpapi_ng
+				decrypted = dpapi_ng.ncrypt_unprotect_secret(
+					blob, server = server['address'],
+					username = None if self.cfgUsername=='' else self.cfgUsername,
+					password = None if self.cfgPassword=='' else self.cfgPassword
+				)
+				return decrypted.decode('utf-8').replace("\x00", "")
+			except Exception as e:
+				print(e)
+
 	def printResult(self, attribute, value):
-		print((attribute+':').ljust(26)+value)
+		print((attribute+':').ljust(34)+value)
 
 	def checkCredentialsAndConnect(self):
 		# ask for server address and domain name if not already set via config file
@@ -377,6 +435,7 @@ class LapsCli():
 				self.cfgUsername = cfgJson.get('username', self.cfgUsername)
 				self.cfgLdapAttributePassword = str(cfgJson.get('ldap-attribute-password', self.cfgLdapAttributePassword))
 				self.cfgLdapAttributePasswordExpiry = str(cfgJson.get('ldap-attribute-password-expiry', self.cfgLdapAttributePasswordExpiry))
+				self.cfgLdapAttributePasswordHistory = str(cfgJson.get('ldap-attribute-password-history', self.cfgLdapAttributePasswordHistory))
 				tmpLdapAttributes = cfgJson.get('ldap-attributes', self.cfgLdapAttributes)
 				if(isinstance(tmpLdapAttributes, list) or isinstance(tmpLdapAttributes, dict)):
 					self.cfgLdapAttributes = tmpLdapAttributes
@@ -400,6 +459,7 @@ class LapsCli():
 					'username': self.cfgUsername,
 					'ldap-attribute-password': self.cfgLdapAttributePassword,
 					'ldap-attribute-password-expiry': self.cfgLdapAttributePasswordExpiry,
+					'ldap-attribute-password-history': self.cfgLdapAttributePasswordHistory,
 					'ldap-attributes': self.cfgLdapAttributes
 				}, json_file, indent=4)
 		except Exception as e:
