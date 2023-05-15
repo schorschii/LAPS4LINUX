@@ -10,6 +10,7 @@ from pathlib import Path
 from os import path, makedirs, rename
 from datetime import datetime
 from dns import resolver, rdatatype
+from functools import partial
 import ldap3
 import ssl
 import getpass
@@ -266,6 +267,10 @@ class LapsMainWindow(QMainWindow):
 		grid.addWidget(self.btnSearchComputer, gridLine, 1)
 		gridLine += 1
 
+		self.btnSetExpirationTime = QPushButton('Set')
+		self.btnSetExpirationTime.setEnabled(False)
+		self.btnSetExpirationTime.clicked.connect(self.OnClickSetExpiry)
+
 		for title, attribute in self.GetAttributesAsDict().items():
 			lblAdditionalAttribute = QLabel(str(title))
 			grid.addWidget(lblAdditionalAttribute, gridLine, 0)
@@ -284,14 +289,13 @@ class LapsMainWindow(QMainWindow):
 				font.setPointSize(18 if self.PLATFORM=='darwin' else 14)
 			txtAdditionalAttribute.setFont(font)
 			grid.addWidget(txtAdditionalAttribute, gridLine, 0)
-			gridLine += 1
 			self.refLdapAttributesTextBoxes[str(title)] = txtAdditionalAttribute
-
-		self.btnSetExpirationTime = QPushButton('Set New Expiration Date')
-		self.btnSetExpirationTime.setEnabled(False)
-		self.btnSetExpirationTime.clicked.connect(self.OnClickSetExpiry)
-		if(self.cfgLdapAttributePasswordExpiry.strip() != ''):
-			grid.addWidget(self.btnSetExpirationTime, gridLine, 0)
+			if(attribute == self.cfgLdapAttributePasswordExpiry):
+				grid.addWidget(self.btnSetExpirationTime, gridLine, 1)
+			else:
+				btnCopy = QPushButton('Copy')
+				btnCopy.clicked.connect(partial(self.OnClickCopy, txtAdditionalAttribute))
+				grid.addWidget(btnCopy, gridLine, 1)
 			gridLine += 1
 
 		widget = QWidget(self)
@@ -326,6 +330,15 @@ class LapsMainWindow(QMainWindow):
 
 	def OnQuit(self, e):
 		sys.exit()
+
+	def OnClickCopy(self, lineEdit, e):
+		if(type(lineEdit) == QPlainTextEdit):
+			text = lineEdit.toPlainText()
+		else:
+			text = lineEdit.text()
+		cb = QApplication.clipboard()
+		cb.clear(mode=cb.Clipboard)
+		cb.setText(text, mode=cb.Clipboard)
 
 	def OnClickKerberos(self, e):
 		self.cfgUseKerberos = not self.cfgUseKerberos
