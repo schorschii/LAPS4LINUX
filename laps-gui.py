@@ -171,10 +171,12 @@ class LapsMainWindow(QMainWindow):
 	cfgUsername    = ''
 	cfgPassword    = ''
 	cfgLdapAttributes              = {
-		'Administrator Password':   'msLAPS-Password',
-		'Password Expiration Date': 'msLAPS-PasswordExpirationTime'
+		'Administrator Password':           'msLAPS-Password',
+		'Decrypted Administrator Password': 'msLAPS-EncryptedPassword',
+		'Password Expiration Date':         'msLAPS-PasswordExpirationTime',
+		'Administrator Password History':   'msLAPS-EncryptedPasswordHistory'
 	}
-	cfgLdapAttributePassword        = 'msLAPS-Password'
+	cfgLdapAttributePassword        = 'msLAPS-EncryptedPassword'
 	cfgLdapAttributePasswordExpiry  = 'msLAPS-PasswordExpirationTime'
 	cfgLdapAttributePasswordHistory = 'msLAPS-EncryptedPasswordHistory'
 	cfgConnectUsername              = 'administrator'
