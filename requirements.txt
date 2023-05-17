@@ -1,0 +1,6 @@
+cryptography
+dnspython
+dpapi-ng[kerberos]
+gssapi  # needs libkrb5-dev
+ldap3
+PyQt5
