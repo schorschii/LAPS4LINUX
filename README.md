@@ -41,6 +41,7 @@ LAPS4LINUX uses the Native LAPS attributes as default. To upgrade to Native LAPS
 <details>
 <summary>Native LAPS (encrypted, LAPS client only)</summary>
 
+Please note: only SID security descriptors are supported (e.g. `S-1-5-21-2185496602-3367037166-1388177638-1103`). Do not use group names (`DOMAIN\groupname`).
 ```
 .....
 "native-laps": true,

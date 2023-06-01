@@ -188,44 +188,21 @@ class LapsCli():
 				stringValue = str(entry[str(attribute)])
 
 				# if this is the password attribute -> try to parse Native LAPS format
-				if(str(attribute) == self.cfgLdapAttributePassword):
-					try:
-						# decrypt if necessary
-						if(len(entry[str(attribute)]) > 0 and type(entry[str(attribute)].values[0]) is bytes):
-							decryptedValue = self.decryptPassword( entry[str(attribute)].values[0][16:] )
-							if(decryptedValue): stringValue = decryptedValue
-
-						# parse Native LAPS JSON
-						jsonValue = json.loads(stringValue)
-						if(not 'n' in jsonValue or not 'p' in jsonValue or not 't' in jsonValue):
-							raise Exception('Invalid LAPS JSON')
-
-						# display values
-						self.printResult(str(title), jsonValue['p']+'  ('+jsonValue['n']+')  ('+str(filetime_to_dt( int(jsonValue['t'], 16)) )+')')
-					except Exception as e:
-						# directly use LDAP value as password (Legacy LAPS)
-						self.printResult(str(title), stringValue)
+				if(str(attribute) == self.cfgLdapAttributePassword and len(entry[str(attribute)]) > 0):
+					password, username, timestamp = self.parseLapsValue(entry[str(attribute)].values[0])
+					if(not username or not password):
+						self.printResult(str(title), password)
+					else:
+						self.printResult(str(title), password+'  ('+username+')  ('+timestamp+')')
 
 				# if this is the encrypted password history attribute -> try to parse Native LAPS format
-				elif(str(attribute) == self.cfgLdapAttributePasswordHistory):
-					try:
-						for value in entry[str(attribute)].values:
-							# decrypt if necessary
-							if(len(entry[str(attribute)]) > 0 and type(value) is bytes):
-								decryptedValue = self.decryptPassword(value[16:])
-								if(decryptedValue): stringValue = decryptedValue
-
-							# parse Native LAPS JSON
-							jsonValue = json.loads(stringValue)
-							if(not 'n' in jsonValue or not 'p' in jsonValue or not 't' in jsonValue):
-								raise Exception('Invalid LAPS JSON')
-
-							# update values in GUI
-							self.printResult(str(title), jsonValue['p']+'  ('+jsonValue['n']+')  ('+str(filetime_to_dt( int(jsonValue['t'], 16)) )+')')
-					except Exception as e:
-						# fallback
-						print(e)
-						self.printResult(str(title), stringValue)
+				elif(str(attribute) == self.cfgLdapAttributePasswordHistory and len(entry[str(attribute)]) > 0):
+					for value in entry[str(attribute)].values:
+						password, username, timestamp = self.parseLapsValue(entry[str(attribute)].values[0])
+						if(not username or not password):
+							self.printResult(str(title), password)
+						else:
+							self.printResult(str(title), password+'  ('+username+')  ('+timestamp+')')
 
 				# if this is the expiry date attribute -> format date
 				elif(str(attribute) == self.cfgLdapAttributePasswordExpiry):
@@ -251,11 +228,29 @@ class LapsCli():
 					password = None if self.cfgPassword=='' else self.cfgPassword
 				)
 				return decrypted.decode('utf-8').replace("\x00", "")
+
 			except Exception as e:
-				print(e)
+				eprint('Unable to decrypt blob:', e)
+
+	def parseLapsValue(self, ldapValue):
+		try:
+			# if type is bytes -> try to decrypt
+			if(type(ldapValue) is bytes):
+				decryptedValue = self.decryptPassword(ldapValue[16:])
+				if(decryptedValue): ldapValue = decryptedValue
+
+			# parse Native LAPS JSON
+			jsonDict = json.loads(ldapValue)
+			if(not 'n' in jsonDict or not 'p' in jsonDict or not 't' in jsonDict):
+				raise Exception('Invalid LAPS JSON')
+			return jsonDict['p'], jsonDict['n'], str(filetime_to_dt( int(jsonDict['t'], 16) ))
+
+		except Exception as e:
+			# directly use LDAP value as password (Legacy LAPS)
+			return ldapValue, None, None
 
 	def printResult(self, attribute, value):
-		print((attribute+':').ljust(34)+value)
+		print((attribute+':').ljust(34)+str(value))
 
 	def checkCredentialsAndConnect(self):
 		# ask for server address and domain name if not already set via config file
