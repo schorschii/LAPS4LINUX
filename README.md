@@ -1,7 +1,7 @@
 <img align="right" style="width:180px" src="assets/laps.png">
 
 # LAPS4LINUX
-Linux and macOS implementation of the Local Administrator Password Solution (LAPS) from Microsoft. The client is also executable under Windows and provides additional features (e.g. display additional LDAP values, directly start remote connections and it can be started with `laps://` protocole scheme parameter to directly start search).
+Linux and macOS implementation of the Local Administrator Password Solution (LAPS) from Microsoft. The client is also executable under Windows and provides additional features (e.g. display additional LDAP values, directly start remote connections and it can be called with `laps://` protocole scheme parameter to directly start search).
 
 ## Legacy and Native LAPS
 Microsoft introducted the new "Native LAPS" in 2023. In contrast to Legacy LAPS, the new version uses different LDAP attributes and has the option to store the password encrypted in the LDAP directory. LAPS4LINUX supports both versions and you can switch between them by simply adjusting your configuration. Encrypted passwords are currently supported only within the client, not within the runner.
