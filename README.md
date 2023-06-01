@@ -1,3 +1,5 @@
+<img style="float:right;width:256px" src="assets/laps.png">
+
 # LAPS4LINUX
 Linux implementation of the Local Administrator Password Solution (LAPS) from Microsoft.
 
