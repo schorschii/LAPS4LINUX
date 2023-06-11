@@ -22,13 +22,29 @@
     "username": "johndoe",
     "use-kerberos": true,
 
-    "ldap-attribute-password": "msLAPS-Password",
-    "ldap-attribute-password-expiry": "msLAPS-PasswordExpirationTime",
+    "ldap-attribute-password": [
+        "msLAPS-EncryptedPassword",
+        "msLAPS-Password",
+        "ms-Mcs-AdmPwd"
+    ],
+    "ldap-attribute-password-expiry": [
+        "msLAPS-PasswordExpirationTime",
+        "ms-McsAdmPwdExpirationTime"
+    ],
+    "ldap-attribute-password-history": "msLAPS-EncryptedPasswordHistory",
     "ldap-attributes": {
         "Operating System": "operatingSystem",
         "Last Logon Timestamp": "lastLogonTimestamp",
-        "Administrator Password": "msLAPS-Password",
-        "Password Expiration Date": "msLAPS-PasswordExpirationTime"
+        "Administrator Password": [
+            "msLAPS-EncryptedPassword",
+            "msLAPS-Password",
+            "ms-Mcs-AdmPwd"
+        ],
+        "Password Expiration Date": [
+            "msLAPS-PasswordExpirationTime",
+            "ms-McsAdmPwdExpirationTime"
+        ],
+        "Administrator Password History": "msLAPS-EncryptedPasswordHistory"
     },
 
     "connect-username": "administrator"

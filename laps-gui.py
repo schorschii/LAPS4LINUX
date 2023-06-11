@@ -108,13 +108,18 @@ class LapsCalendarWindow(QDialog):
 		if parentWidget.tmpDn.strip() == '': return
 
 		try:
+			if isinstance(parentWidget.cfgLdapAttributePasswordExpiry, list) and len(parentWidget.cfgLdapAttributePasswordExpiry) > 0:
+				attributeExpirationDate = parentWidget.cfgLdapAttributePasswordExpiry[0]
+			else:
+				attributeExpirationDate = str(parentWidget.cfgLdapAttributePasswordExpiry)
+
 			# calc new time
 			newExpirationDate = datetime.combine(self.cwNewExpirationTime.selectedDate().toPyDate(), datetime.min.time())
 			newExpirationDateTime = dt_to_filetime(newExpirationDate)
 			print('new expiration time: '+str(newExpirationDateTime))
 
 			# start LDAP modify
-			parentWidget.connection.modify(parentWidget.tmpDn, { parentWidget.cfgLdapAttributePasswordExpiry: [(ldap3.MODIFY_REPLACE, [str(newExpirationDateTime)])] })
+			parentWidget.connection.modify(parentWidget.tmpDn, { attributeExpirationDate: [(ldap3.MODIFY_REPLACE, [str(newExpirationDateTime)])] })
 			if parentWidget.connection.result['result'] == 0:
 				parentWidget.showInfoDialog('Success',
 					'Expiration date successfully changed to '+str(newExpirationDate)+'.',
@@ -172,13 +177,13 @@ class LapsMainWindow(QMainWindow):
 	cfgUsername    = ''
 	cfgPassword    = ''
 	cfgLdapAttributes              = {
-		'Administrator Password':           'msLAPS-Password',
-		'Decrypted Administrator Password': 'msLAPS-EncryptedPassword',
-		'Password Expiration Date':         'msLAPS-PasswordExpirationTime',
-		'Administrator Password History':   'msLAPS-EncryptedPasswordHistory'
+		'Operating System':               'operatingSystem',
+		'Administrator Password':         ['msLAPS-EncryptedPassword', 'msLAPS-Password', 'ms-Mcs-AdmPwd'],
+		'Password Expiration Date':       ['msLAPS-PasswordExpirationTime', 'ms-McsAdmPwdExpirationTime'],
+		'Administrator Password History': 'msLAPS-EncryptedPasswordHistory'
 	}
-	cfgLdapAttributePassword        = 'msLAPS-EncryptedPassword'
-	cfgLdapAttributePasswordExpiry  = 'msLAPS-PasswordExpirationTime'
+	cfgLdapAttributePassword        = ['msLAPS-EncryptedPassword', 'msLAPS-Password', 'ms-Mcs-AdmPwd']
+	cfgLdapAttributePasswordExpiry  = ['msLAPS-PasswordExpirationTime', 'ms-McsAdmPwdExpirationTime']
 	cfgLdapAttributePasswordHistory = 'msLAPS-EncryptedPasswordHistory'
 	cfgConnectUsername              = 'administrator'
 	refLdapAttributesTextBoxes      = {}
@@ -209,7 +214,7 @@ class LapsMainWindow(QMainWindow):
 		searchAction.setShortcut('F2')
 		searchAction.triggered.connect(self.OnClickSearch)
 		fileMenu.addAction(searchAction)
-		if(self.cfgLdapAttributePasswordExpiry.strip() != ''):
+		if(self.cfgLdapAttributePasswordExpiry):
 			setExpirationDateAction = QAction('Set &Expiration', self)
 			setExpirationDateAction.setShortcut('F3')
 			setExpirationDateAction.triggered.connect(self.OnClickSetExpiry)
@@ -290,7 +295,7 @@ class LapsMainWindow(QMainWindow):
 			txtAdditionalAttribute.setFont(font)
 			grid.addWidget(txtAdditionalAttribute, gridLine, 0)
 			self.refLdapAttributesTextBoxes[str(title)] = txtAdditionalAttribute
-			if(attribute == self.cfgLdapAttributePasswordExpiry):
+			if(attribute == self.cfgLdapAttributePasswordExpiry or (isinstance(self.cfgLdapAttributePasswordExpiry, list) and attribute in self.cfgLdapAttributePasswordExpiry)):
 				grid.addWidget(self.btnSetExpirationTime, gridLine, 1)
 			else:
 				btnCopy = QPushButton('Copy')
@@ -325,7 +330,7 @@ class LapsMainWindow(QMainWindow):
 				finalDict[attribute] = attribute
 		elif(isinstance(self.cfgLdapAttributes, dict)):
 			for title, attribute in self.cfgLdapAttributes.items():
-				finalDict[str(title)] = str(attribute)
+				finalDict[str(title)] = attribute
 		return finalDict
 
 	def OnQuit(self, e):
@@ -455,11 +460,11 @@ class LapsMainWindow(QMainWindow):
 			self.connection.search(
 				search_base=self.createLdapBase(self.connection),
 				search_filter='(&(objectCategory=computer)(name='+computerName+'))',
-				attributes=['SAMAccountname', 'distinguishedName']
+				attributes=['cn', 'distinguishedName']
 			)
 			for entry in self.connection.entries:
 				self.statusBar.showMessage('Found: '+str(entry['distinguishedName'])+' ('+self.GetConnectionString()+')')
-				self.setWindowTitle(str(entry['SAMAccountname'])+' - '+self.PRODUCT_NAME)
+				self.setWindowTitle(str(entry['cn'])+' - '+self.PRODUCT_NAME)
 				self.tmpDn = str(entry['distinguishedName'])
 				self.queryAttributes()
 				return
@@ -498,37 +503,52 @@ class LapsMainWindow(QMainWindow):
 			self.btnSearchComputer.setEnabled(True)
 			return
 
-		# compile query attributes
-		attributes = ['SAMAccountname', 'distinguishedName']
-		for title, attribute in self.GetAttributesAsDict().items():
-			attributes.append(str(attribute))
 		# start LDAP search
 		self.connection.search(
 			search_base=self.tmpDn,
 			search_filter='(objectCategory=computer)',
-			attributes=attributes
+			attributes=ldap3.ALL_ATTRIBUTES
 		)
 		# display result
 		for entry in self.connection.entries:
 			self.btnSetExpirationTime.setEnabled(True)
 			self.btnSearchComputer.setEnabled(True)
+
+			# evaluate attributes of interest
 			for title, attribute in self.GetAttributesAsDict().items():
-				stringValue = str(entry[str(attribute)])
 				textBox = self.refLdapAttributesTextBoxes[str(title)]
+				value = None
+				if(isinstance(attribute, list)):
+					for _attribute in attribute:
+						# use first non-empty attribute
+						if(str(_attribute) in entry and entry[str(_attribute)]):
+							value = entry[str(_attribute)]
+							attribute = str(_attribute)
+							break
+				elif(str(attribute) in entry):
+					value = entry[str(attribute)]
+
+				# handle non-existing attributes
+				if(value == None):
+					textBox.setText('')
 
 				# if this is the password attribute -> try to parse Native LAPS format
-				if(str(attribute) == self.cfgLdapAttributePassword and len(entry[str(attribute)]) > 0):
-					password, username, timestamp = self.parseLapsValue(entry[str(attribute)].values[0])
+				elif(len(value) > 0 and
+					(str(attribute) == self.cfgLdapAttributePassword or (isinstance(self.cfgLdapAttributePassword, list) and str(attribute) in self.cfgLdapAttributePassword))
+				):
+					password, username, timestamp = self.parseLapsValue(value.values[0])
 					textBox.setText(str(password))
 					if(username and password):
 						self.cfgConnectUsername = username
 						textBox.setToolTip(username+', '+timestamp)
 
 				# if this is the encrypted password history attribute -> try to parse Native LAPS format
-				elif(str(attribute) == self.cfgLdapAttributePasswordHistory and len(entry[str(attribute)]) > 0):
+				elif(len(value) > 0 and
+					(str(attribute) == self.cfgLdapAttributePasswordHistory or (isinstance(self.cfgLdapAttributePasswordHistory, list) and str(attribute) in self.cfgLdapAttributePasswordHistory))
+				):
 					lines = []
-					for value in entry[str(attribute)].values:
-						password, username, timestamp = self.parseLapsValue(entry[str(attribute)].values[0])
+					for _value in value.values:
+						password, username, timestamp = self.parseLapsValue(_value)
 						if(not username or not password):
 							lines.append(str(password))
 						else:
@@ -539,16 +559,16 @@ class LapsMainWindow(QMainWindow):
 						textBox.setText("\n".join(lines))
 
 				# if this is the expiry date attribute -> format date
-				elif(str(attribute) == self.cfgLdapAttributePasswordExpiry):
+				elif(str(attribute) == self.cfgLdapAttributePasswordExpiry or (isinstance(self.cfgLdapAttributePasswordExpiry, list) and str(attribute) in self.cfgLdapAttributePasswordExpiry)):
 					try:
-						textBox.setText( str(filetime_to_dt( int(stringValue) )) )
+						textBox.setText( str(filetime_to_dt( int(str(value)) )) )
 					except Exception as e:
 						print(str(e))
-						textBox.setText(stringValue)
+						textBox.setText(str(value))
 
 				# display raw value
 				else:
-					textBox.setText(stringValue)
+					textBox.setText(str(value))
 
 			return
 
@@ -563,7 +583,7 @@ class LapsMainWindow(QMainWindow):
 				)
 				return decrypted.decode('utf-8').replace("\x00", "")
 			except Exception as e:
-				print(e)
+				self.showErrorDialog('Decryption Error', str(e))
 
 	def parseLapsValue(self, ldapValue):
 		try:
@@ -759,9 +779,9 @@ class LapsMainWindow(QMainWindow):
 				self.cfgServer = cfgJson.get('server', self.cfgServer)
 				self.cfgDomain = cfgJson.get('domain', self.cfgDomain)
 				self.cfgUsername = cfgJson.get('username', self.cfgUsername)
-				self.cfgLdapAttributePassword = str(cfgJson.get('ldap-attribute-password', self.cfgLdapAttributePassword))
-				self.cfgLdapAttributePasswordExpiry = str(cfgJson.get('ldap-attribute-password-expiry', self.cfgLdapAttributePasswordExpiry))
-				self.cfgLdapAttributePasswordHistory = str(cfgJson.get('ldap-attribute-password-history', self.cfgLdapAttributePasswordHistory))
+				self.cfgLdapAttributePassword = cfgJson.get('ldap-attribute-password', self.cfgLdapAttributePassword)
+				self.cfgLdapAttributePasswordExpiry = cfgJson.get('ldap-attribute-password-expiry', self.cfgLdapAttributePasswordExpiry)
+				self.cfgLdapAttributePasswordHistory = cfgJson.get('ldap-attribute-password-history', self.cfgLdapAttributePasswordHistory)
 				tmpLdapAttributes = cfgJson.get('ldap-attributes', self.cfgLdapAttributes)
 				self.cfgConnectUsername = str(cfgJson.get('connect-username', self.cfgConnectUsername))
 				if(isinstance(tmpLdapAttributes, list) or isinstance(tmpLdapAttributes, dict)):
