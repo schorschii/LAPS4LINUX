@@ -145,6 +145,11 @@ class LapsCalendarWindow(QDialog):
 	def OnClickReject(self):
 		self.close()
 
+class LapsPlainTextEdit(QPlainTextEdit):
+	# default sizeHint of (256,192) is too large for our password history
+	def sizeHint(self):
+		return QSize(200, 90)
+
 class LapsMainWindow(QMainWindow):
 	PLATFORM          = sys.platform.lower()
 
@@ -284,8 +289,9 @@ class LapsMainWindow(QMainWindow):
 			lblAdditionalAttribute = QLabel(str(title))
 			grid.addWidget(lblAdditionalAttribute, gridLine, 0)
 			gridLine += 1
-			if(attribute == self.cfgLdapAttributePasswordHistory):
-				txtAdditionalAttribute = QPlainTextEdit()
+			if(attribute == self.cfgLdapAttributePasswordHistory
+			or (isinstance(self.cfgLdapAttributePasswordHistory, list) and attribute in self.cfgLdapAttributePasswordHistory)):
+				txtAdditionalAttribute = LapsPlainTextEdit()
 				txtAdditionalAttribute.setLineWrapMode(QPlainTextEdit.LineWrapMode.NoWrap)
 			else:
 				txtAdditionalAttribute = QLineEdit()
@@ -299,7 +305,8 @@ class LapsMainWindow(QMainWindow):
 			txtAdditionalAttribute.setFont(font)
 			grid.addWidget(txtAdditionalAttribute, gridLine, 0)
 			self.refLdapAttributesTextBoxes[str(title)] = txtAdditionalAttribute
-			if(attribute == self.cfgLdapAttributePasswordExpiry or (isinstance(self.cfgLdapAttributePasswordExpiry, list) and attribute in self.cfgLdapAttributePasswordExpiry)):
+			if(attribute == self.cfgLdapAttributePasswordExpiry
+			or (isinstance(self.cfgLdapAttributePasswordExpiry, list) and attribute in self.cfgLdapAttributePasswordExpiry)):
 				grid.addWidget(self.btnSetExpirationTime, gridLine, 1)
 			else:
 				btnCopy = QPushButton('Copy')
@@ -574,7 +581,7 @@ class LapsMainWindow(QMainWindow):
 			return
 
 	def updateTextboxText(self, textBox, text):
-		if(type(textBox) is QPlainTextEdit):
+		if(isinstance(textBox, QPlainTextEdit)):
 			textBox.setPlainText(text)
 		else:
 			textBox.setText(text)
