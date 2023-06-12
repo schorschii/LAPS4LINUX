@@ -1,5 +1,5 @@
 Name:           laps4linux-client
-Version:        1.6.3
+Version:        1.7.0
 Release:        1%{?dist}
 Summary:        Laps4linux - auto-rotate the root password for AD bound (samba net, pbis, adcli) linux servers
 BuildArch:      noarch

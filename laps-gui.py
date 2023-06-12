@@ -149,7 +149,7 @@ class LapsMainWindow(QMainWindow):
 	PLATFORM          = sys.platform.lower()
 
 	PRODUCT_NAME      = 'LAPS4LINUX'
-	PRODUCT_VERSION   = '1.6.3'
+	PRODUCT_VERSION   = '1.7.0'
 	PRODUCT_WEBSITE   = 'https://github.com/schorschii/laps4linux'
 	PROTOCOL_SCHEME   = 'laps://'
 	PRODUCT_ICON      = 'laps.png'
