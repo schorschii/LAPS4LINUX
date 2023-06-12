@@ -233,18 +233,21 @@ class LapsMainWindow(QMainWindow):
 		fileMenu.addAction(quitAction)
 
 		# Connection Menu
-		# only available on linux as there is no reasonable way to open remote connections with password on other OSes
-		if(self.PLATFORM == 'linux'):
-			connectMenu = mainMenu.addMenu('&Connect')
+		connectMenu = mainMenu.addMenu('&Connect')
 
-			rdpAction = QAction('&RDP', self)
-			rdpAction.setShortcut('F5')
-			rdpAction.triggered.connect(self.OnClickRDP)
-			connectMenu.addAction(rdpAction)
-			sshAction = QAction('&SSH', self)
-			sshAction.setShortcut('F6')
-			sshAction.triggered.connect(self.OnClickSSH)
-			connectMenu.addAction(sshAction)
+		rdpAction = QAction('&RDP', self)
+		rdpAction.setShortcut('F5')
+		rdpAction.triggered.connect(self.OnClickRDP)
+		connectMenu.addAction(rdpAction)
+		sshAction = QAction('&SSH', self)
+		sshAction.setShortcut('F6')
+		sshAction.triggered.connect(self.OnClickSSH)
+		connectMenu.addAction(sshAction)
+
+		# only available on linux as there is no reasonable way to open remote connections with password on other OSes
+		if(self.PLATFORM != 'linux'):
+			rdpAction.setEnabled(False)
+			sshAction.setEnabled(False)
 
 		# Help Menu
 		helpMenu = mainMenu.addMenu('&Help')
@@ -409,6 +412,8 @@ class LapsMainWindow(QMainWindow):
 
 			# creating remmina files with permissions 400 is currently useless as remmina re-creates the file with 664 on exit with updated settings
 			# protection is done by limiting access to our config dir
+			if(os.path.isfile(self.cfgPathRemmina)):
+				os.unlink(self.cfgPathRemmina)
 			if(protocol == 'RDP'):
 				with open(os.open(self.cfgPathRemmina, os.O_CREAT | os.O_WRONLY, 0o400), 'w') as f:
 					f.write(
