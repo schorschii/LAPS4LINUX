@@ -479,10 +479,7 @@ class LapsMainWindow(QMainWindow):
 			self.statusBar.showMessage('No Result For: '+computerName+' ('+self.GetConnectionString()+')')
 			for title, attribute in self.GetAttributesAsDict().items():
 				textBox = self.refLdapAttributesTextBoxes[str(title)]
-				if(type(textBox) is QPlainTextEdit):
-					textBox.setPlainText('')
-				else:
-					textBox.setText('')
+				self.updateTextboxText(textBox, '')
 				textBox.setToolTip('')
 		except Exception as e:
 			# display error
@@ -536,14 +533,14 @@ class LapsMainWindow(QMainWindow):
 
 				# handle non-existing attributes
 				if(value == None):
-					textBox.setText('')
+					self.updateTextboxText(textBox, '')
 
 				# if this is the password attribute -> try to parse Native LAPS format
 				elif(len(value) > 0 and
 					(str(attribute) == self.cfgLdapAttributePassword or (isinstance(self.cfgLdapAttributePassword, list) and str(attribute) in self.cfgLdapAttributePassword))
 				):
 					password, username, timestamp = self.parseLapsValue(value.values[0])
-					textBox.setText(str(password))
+					self.updateTextboxText(textBox, str(password))
 					if(username and password):
 						self.cfgConnectUsername = username
 						textBox.setToolTip(username+', '+timestamp)
@@ -559,24 +556,27 @@ class LapsMainWindow(QMainWindow):
 							lines.append(str(password))
 						else:
 							lines.append(password+'  '+username+'  '+timestamp)
-					if(type(textBox) is QPlainTextEdit):
-						textBox.setPlainText("\n".join(lines))
-					else:
-						textBox.setText("\n".join(lines))
+					self.updateTextboxText(textBox, "\n".join(lines))
 
 				# if this is the expiry date attribute -> format date
 				elif(str(attribute) == self.cfgLdapAttributePasswordExpiry or (isinstance(self.cfgLdapAttributePasswordExpiry, list) and str(attribute) in self.cfgLdapAttributePasswordExpiry)):
 					try:
-						textBox.setText( str(filetime_to_dt( int(str(value)) )) )
+						self.updateTextboxText(textBox, str(filetime_to_dt( int(str(value)) )) )
 					except Exception as e:
 						print(str(e))
-						textBox.setText(str(value))
+						self.updateTextboxText(textBox, str(value))
 
 				# display raw value
 				else:
-					textBox.setText(str(value))
+					self.updateTextboxText(textBox, str(value))
 
 			return
+
+	def updateTextboxText(self, textBox, text):
+		if(type(textBox) is QPlainTextEdit):
+			textBox.setPlainText(text)
+		else:
+			textBox.setText(text)
 
 	dpapiCache = dpapi_ng.KeyCache()
 	def decryptPassword(self, blob):
