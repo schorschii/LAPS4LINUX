@@ -45,7 +45,7 @@ class LapsCli():
 
 	cfgDir      = str(Path.home())+'/.config/laps-client'
 	cfgPath     = cfgDir+'/settings.json'
-	cfgPathOld  = str(Path.home())+'/.laps-client.json'
+	cfgVersion  = 0
 	cfgUseKerberos = True
 	cfgUseStartTls = True
 	cfgServer   = []
@@ -430,27 +430,36 @@ class LapsCli():
 			makedirs(self.cfgDir, exist_ok=True)
 		# protect temporary .remmina file by limiting access to our config folder
 		if(self.PLATFORM == 'linux'): os.chmod(self.cfgDir, 0o700)
-		if(path.exists(self.cfgPathOld)):
-			rename(self.cfgPathOld, self.cfgPath)
 
-		if(path.isfile(self.cfgPath)): cfgPath = self.cfgPath
-		elif(path.isfile(self.cfgPresetPath)): cfgPath = self.cfgPresetPath
-		else: return
+		dctPresetSettings = {}
+		dctUserSettings = {}
+		cfgJson = {}
 
 		try:
-			with open(cfgPath) as f:
-				cfgJson = json.load(f)
-				self.cfgUseKerberos = cfgJson.get('use-kerberos', self.cfgUseKerberos)
-				self.cfgUseStartTls = cfgJson.get('use-starttls', self.cfgUseStartTls)
-				self.cfgServer = cfgJson.get('server', self.cfgServer)
-				self.cfgDomain = cfgJson.get('domain', self.cfgDomain)
-				self.cfgUsername = cfgJson.get('username', self.cfgUsername)
-				self.cfgLdapAttributePassword = cfgJson.get('ldap-attribute-password', self.cfgLdapAttributePassword)
-				self.cfgLdapAttributePasswordExpiry = cfgJson.get('ldap-attribute-password-expiry', self.cfgLdapAttributePasswordExpiry)
-				self.cfgLdapAttributePasswordHistory = cfgJson.get('ldap-attribute-password-history', self.cfgLdapAttributePasswordHistory)
-				tmpLdapAttributes = cfgJson.get('ldap-attributes', self.cfgLdapAttributes)
-				if(isinstance(tmpLdapAttributes, list) or isinstance(tmpLdapAttributes, dict)):
-					self.cfgLdapAttributes = tmpLdapAttributes
+			if(path.isfile(self.cfgPath)):
+				with open(self.cfgPath) as f:
+					dctUserSettings = json.load(f)
+					cfgJson = dctUserSettings
+			if(path.isfile(self.cfgPresetPath)):
+				with open(self.cfgPresetPath) as f:
+					dctPresetSettings = json.load(f)
+					# use preset config if version is higher or user settings are empty
+					if(dctPresetSettings.get('version', 0) > dctUserSettings.get('version', 0)
+					or dctUserSettings == {}):
+						cfgJson = dctPresetSettings
+
+			self.cfgVersion = cfgJson.get('version', self.cfgVersion)
+			self.cfgUseKerberos = cfgJson.get('use-kerberos', self.cfgUseKerberos)
+			self.cfgUseStartTls = cfgJson.get('use-starttls', self.cfgUseStartTls)
+			self.cfgServer = cfgJson.get('server', self.cfgServer)
+			self.cfgDomain = cfgJson.get('domain', self.cfgDomain)
+			self.cfgUsername = cfgJson.get('username', self.cfgUsername)
+			self.cfgLdapAttributePassword = cfgJson.get('ldap-attribute-password', self.cfgLdapAttributePassword)
+			self.cfgLdapAttributePasswordExpiry = cfgJson.get('ldap-attribute-password-expiry', self.cfgLdapAttributePasswordExpiry)
+			self.cfgLdapAttributePasswordHistory = cfgJson.get('ldap-attribute-password-history', self.cfgLdapAttributePasswordHistory)
+			tmpLdapAttributes = cfgJson.get('ldap-attributes', self.cfgLdapAttributes)
+			if(isinstance(tmpLdapAttributes, list) or isinstance(tmpLdapAttributes, dict)):
+				self.cfgLdapAttributes = tmpLdapAttributes
 		except Exception as e:
 			print('Error loading settings file: '+str(e))
 
@@ -464,6 +473,7 @@ class LapsCli():
 
 			with open(self.cfgPath, 'w') as json_file:
 				json.dump({
+					'version': self.cfgVersion,
 					'use-kerberos': self.cfgUseKerberos,
 					'use-starttls': self.cfgUseStartTls,
 					'server': saveServers,
