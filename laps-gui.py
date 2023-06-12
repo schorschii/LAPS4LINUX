@@ -389,7 +389,8 @@ class LapsMainWindow(QMainWindow):
 			# get current admin password
 			password = ''
 			for title, attribute in self.GetAttributesAsDict().items():
-				if(self.cfgLdapAttributePassword.upper() == attribute.upper()):
+				if((isinstance(self.cfgLdapAttributePassword, str) and isinstance(attribute, str) and attribute.upper() == self.cfgLdapAttributePassword.upper())
+				or attribute == self.cfgLdapAttributePassword):
 					if(title in self.refLdapAttributesTextBoxes):
 						password = self.refLdapAttributesTextBoxes[title].text()
 
