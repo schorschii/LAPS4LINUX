@@ -29,7 +29,7 @@
     ],
     "ldap-attribute-password-expiry": [
         "msLAPS-PasswordExpirationTime",
-        "ms-McsAdmPwdExpirationTime"
+        "ms-Mcs-AdmPwdExpirationTime"
     ],
     "ldap-attribute-password-history": "msLAPS-EncryptedPasswordHistory",
     "ldap-attributes": {
@@ -42,7 +42,7 @@
         ],
         "Password Expiration Date": [
             "msLAPS-PasswordExpirationTime",
-            "ms-McsAdmPwdExpirationTime"
+            "ms-Mcs-AdmPwdExpirationTime"
         ],
         "Administrator Password History": "msLAPS-EncryptedPasswordHistory"
     },

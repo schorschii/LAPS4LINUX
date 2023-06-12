@@ -55,11 +55,11 @@ class LapsCli():
 	cfgLdapAttributes              = {
 		'Operating System':               'operatingSystem',
 		'Administrator Password':         ['msLAPS-EncryptedPassword', 'msLAPS-Password', 'ms-Mcs-AdmPwd'],
-		'Password Expiration Date':       ['msLAPS-PasswordExpirationTime', 'ms-McsAdmPwdExpirationTime'],
+		'Password Expiration Date':       ['msLAPS-PasswordExpirationTime', 'ms-Mcs-AdmPwdExpirationTime'],
 		'Administrator Password History': 'msLAPS-EncryptedPasswordHistory'
 	}
 	cfgLdapAttributePassword        = ['msLAPS-EncryptedPassword', 'msLAPS-Password', 'ms-Mcs-AdmPwd']
-	cfgLdapAttributePasswordExpiry  = ['msLAPS-PasswordExpirationTime', 'ms-McsAdmPwdExpirationTime']
+	cfgLdapAttributePasswordExpiry  = ['msLAPS-PasswordExpirationTime', 'ms-Mcs-AdmPwdExpirationTime']
 	cfgLdapAttributePasswordHistory = 'msLAPS-EncryptedPasswordHistory'
 
 
