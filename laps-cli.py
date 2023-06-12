@@ -217,9 +217,9 @@ class LapsCli():
 			return
 
 	def decryptPassword(self, blob):
+		import dpapi_ng
 		for server in self.cfgServer:
 			try:
-				import dpapi_ng
 				decrypted = dpapi_ng.ncrypt_unprotect_secret(
 					blob, server = server['address'],
 					username = None if self.cfgUsername=='' else self.cfgUsername,
