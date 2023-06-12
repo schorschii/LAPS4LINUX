@@ -5,6 +5,7 @@ from pathlib import Path
 from os import path, makedirs, rename
 from datetime import datetime
 from dns import resolver, rdatatype
+import dpapi_ng
 import ldap3
 import ssl
 import getpass
@@ -216,14 +217,15 @@ class LapsCli():
 
 			return
 
+	dpapiCache = dpapi_ng.KeyCache()
 	def decryptPassword(self, blob):
-		import dpapi_ng
 		for server in self.cfgServer:
 			try:
 				decrypted = dpapi_ng.ncrypt_unprotect_secret(
 					blob, server = server['address'],
 					username = None if self.cfgUsername=='' else self.cfgUsername,
-					password = None if self.cfgPassword=='' else self.cfgPassword
+					password = None if self.cfgPassword=='' else self.cfgPassword,
+					cache = self.dpapiCache
 				)
 				return decrypted.decode('utf-8').replace("\x00", "")
 
