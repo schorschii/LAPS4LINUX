@@ -24,6 +24,7 @@
     "client-keytab-file": "/etc/krb5.keytab",
 
     "native-laps": true,
+    "security-descriptor": null,
     "ldap-attribute-password": "msLAPS-Password",
     "ldap-attribute-password-expiry": "msLAPS-PasswordExpirationTime",
 

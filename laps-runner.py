@@ -54,11 +54,11 @@ class LapsRunner():
 	cfgAlphabet         = string.ascii_letters+string.digits+string.punctuation # allowed chars for the new password
 
 	cfgUseNativeLapsAttributeSchema = True
+	cfgSecurityDescriptor           = None
 	cfgLdapAttributePassword        = 'msLAPS-Password'
 	cfgLdapAttributePasswordExpiry  = 'msLAPS-PasswordExpirationTime'
 
 	tmpDn         = ''
-	tmpPassword   = ''
 	tmpExpiry     = ''
 	tmpExpiryDate = ''
 
@@ -130,12 +130,11 @@ class LapsRunner():
 		self.connection.search(
 			search_base = self.createLdapBase(self.connection),
 			search_filter = '(&(objectCategory=computer)(name='+computerName+'))',
-			attributes = [ self.cfgLdapAttributePassword, self.cfgLdapAttributePasswordExpiry, 'SAMAccountname', 'distinguishedName' ]
+			attributes = [ self.cfgLdapAttributePasswordExpiry, 'distinguishedName' ]
 		)
 		for entry in self.connection.entries:
 			# display result
 			self.tmpDn = str(entry['distinguishedName'])
-			self.tmpPassword = str(entry[self.cfgLdapAttributePassword])
 			self.tmpExpiry = str(entry[self.cfgLdapAttributePasswordExpiry])
 			try:
 				# date conversion will fail if there is no previous expiration time saved
@@ -149,7 +148,6 @@ class LapsRunner():
 			raise Exception('No Result For: '+computerName)
 
 		self.tmpDn = ''
-		self.tmpPassword = ''
 		self.tmpExpiry = ''
 		self.tmpExpiryDate = ''
 		return False
@@ -167,8 +165,8 @@ class LapsRunner():
 		cmd = ['usermod', '-p', newPasswordHashed, self.cfgUsername]
 		res = subprocess.run(cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL, universal_newlines=True)
 		if res.returncode == 0:
-			print('Password successfully changed in local database.')
-			self.logger.debug(self.PRODUCT_NAME+': Changed password of user '+self.cfgUsername+' in local database.')
+			print('Password successfully changed in local database')
+			self.logger.debug(self.PRODUCT_NAME+': Changed password of user '+self.cfgUsername+' in local database')
 		else:
 			raise Exception(' '.join(cmd)+' returned non-zero exit code '+str(res.returncode))
 
@@ -181,21 +179,39 @@ class LapsRunner():
 
 		# apply Native LAPS JSON format
 		if(self.cfgUseNativeLapsAttributeSchema):
+			print('Using Native LAPS JSON format')
 			newPassword = json.dumps({
 				'p': newPassword,
 				'n': self.cfgUsername,
 				't': ('%0.2X' % newExpirationDateTime).lower()
 			})
 
+		# encrypt Native LAPS content
+		if(self.cfgUseNativeLapsAttributeSchema and self.cfgSecurityDescriptor):
+			print('Encrypting password to SID', self.cfgSecurityDescriptor)
+			newPassword = self.encryptPassword(newPassword)
+
 		# start query
 		self.connection.modify(self.tmpDn, {
 			self.cfgLdapAttributePasswordExpiry: [(ldap3.MODIFY_REPLACE, [str(newExpirationDateTime)])],
-			self.cfgLdapAttributePassword: [(ldap3.MODIFY_REPLACE, [str(newPassword)])],
+			self.cfgLdapAttributePassword: [(ldap3.MODIFY_REPLACE, [newPassword])],
 		})
 		if self.connection.result['result'] == 0:
-			print('Password and expiration date changed successfully in LDAP directory (new expiration '+str(newExpirationDate)+').')
+			print('Password and expiration date changed successfully in LDAP directory (attribute '+self.cfgLdapAttributePassword+', new expiration '+str(newExpirationDate)+')')
 		else:
 			raise Exception('Could not update password in LDAP directory: '+str(self.connection.result))
+
+	def encryptPassword(self, content):
+		preMagic = bytes.fromhex('00000000000000000000000000000000')
+
+		import dpapi_ng
+		for server in self.cfgServer:
+			encrypted = dpapi_ng.ncrypt_protect_secret(
+				content.encode('utf-16-le')+b"\x00\x00",
+				self.cfgSecurityDescriptor,
+				server = server['address'],
+			)
+			return preMagic + encrypted
 
 	def generatePassword(self):
 		return ''.join(secrets.choice(self.cfgAlphabet) for i in range(self.cfgLength))
@@ -236,6 +252,7 @@ class LapsRunner():
 			self.cfgLength = int(cfgJson.get('password-length', self.cfgLength))
 			self.cfgAlphabet = str(cfgJson.get('password-alphabet', self.cfgAlphabet))
 			self.cfgUseNativeLapsAttributeSchema = str(cfgJson.get('native-laps', self.cfgUseNativeLapsAttributeSchema))
+			self.cfgSecurityDescriptor = cfgJson.get('security-descriptor', self.cfgSecurityDescriptor)
 			self.cfgLdapAttributePassword = str(cfgJson.get('ldap-attribute-password', self.cfgLdapAttributePassword))
 			self.cfgLdapAttributePasswordExpiry = str(cfgJson.get('ldap-attribute-password-expiry', self.cfgLdapAttributePasswordExpiry))
 			self.cfgHostname = cfgJson.get('hostname', self.cfgHostname)
