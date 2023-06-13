@@ -675,7 +675,7 @@ class LapsMainWindow(QMainWindow):
 						port = server['gc-port']
 						self.gcModeOn = True
 					serverArray.append(ldap3.Server(server['address'], port=port, use_ssl=server['ssl'], tls=self.tlsSettings, get_info=ldap3.ALL))
-				self.server = ldap3.ServerPool(serverArray, ldap3.FIRST, active=True, exhaust=True)
+				self.server = ldap3.ServerPool(serverArray, ldap3.FIRST, active=2, exhaust=True)
 			except Exception as e:
 				self.showErrorDialog('Error connecting to LDAP server', str(e))
 				return False
@@ -694,6 +694,9 @@ class LapsMainWindow(QMainWindow):
 				return True # return if connection created successfully
 		except Exception as e:
 			print('Unable to connect via Kerberos: '+str(e))
+			if(isinstance(e, ldap3.core.exceptions.LDAPServerPoolExhaustedError)):
+				self.statusBar.showMessage(str(e))
+				return False
 
 		# ask for username and password for SIMPLE bind
 		if self.cfgUsername == '':
@@ -722,6 +725,9 @@ class LapsMainWindow(QMainWindow):
 			)
 			if(self.cfgUseStartTls): self.connection.start_tls()
 		except Exception as e:
+			if(isinstance(e, ldap3.core.exceptions.LDAPServerPoolExhaustedError)):
+				self.statusBar.showMessage(str(e))
+				return False
 			self.cfgUsername = ''
 			self.cfgPassword = ''
 			self.showErrorDialog('Error binding to LDAP server', str(e))

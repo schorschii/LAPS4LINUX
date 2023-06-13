@@ -316,7 +316,7 @@ class LapsCli():
 						port = server['gc-port']
 						self.gcModeOn = True
 					serverArray.append(ldap3.Server(server['address'], port=port, use_ssl=server['ssl'], tls=self.tlsSettings, get_info=ldap3.ALL))
-				self.server = ldap3.ServerPool(serverArray, ldap3.FIRST, active=True, exhaust=True)
+				self.server = ldap3.ServerPool(serverArray, ldap3.FIRST, active=2, exhaust=True)
 			except Exception as e:
 				print('Error connecting to LDAP server: ', str(e))
 				return False
@@ -335,6 +335,8 @@ class LapsCli():
 				return True # return if connection created successfully
 		except Exception as e:
 			print('Unable to connect via Kerberos: '+str(e))
+			if(isinstance(e, ldap3.core.exceptions.LDAPServerPoolExhaustedError)):
+				raise Exception('Unable to connect to any of your LDAP servers')
 
 		# ask for username and password for SIMPLE bind
 		if self.cfgUsername == '':
@@ -364,6 +366,8 @@ class LapsCli():
 			if(self.cfgUseStartTls): self.connection.start_tls()
 			print('') # separate user input from results by newline
 		except Exception as e:
+			if(isinstance(e, ldap3.core.exceptions.LDAPServerPoolExhaustedError)):
+				raise Exception('Unable to connect to any of your LDAP servers')
 			self.cfgUsername = ''
 			self.cfgPassword = ''
 			print('Error binding to LDAP server: ', str(e))
