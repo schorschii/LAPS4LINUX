@@ -286,9 +286,12 @@ class LapsMainWindow(QMainWindow):
 		self.btnSetExpirationTime.clicked.connect(self.OnClickSetExpiry)
 
 		for title, attribute in self.GetAttributesAsDict().items():
+			# create label
 			lblAdditionalAttribute = QLabel(str(title))
 			grid.addWidget(lblAdditionalAttribute, gridLine, 0)
 			gridLine += 1
+
+			# instantiate single or multiline textbox
 			if(attribute == self.cfgLdapAttributePasswordHistory
 			or (isinstance(self.cfgLdapAttributePasswordHistory, list) and attribute in self.cfgLdapAttributePasswordHistory)):
 				txtAdditionalAttribute = LapsPlainTextEdit()
@@ -296,15 +299,21 @@ class LapsMainWindow(QMainWindow):
 			else:
 				txtAdditionalAttribute = QLineEdit()
 			txtAdditionalAttribute.setReadOnly(True)
-			if(self.PLATFORM=='win32'):
+
+			# set easy readable font
+			if(self.PLATFORM == 'win32'):
 				font = QFont('Consolas', 14)
 				font.setBold(True)
 			else:
 				font = QFontDatabase.systemFont(QFontDatabase.FixedFont)
 				font.setPointSize(18 if self.PLATFORM=='darwin' else 14)
 			txtAdditionalAttribute.setFont(font)
+
+			# add textbox to layout
 			grid.addWidget(txtAdditionalAttribute, gridLine, 0)
 			self.refLdapAttributesTextBoxes[str(title)] = txtAdditionalAttribute
+
+			# create copy/set button
 			if(attribute == self.cfgLdapAttributePasswordExpiry
 			or (isinstance(self.cfgLdapAttributePasswordExpiry, list) and attribute in self.cfgLdapAttributePasswordExpiry)):
 				grid.addWidget(self.btnSetExpirationTime, gridLine, 1)
