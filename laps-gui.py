@@ -597,10 +597,10 @@ class LapsMainWindow(QMainWindow):
 
 	dpapiCache = dpapi_ng.KeyCache()
 	def decryptPassword(self, blob):
-		for server in self.cfgServer:
+		for server in self.server.servers:
 			try:
 				decrypted = dpapi_ng.ncrypt_unprotect_secret(
-					blob, server = server['address'],
+					blob, server = server.host,
 					username = None if self.cfgUsername=='' else self.cfgUsername,
 					password = None if self.cfgPassword=='' else self.cfgPassword,
 					cache = self.dpapiCache
