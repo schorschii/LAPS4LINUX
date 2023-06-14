@@ -2,12 +2,12 @@
 
 cd "$(dirname "$0")"
 
-DMG_FILE_TMP_MOUNT="/Volumes/LAPS4MAC"
-DMG_FILE_TMP="laps4mac-rw.dmg"
-DMG_FILE="laps4mac-client.dmg"
+DMG_FILE_TMP_MOUNT="/Volumes/LAPS4LINUX"
+DMG_FILE_TMP="laps4linux-rw.dmg"
+DMG_FILE="laps4linux-client.dmg"
 
 # remove temp build folder
-rm -r "../../dist/LAPS4MAC"
+rm -r "../../dist/LAPS4LINUX"
 
 # check if mount point is free
 if [ -d "$DMG_FILE_TMP_MOUNT" ]; then
@@ -17,7 +17,7 @@ fi
 
 # create DMG with .app directory and /Applications link
 rm "../../dist/.DS_Store"
-hdiutil create -srcfolder "../../dist" -volname "LAPS4MAC" -fs HFS+ -fsargs "-c c=64,a=16,e=16" -format UDRW "$DMG_FILE_TMP"
+hdiutil create -srcfolder "../../dist" -volname "LAPS4LINUX" -fs HFS+ -fsargs "-c c=64,a=16,e=16" -format UDRW "$DMG_FILE_TMP"
 hdiutil attach -readwrite -noverify -noautoopen "$DMG_FILE_TMP"
 ln -s "/Applications" "$DMG_FILE_TMP_MOUNT/Applications"
 
