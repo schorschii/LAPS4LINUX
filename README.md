@@ -56,9 +56,9 @@ You can create a preset config file `/etc/laps-client.json` which will be loaded
   - `ldap-attribute-password-expiry`: The LDAP attribute name which contains the admin password expiration date. The client will write the updated expiration date into this attribute. Can also be a list of strings.
   - `ldap-attribute-password-history`: The LDAP attribute name which contains the admin password history. The client will try to decrypt this value (in case of Native LAPS) and use it to display the password history. Can also be a list of strings.
   - `connect-username`: The username which will be used for Remmina connections. May be modified by the client during the runtime since Native LAPS also stores username information.
+</details>
 
 If you want to view the DSRM password, simply put `msLAPS-EncryptedDSRMPassword` and `msLAPS-EncryptedDSRMPasswordHistory` into the `ldap-attributes` and `ldap-attribute-password`|`ldap-attribute-password-history` configuration.
-</details>
 
 ### Kerberos Authentication
 The client (both GUI and CLI) supports Kerberos authentication which means that you can use the client without entering a password if you are logged in with a domain account and have a valid Kerberos ticket (for this, an SSL connection is required). If not, ldap3's "simple" authentication is used as fallback and the client will ask you for username and password. The Kerberos authentication attempt can be disabled by setting `use-kerberos` to `false` in the config file.
@@ -185,6 +185,11 @@ Please configure the runner by editing the configuration file `/etc/laps-runner.
   - `password-days-valid`: The amount of days how long a password should be valid.
   - `password-length`: Determines how long a generated password should be.
   - `password-alphabet`: Determines the chars to use for password generation.
+
+Important:
+- If `native-laps` is `false`, you should set `ldap-attribute-password` to `ms-Mcs-AdmPwd` and `ldap-attribute-password-expiry` to `ms-Mcs-AdmPwdExpirationTime`.
+- If If `native-laps` is `true` and `security-descriptor` not set or `null`, you should set `ldap-attribute-password` to `msLAPS-Password` and `ldap-attribute-password-expiry` to `msLAPS-PasswordExpirationTime`.
+- If If `native-laps` is `true` and `security-descriptor` is set to a valid SID in your domain, you should set `ldap-attribute-password` to `msLAPS-EncryptedPassword` and `ldap-attribute-password-expiry` to `msLAPS-PasswordExpirationTime`.
 </details>
 
 You can call the runner with the `-f` parameter to force updating the password directly after installation. You should do this to check if the runner is working properly.
