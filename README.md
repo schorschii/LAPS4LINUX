@@ -56,6 +56,8 @@ You can create a preset config file `/etc/laps-client.json` which will be loaded
   - `ldap-attribute-password-expiry`: The LDAP attribute name which contains the admin password expiration date. The client will write the updated expiration date into this attribute. Can also be a list of strings.
   - `ldap-attribute-password-history`: The LDAP attribute name which contains the admin password history. The client will try to decrypt this value (in case of Native LAPS) and use it to display the password history. Can also be a list of strings.
   - `connect-username`: The username which will be used for Remmina connections. May be modified by the client during the runtime since Native LAPS also stores username information.
+
+If you want to view the DSRM password, simply put `msLAPS-EncryptedDSRMPassword` and `msLAPS-EncryptedDSRMPasswordHistory` into the `ldap-attributes` and `ldap-attribute-password`|`ldap-attribute-password-history` configuration.
 </details>
 
 ### Kerberos Authentication
