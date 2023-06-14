@@ -8,7 +8,7 @@ License:        GPL-3.0
 URL:            https://github.com/schorschii/LAPS4LINUX
 Source0:        %{name}-%{version}.tar.gz
 
-Requires:       python3 python3-pip python3-gssapi python3-qt5 python3-dns
+Requires:       python3 python3-pip python3-gssapi python3-qt5 python3-dns python3-devel krb5-devel gcc
 
 %description
 This RPM contains the script and personalized config to run the lap4linux python script
@@ -34,7 +34,7 @@ cp usr/share/pixmaps/laps.png $RPM_BUILD_ROOT/usr/share/pixmaps
 
 
 %post
-sudo -H pip3 install ldap3
+sudo -H pip3 install ldap3 dpapi-ng[kerberos]
 if command -v update-desktop-database; then
 	update-desktop-database
 fi

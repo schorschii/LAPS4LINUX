@@ -8,7 +8,7 @@ License:        GPL-3.0
 URL:            https://github.com/schorschii/LAPS4LINUX
 Source0:        %{name}-%{version}.tar.gz
 
-Requires:       python3 python3-pip python3-gssapi python3-cryptography python3-dns krb5-workstation
+Requires:       python3 python3-pip python3-gssapi python3-cryptography python3-dns python3-devel krb5-devel gcc
 
 %description
 This RPM contains the script and personalized config to run the lap4linux python script
@@ -32,7 +32,7 @@ mkdir -p $RPM_BUILD_ROOT/%{_sysconfdir}/cron.hourly/
 cp etc/cron.hourly/laps-runner $RPM_BUILD_ROOT/%{_sysconfdir}/cron.hourly/
 
 %post
-sudo -H pip3 install ldap3
+sudo -H pip3 install ldap3 dpapi-ng[kerberos]
 
 
 %clean
