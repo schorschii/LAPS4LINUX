@@ -104,6 +104,18 @@ With the setting `ldap-attribute-password` you define which LDAP attribute is co
 ### Remote Access
 On Linux, the GUI allows you to directly open RDP or SSH connections via Remmina from the menu. Please make sure you have installed the latest Remmina with RDP and SSH extensions. You can change the username which is used for the connection in the client config (`"connect-username": "administrator"`).
 
+<details>
+<summary>Flatpak Remmina</summary>
+
+If you use Remmina installed via Flatpak, you need to create the following dummy script which calls the Flatpak version of remmina.
+
+`/usr/local/bin/remmina`
+```
+#!/bin/bash
+flatpak run org.remmina.Remmina $@
+```
+</details>
+
 ### Windows and macOS
 The clients (GUI and CLI) are also executable under Windows and macOS. It's ported to Windows because of the additional features that the original LAPS GUI did not have (query custom attributes, OCO integration).
 
