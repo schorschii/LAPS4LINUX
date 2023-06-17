@@ -37,8 +37,10 @@ else
 fi
 
 # add cron script
-echo '#!/bin/sh' > laps4linux-runner-$VERSION/etc/cron.hourly/laps-runner
-echo '/usr/sbin/laps-runner --config /etc/laps-runner.json' >> laps4linux-runner-$VERSION/etc/cron.hourly/laps-runner
+echo 'SHELL=/bin/sh
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+
+/usr/sbin/laps-runner --config /etc/laps-runner.json' > laps4linux-runner-$VERSION/etc/cron.hourly/laps-runner
 chmod +x laps4linux-runner-$VERSION/etc/cron.hourly/laps-runner
 
 # create .tar.gz source package
