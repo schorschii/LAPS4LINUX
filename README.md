@@ -46,7 +46,7 @@ You can create a preset config file `/etc/laps-client.json` which will be loaded
 <details>
   <summary>Configuration Values</summary>
 
-  - `server`: Array of domain controllers with items like `{"address": "xxx.xxx.xxx.xxx", "port": 389, "ssl": false}`. Leave empty for DNS auto discovery.
+  - `server`: Array of domain controllers with items like `{"address": "dc1.example.com", "port": 389, "ssl": false}`. Leave empty for DNS auto discovery.
   - `domain`: Your domain name (e.g. `example.com`). Leave empty for DNS auto discovery.
   - `use-starttls`: Boolean which indicates wheter to use StartTLS on unencrypted LDAP connections (requires valid server certificate).
   - `username`: The username for LDAP simple binds.
@@ -61,7 +61,7 @@ You can create a preset config file `/etc/laps-client.json` which will be loaded
 If you want to view the DSRM password, simply put `msLAPS-EncryptedDSRMPassword` and `msLAPS-EncryptedDSRMPasswordHistory` into the `ldap-attributes` and `ldap-attribute-password`|`ldap-attribute-password-history` configuration.
 
 ### Kerberos Authentication
-The client (both GUI and CLI) supports Kerberos authentication which means that you can use the client without entering a password if you are logged in with a domain account and have a valid Kerberos ticket (for this, an SSL connection is required). If not, ldap3's "simple" authentication is used as fallback and the client will ask you for username and password. The Kerberos authentication attempt can be disabled by setting `use-kerberos` to `false` in the config file.
+The client (both GUI and CLI) supports Kerberos authentication which means you can use the client without entering a password if you are logged in with a domain account and have a valid Kerberos ticket (for this, an SSL connection is required). If not, ldap3's "simple" authentication is used as fallback and the client will ask you for username and password. The Kerberos authentication attempt can be disabled by setting `use-kerberos` to `false` in the config file.
 
 If you did not automatically received a Kerberos ticket on login, you can manually aquire a ticket via `kinit <username>@<DOMAIN.TLD>`.
 
@@ -71,7 +71,7 @@ By default, LAPS4LINUX (client and runner) will connect via LDAP on port 389 to 
 Alternatively, you can use LDAPS by editing the config file (`~/.config/laps-client/settings.json`): modify the server entry and set `ssl` to `true` and `port` to `636` (see example below). You can also configure multiple static LDAP servers in the config file.
 
 ### Domain Forest Searches
-If you are managing multiple domains, you probably want to search for a computer in all domains. Please use the global catalog for this. This means that you need to set the option `gc-port` in the configuration file of all servers, e.g. to `3268` (LDAP) or `3269` (LDAPS).
+If you are managing multiple domains, you probably want to search for a computer in all domains. Please use the global catalog for this by setting the option `gc-port` in the configuration file of all servers, e.g. to `3268` (LDAP) or `3269` (LDAPS).
 
 <details>
 <summary>Example</summary>
@@ -107,10 +107,11 @@ On Linux, the GUI allows you to directly open RDP or SSH connections via Remmina
 <details>
 <summary>Flatpak Remmina</summary>
 
-If you use Remmina installed via Flatpak, you need to create the following dummy script which calls the Flatpak version of remmina.
+If you use Remmina installed via Flatpak, you need to create the following wrapper script which calls the Flatpak version of remmina. Do not forget to make it executable.
 
-`/usr/local/bin/remmina`
 ```
+*** /usr/local/bin/remmina ***
+
 #!/bin/bash
 flatpak run org.remmina.Remmina $@
 ```
@@ -173,9 +174,13 @@ The runner should be called periodically via cron. It decides by the expiration 
 ```
 *** /etc/cron.hourly/laps-runner ***
 
-#!/bin/sh
+SHELL=/bin/sh
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+
 /usr/sbin/laps-runner --config /etc/laps-runner.json
 ```
+
+Please make sure that `usermod` (for changing the password in the local database) is in you crontab `$PATH` (this is the default in Debian and Ubuntu based systems, but may not in other distros).
 
 ### Configuration
 Please configure the runner by editing the configuration file `/etc/laps-runner.json`.
@@ -183,7 +188,7 @@ Please configure the runner by editing the configuration file `/etc/laps-runner.
 <details>
   <summary>Configuration Values</summary>
 
-  - `server`: Array of domain controllers with items like `{"address": "xxx.xxx.xxx.xxx", "port": 389, "ssl": false}`. Leave empty for DNS auto discovery.
+  - `server`: Array of domain controllers with items like `{"address": "dc1.example.com", "port": 389, "ssl": false}`. Leave empty for DNS auto discovery.
   - `domain`: Your domain name (e.g. `example.com`). Leave empty for DNS auto discovery.
   - `use-starttls`: Boolean which indicates wheter to use StartTLS on unencrypted LDAP connections (requires valid server certificate).
   - `client-keytab-file`: The Kerberos keytab file with the machine secret.

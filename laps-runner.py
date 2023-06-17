@@ -6,6 +6,7 @@ from os import path
 from crypt import crypt
 from datetime import datetime, timedelta
 from dns import resolver, rdatatype
+from shutil import which
 import ssl
 import ldap3
 import subprocess
@@ -153,6 +154,9 @@ class LapsRunner():
 		return False
 
 	def updatePassword(self):
+		# check if usermod is in PATH
+		if(which('usermod') is None): raise Exception('usermod is not in PATH')
+
 		# generate new values
 		newPassword = self.generatePassword()
 		newPasswordHashed = crypt(newPassword)

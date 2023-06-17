@@ -10,3 +10,6 @@ setup/macos/target/*
 setup/deb/*.deb
 setup/deb/laps4linux-*/*
 !setup/deb/laps4linux-*/DEBIAN/
+!setup/deb/laps4linux-runner/etc
+setup/deb/laps4linux-runner/etc/*
+!setup/deb/laps4linux-runner/etc/cron.hourly/
