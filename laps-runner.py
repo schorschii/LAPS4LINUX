@@ -183,16 +183,13 @@ class LapsRunner():
 		# check if dn of target computer object is known
 		if self.tmpDn.strip() == '': return
 
-		# calc new time
-		newExpirationDateTime = dt_to_filetime( newExpirationDate )
-
 		# apply Native LAPS JSON format
 		if(self.cfgUseNativeLapsAttributeSchema):
 			print('Using Native LAPS JSON format')
 			newPassword = json.dumps({
 				'p': newPassword,
 				'n': self.cfgUsername,
-				't': ('%0.2X' % newExpirationDateTime).lower()
+				't': ('%0.2X' % dt_to_filetime(datetime.now())).lower()
 			})
 
 		# encrypt Native LAPS content
@@ -202,7 +199,7 @@ class LapsRunner():
 
 		# start query
 		self.connection.modify(self.tmpDn, {
-			self.cfgLdapAttributePasswordExpiry: [(ldap3.MODIFY_REPLACE, [str(newExpirationDateTime)])],
+			self.cfgLdapAttributePasswordExpiry: [(ldap3.MODIFY_REPLACE, [str( dt_to_filetime(newExpirationDate) )])],
 			self.cfgLdapAttributePassword: [(ldap3.MODIFY_REPLACE, [newPassword])],
 		})
 		if self.connection.result['result'] == 0:
