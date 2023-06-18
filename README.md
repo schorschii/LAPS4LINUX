@@ -195,7 +195,9 @@ Please configure the runner by editing the configuration file `/etc/laps-runner.
   - `cred-cache-file`: File where to store the kerberos ticket for the LDAP connection.
   - `native-laps`: `true` to store the password as JSON string in the LDAP attribute, as specified by Microsoft (Native LAPS). `false` to store it as plaintext (Legacy LAPS).
   - `security-descriptor`: The security descriptor (SID) for pasword encryption (Native LAPS only). Leave empty (set to `null`) to disable encryption. Important: if you enable encryption, you should also change `ldap-attribute-password` to `msLAPS-EncryptedPassword`!
+  - `history-size`: The amount of password entries to keep in history. If not set or `0`, no password history will be written.
   - `ldap-attribute-password`: The LDAP attribute name where to store the generated password. Must be a string, not a list.
+  - `ldap-attribute-password-history`: The LDAP attribute where to store the password history. Must be a multi-value text field. If empty, no password history will be written.
   - `ldap-attribute-password-expiry`: The LDAP attribute where to store the password expiration date. Must be a string, not a list.
   - `hostname`: The hostname used for Kerberos ticket creation. Leave empty to use the system's hostname.
   - `password-change-user`: The Linux user whose password should be rotated.
@@ -207,6 +209,7 @@ Important:
 - If `native-laps` is `false`, you should set `ldap-attribute-password` to `ms-Mcs-AdmPwd` and `ldap-attribute-password-expiry` to `ms-Mcs-AdmPwdExpirationTime`.
 - If If `native-laps` is `true` and `security-descriptor` not set or `null`, you should set `ldap-attribute-password` to `msLAPS-Password` and `ldap-attribute-password-expiry` to `msLAPS-PasswordExpirationTime`.
 - If If `native-laps` is `true` and `security-descriptor` is set to a valid SID in your domain, you should set `ldap-attribute-password` to `msLAPS-EncryptedPassword` and `ldap-attribute-password-expiry` to `msLAPS-PasswordExpirationTime`.
+- While it is technically possible to save the password history unencrypted, Microsoft did not designated this. By default, in Active Directory, the only password history attribute is `msLAPS-EncryptedPasswordHistory`. Therefore, you should only configure the runner to store a password history when using password encryption too.
 </details>
 
 You can call the runner with the `-f` parameter to force updating the password directly after installation. You should do this to check if the runner is working properly.

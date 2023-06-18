@@ -25,7 +25,9 @@
 
     "native-laps": true,
     "security-descriptor": null,
+    "history-size": 0,
     "ldap-attribute-password": "msLAPS-Password",
+    "ldap-attribute-password-history": "msLAPS-EncryptedPasswordHistory",
     "ldap-attribute-password-expiry": "msLAPS-PasswordExpirationTime",
 
     "hostname": null,

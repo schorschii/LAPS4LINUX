@@ -56,10 +56,13 @@ class LapsRunner():
 
 	cfgUseNativeLapsAttributeSchema = True
 	cfgSecurityDescriptor           = None
+	cfgHistorySize                  = 0 # disabled by default because encryption is disabled by default
 	cfgLdapAttributePassword        = 'msLAPS-Password'
+	cfgLdapAttributePasswordHistory = 'msLAPS-EncryptedPasswordHistory'
 	cfgLdapAttributePasswordExpiry  = 'msLAPS-PasswordExpirationTime'
 
 	tmpDn         = ''
+	tmpPassword   = None
 	tmpExpiry     = ''
 	tmpExpiryDate = ''
 
@@ -131,27 +134,29 @@ class LapsRunner():
 		self.connection.search(
 			search_base = self.createLdapBase(self.connection),
 			search_filter = '(&(objectCategory=computer)(name='+computerName+'))',
-			attributes = [ self.cfgLdapAttributePasswordExpiry, 'distinguishedName' ]
+			attributes = ldap3.ALL_ATTRIBUTES
 		)
 		for entry in self.connection.entries:
 			# display result
 			self.tmpDn = str(entry['distinguishedName'])
-			self.tmpExpiry = str(entry[self.cfgLdapAttributePasswordExpiry])
+			try:
+				self.tmpPassword = entry[self.cfgLdapAttributePassword][0]
+			except Exception:
+				pass
+			try:
+				self.tmpExpiry = str(entry[self.cfgLdapAttributePasswordExpiry])
+			except Exception:
+				pass
 			try:
 				# date conversion will fail if there is no previous expiration time saved
 				self.tmpExpiryDate = filetime_to_dt( int(str(entry[self.cfgLdapAttributePasswordExpiry])) )
 			except Exception as e:
-				print('Unable to parse date '+str(entry[self.cfgLdapAttributePasswordExpiry])+' - assuming that no expiration date is set.')
+				print('Unable to parse date '+str(self.tmpExpiry)+' - assuming that no expiration date is set.')
 				self.tmpExpiryDate = datetime.utcfromtimestamp(0)
 			return True
 
-			# no result found
-			raise Exception('No Result For: '+computerName)
-
-		self.tmpDn = ''
-		self.tmpExpiry = ''
-		self.tmpExpiryDate = ''
-		return False
+		# no result found
+		raise Exception('No Result For: '+computerName)
 
 	def updatePassword(self):
 		# check if usermod is in PATH
@@ -205,6 +210,36 @@ class LapsRunner():
 		else:
 			raise Exception('Could not update password in LDAP directory: '+str(self.connection.result))
 
+		# update history
+		if(self.tmpPassword and self.cfgHistorySize and self.cfgHistorySize > 0
+		and self.cfgLdapAttributePasswordHistory and self.cfgLdapAttributePasswordHistory.strip() != ''):
+			self.connection.modify(self.tmpDn, {
+				self.cfgLdapAttributePasswordHistory: [(ldap3.MODIFY_ADD, self.tmpPassword)],
+			})
+			if self.connection.result['result'] != 0:
+				raise Exception('Could not add previous password to history in LDAP directory: '+str(self.connection.result))
+
+			# remove obsolete history entries
+			self.connection.search(
+				search_base=self.tmpDn,
+				search_filter='(objectCategory=computer)',
+				attributes=[self.cfgLdapAttributePasswordHistory]
+			)
+			counter = 0
+			deleteEntries = []
+			for entry in self.connection.entries:
+				for value in entry[self.cfgLdapAttributePasswordHistory]:
+					counter += 1
+					if counter > self.cfgHistorySize:
+						deleteEntries.append(value)
+				if len(deleteEntries) > 0: # when giving ldap3 an empty array, all entries will be removed!
+					self.connection.modify(self.tmpDn, {
+						self.cfgLdapAttributePasswordHistory: [(ldap3.MODIFY_DELETE, deleteEntries)],
+					})
+					if self.connection.result['result'] != 0:
+						raise Exception('Could not remove old password from history in LDAP directory: '+str(self.connection.result))
+				break
+
 	def encryptPassword(self, content):
 		preMagic = bytes.fromhex('00000000000000000000000000000000')
 
@@ -257,7 +292,9 @@ class LapsRunner():
 			self.cfgAlphabet = str(cfgJson.get('password-alphabet', self.cfgAlphabet))
 			self.cfgUseNativeLapsAttributeSchema = str(cfgJson.get('native-laps', self.cfgUseNativeLapsAttributeSchema))
 			self.cfgSecurityDescriptor = cfgJson.get('security-descriptor', self.cfgSecurityDescriptor)
+			self.cfgHistorySize = cfgJson.get('history-size', self.cfgHistorySize)
 			self.cfgLdapAttributePassword = str(cfgJson.get('ldap-attribute-password', self.cfgLdapAttributePassword))
+			self.cfgLdapAttributePasswordHistory = str(cfgJson.get('ldap-attribute-password-history', self.cfgLdapAttributePasswordHistory))
 			self.cfgLdapAttributePasswordExpiry = str(cfgJson.get('ldap-attribute-password-expiry', self.cfgLdapAttributePasswordExpiry))
 			self.cfgHostname = cfgJson.get('hostname', self.cfgHostname)
 
