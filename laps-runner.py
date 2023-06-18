@@ -7,6 +7,7 @@ from crypt import crypt
 from datetime import datetime, timedelta
 from dns import resolver, rdatatype
 from shutil import which
+import struct
 import ssl
 import ldap3
 import subprocess
@@ -238,16 +239,31 @@ class LapsRunner():
 				break
 
 	def encryptPassword(self, content):
-		preMagic = bytes.fromhex('00000000000000000000000000000000')
-
 		import dpapi_ng
+		encrypted = None
 		for server in self.server.servers:
-			encrypted = dpapi_ng.ncrypt_protect_secret(
-				content.encode('utf-16-le')+b"\x00\x00",
-				self.cfgSecurityDescriptor,
-				server = server.host,
-			)
-			return preMagic + encrypted
+			try: # one server could be unavailable, simply try the next one
+				encrypted = dpapi_ng.ncrypt_protect_secret(
+					content.encode('utf-16-le')+b"\x00\x00",
+					self.cfgSecurityDescriptor,
+					server = server.host,
+				)
+				break
+			except Exception as e:
+				print('Encryption attempt failed', e)
+		if not encrypted: raise Exception('Unable to encrypt blob')
+
+		# 0-4 - timestamp upper
+		# 4-8 - timestamp lower
+		# 8-12 - blob size, uint32
+		# 12-16 - flags, currently always 0
+		preMagic = (
+			struct.pack('<Q', dt_to_filetime(datetime.now()))
+			+ struct.pack('<i', len(encrypted))
+			+ b'\x00\x00\x00\x00'
+		)
+
+		return preMagic + encrypted
 
 	def generatePassword(self):
 		return ''.join(secrets.choice(self.cfgAlphabet) for i in range(self.cfgLength))
