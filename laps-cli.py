@@ -249,23 +249,23 @@ class LapsCli():
 			# directly use LDAP value as password (Legacy LAPS)
 			return ldapValue, None, None
 
-	dctResult = {}
+	dctResult = []
 	def pushResult(self, attribute, value):
-		self.dctResult[attribute] = value
+		self.dctResult.append({'title':attribute, 'value':value})
 
 	def printResult(self, tsv=False):
 		if(tsv):
 			displayValues = []
-			for attribute, value in self.dctResult.items():
-				displayValues.append(value)
+			for attributeValue in self.dctResult:
+				displayValues.append(attributeValue['value'])
 			print("\t".join(displayValues))
 		else:
 			maxTitleLen = 1
-			for attribute, value in self.dctResult.items():
-				maxTitleLen = max(maxTitleLen, len(attribute))
-			for attribute, value in self.dctResult.items():
-				print((attribute+':').ljust(maxTitleLen+2)+str(value))
-		self.dctResult = {}
+			for attributeValue in self.dctResult:
+				maxTitleLen = max(maxTitleLen, len(attributeValue['title']))
+			for attributeValue in self.dctResult:
+				print((attributeValue['title']+':').ljust(maxTitleLen+2)+str(attributeValue['value']))
+		self.dctResult = []
 
 	def checkCredentialsAndConnect(self):
 		# ask for server address and domain name if not already set via config file
