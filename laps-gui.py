@@ -597,6 +597,7 @@ class LapsMainWindow(QMainWindow):
 
 	dpapiCache = dpapi_ng.KeyCache()
 	def decryptPassword(self, blob):
+		lastDecryptionError = ''
 		for server in self.server.servers:
 			try:
 				decrypted = dpapi_ng.ncrypt_unprotect_secret(
@@ -607,7 +608,9 @@ class LapsMainWindow(QMainWindow):
 				)
 				return decrypted.decode('utf-8').replace("\x00", "")
 			except Exception as e:
-				self.showErrorDialog('Decryption Error', str(e))
+				if(lastDecryptionError != str(e)):
+					self.showErrorDialog('Decryption Error', str(e))
+					lastDecryptionError = str(e)
 
 	def parseLapsValue(self, ldapValue):
 		try:
