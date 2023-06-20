@@ -5,3 +5,4 @@ gssapi  # needs libkrb5-dev
         # on windows, install winkerberos instead!
 ldap3
 PyQt5
+pycryptodome  # required only by remmina
