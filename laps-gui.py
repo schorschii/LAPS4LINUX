@@ -393,7 +393,7 @@ class LapsMainWindow(QMainWindow):
 			import configparser
 			import base64
 			from shutil import which
-			from Crypto.Cipher import DES3
+			from Cryptodome.Cipher import DES3
 
 			# check remmina existence and version
 			if(which('remmina') is None): raise Exception('Remmina is not installed')
