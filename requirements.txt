@@ -1,8 +1,8 @@
 cryptography
 dnspython
 dpapi-ng[kerberos]>=0.2.0
-gssapi  # needs libkrb5-dev
-        # on Windows, install winkerberos instead!
+gssapi; sys_platform != "win32"  # needs libkrb5-dev
+winkerberos; sys_platform == "win32"
 ldap3
 PyQt5
 pycryptodomex  # required only for Remmina connections
