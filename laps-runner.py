@@ -303,7 +303,7 @@ class LapsRunner():
 			self.cfgDaysValid = int(cfgJson.get('password-days-valid', self.cfgDaysValid))
 			self.cfgLength = int(cfgJson.get('password-length', self.cfgLength))
 			self.cfgAlphabet = str(cfgJson.get('password-alphabet', self.cfgAlphabet))
-			self.cfgUseNativeLapsAttributeSchema = str(cfgJson.get('native-laps', self.cfgUseNativeLapsAttributeSchema))
+			self.cfgUseNativeLapsAttributeSchema = bool(cfgJson.get('native-laps', self.cfgUseNativeLapsAttributeSchema))
 			self.cfgSecurityDescriptor = cfgJson.get('security-descriptor', self.cfgSecurityDescriptor)
 			self.cfgHistorySize = cfgJson.get('history-size', self.cfgHistorySize)
 			self.cfgLdapAttributePassword = str(cfgJson.get('ldap-attribute-password', self.cfgLdapAttributePassword))
