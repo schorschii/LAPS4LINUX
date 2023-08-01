@@ -8,6 +8,8 @@ Microsoft introducted the new "Native LAPS" in 2023. In contrast to Legacy LAPS,
 
 The runner can operate in Legacy or Native mode by switching the setting `native-laps` to `true` or `false`. In Native mode, the runner stores the password and username as JSON string in the LDAP attribute, as defined by Microsoft. In addition to that, when in Native mode, you can set `security-descriptor` to a valid SID in your domain and the runner will encrypt the password for this user/group. Please note: only SID security descriptors are supported (e.g. `S-1-5-21-2185496602-3367037166-1388177638-1103`), do not use group names (`DOMAIN\groupname`). If you enable encryption, you should also change `ldap-attribute-password` to `msLAPS-EncryptedPassword` to store the encrypted password in the designated LDAP attribute for compatibility with other Tools. Please have a look at the runner section below for more information.
 
+For de-/encryption, the Python [dpapi-ng library](https://github.com/jborean93/dpapi-ng) is used.
+
 ## Management Client
 ### Graphical User Interface (GUI)
 ![screenshot](.github/screenshot.png)
