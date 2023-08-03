@@ -3,6 +3,8 @@
 # LAPS4LINUX
 Linux and macOS implementation of the Local Administrator Password Solution (LAPS) from Microsoft. The client is also executable under Windows and provides additional features (e.g. display additional LDAP values, directly start remote connections and it can be called with `laps://` protocol scheme parameter to directly start search).
 
+LAPS in general is a system which periodically changes local admin passwords on domain computers and stores them (encrypted) in the LDAP directory (i.e. Active Directory), where domain administrators can decrypt and view them. This ensures that people who leave the company do not have access to local admin accounts anymore and that every local admin has a strong unique password set.
+
 ## Legacy and Native LAPS
 Microsoft introducted the new "Native LAPS" in 2023. In contrast to Legacy LAPS, the new version uses different LDAP attributes and has the option to store the password encrypted in the LDAP directory. LAPS4LINUX supports both versions out-of-the-box. The client will search for a password in the following order: Native LAPS encrypted, Native LAPS unencrypted, Legacy LAPS (unencrypted).
 
@@ -11,6 +13,8 @@ The runner can operate in Legacy or Native mode by switching the setting `native
 For de-/encryption, the Python [dpapi-ng library](https://github.com/jborean93/dpapi-ng) is used.
 
 ## Management Client
+The management client enables administrators to view the current (decrypted) local admin passwords. It can be used from command line or as graphical application.
+
 ### Graphical User Interface (GUI)
 ![screenshot](.github/screenshot.png)
 
