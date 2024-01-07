@@ -3,6 +3,10 @@
 
 block_cipher = None
 
+# find the SHA-1 hash of you Developer ID Application certificate
+# for signing via `security find-identity -v -p codesigning` or use `None`
+codesign_identity = '4B7092469383AAFE294DA4B2B0CCB1BB0050DF72'
+
 
 gui_a = Analysis(['laps-gui.py'],
              pathex=[],
@@ -43,7 +47,7 @@ gui_exe = EXE(gui_pyz, gui_a.scripts, [],
           console=False,
           disable_windowed_traceback=False,
           target_arch=None,
-          codesign_identity=None,
+          codesign_identity=codesign_identity,
           entitlements_file=None )
 
 cli_pyz = PYZ(cli_a.pure, cli_a.zipped_data, cipher=block_cipher)
@@ -57,7 +61,7 @@ cli_exe = EXE(cli_pyz, cli_a.scripts, [],
           console=False,
           disable_windowed_traceback=False,
           target_arch=None,
-          codesign_identity=None,
+          codesign_identity=codesign_identity,
           entitlements_file=None )
 
 coll = COLLECT(gui_exe, gui_a.binaries, gui_a.zipfiles, gui_a.datas,
