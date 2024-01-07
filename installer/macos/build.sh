@@ -33,3 +33,11 @@ hdiutil detach "$DMG_FILE_TMP_MOUNT"
 sleep 1
 hdiutil convert "$DMG_FILE_TMP" -format UDZO -o "$DMG_FILE"
 rm "$DMG_FILE_TMP"
+
+# notarize (only possible with valid signature)
+# preparation for this step:
+# xcrun notarytool store-credentials "notarytool-password" --apple-id "..." --team-id ...
+echo "Notarize package ..."
+xcrun notarytool submit "$DMG_FILE" --wait --keychain-profile "notarytool-password"
+# get logfile with additional information:
+# xcrun notarytool log --keychain-profile "notarytool-password" xxx-xxx-xxx-xxx developer_log.json
