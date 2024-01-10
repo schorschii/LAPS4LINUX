@@ -24,6 +24,7 @@ cp ../../laps-gui.py laps4linux-client/usr/bin/laps-gui
 cp ../../laps-cli.py laps4linux-client/usr/bin/laps-cli
 cp ../../assets/LAPS4LINUX.desktop laps4linux-client/usr/share/applications
 cp ../../assets/laps.png laps4linux-client/usr/share/pixmaps
+cp ../../assets/laps-runner.cron laps4linux-runner/etc/cron.hourly/laps-runner
 cp ../../laps-runner.py laps4linux-runner/usr/sbin/laps-runner
 # test if we have our own laps-runner config
 if [ -f ../../laps-runner.json ]; then
@@ -38,6 +39,7 @@ chown -R root:root laps4linux-client
 chown -R root:root laps4linux-runner
 chmod +x laps4linux-client/usr/bin/laps-gui
 chmod +x laps4linux-client/usr/bin/laps-cli
+chmod +x laps4linux-runner/etc/cron.hourly/laps-runner
 chmod +x laps4linux-runner/usr/sbin/laps-runner
 
 # build debs

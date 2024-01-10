@@ -1,0 +1,10 @@
+#!/bin/sh
+
+SHELL=/bin/sh
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+
+OUT=$(/usr/sbin/laps-runner --config /etc/laps-runner.json 2>&1)
+
+if [ -f /usr/bin/logger ]; then
+    echo $OUT | /usr/bin/logger -t laps-runner
+fi

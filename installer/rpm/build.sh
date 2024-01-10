@@ -23,10 +23,12 @@ cp ../../laps-gui.py laps4linux-client-$VERSION/usr/bin/laps-gui
 cp ../../laps-cli.py laps4linux-client-$VERSION/usr/bin/laps-cli
 cp ../../assets/LAPS4LINUX.desktop laps4linux-client-$VERSION/usr/share/applications
 cp ../../assets/laps.png laps4linux-client-$VERSION/usr/share/pixmaps
+cp ../../assets/laps-runner.cron laps4linux-runner-$VERSION/etc/cron.hourly/laps-runner
 cp ../../laps-runner.py laps4linux-runner-$VERSION/usr/sbin/laps-runner
 chmod +x laps4linux-client-$VERSION/usr/bin/laps-gui
 chmod +x laps4linux-client-$VERSION/usr/bin/laps-cli
 chmod +x laps4linux-runner-$VERSION/usr/sbin/laps-runner
+chmod +x laps4linux-runner-$VERSION/etc/cron.hourly/laps-runner
 
 # test if we have our own laps-runner config
 if [ -f ../../laps-runner.json ]; then
@@ -35,13 +37,6 @@ else
     echo 'WARNING: You are using the example json config file, make sure this is intended'
     cp ../../laps-runner.example.json laps4linux-runner-$VERSION/etc/laps-runner.json
 fi
-
-# add cron script
-echo 'SHELL=/bin/sh
-PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
-
-/usr/sbin/laps-runner --config /etc/laps-runner.json' > laps4linux-runner-$VERSION/etc/cron.hourly/laps-runner
-chmod +x laps4linux-runner-$VERSION/etc/cron.hourly/laps-runner
 
 # create .tar.gz source package
 tar --create --file laps4linux-client-$VERSION.tar.gz laps4linux-client-$VERSION
