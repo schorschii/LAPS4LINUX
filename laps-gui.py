@@ -388,12 +388,8 @@ class LapsMainWindow(QMainWindow):
 		if(self.txtSearchComputer.text().strip() == ''): return
 
 		try:
-			import subprocess
-			import time
-			import configparser
-			import base64
+			import subprocess, time
 			from shutil import which
-			from Cryptodome.Cipher import DES3
 
 			# check remmina existence and version
 			if(which('remmina') is None): raise Exception('Remmina is not installed')
@@ -412,6 +408,9 @@ class LapsMainWindow(QMainWindow):
 
 			# passwords must be encrypted in old remmina connection files using the secret found in remmina.pref
 			if(not newRemmina):
+				import base64, configparser
+				from Cryptodome.Cipher import DES3
+
 				remminaPrefPath = str(Path.home())+'/.remmina/remmina.pref' # older remmina versions
 				if(not os.path.exists(remminaPrefPath)): remminaPrefPath = str(Path.home())+'/.config/remmina/remmina.pref' # newer remmina versions
 				if(os.path.exists(remminaPrefPath)):
@@ -432,34 +431,59 @@ class LapsMainWindow(QMainWindow):
 			# protection is done by limiting access to our config dir
 			if(os.path.isfile(self.cfgPathRemmina)):
 				os.unlink(self.cfgPathRemmina)
+
 			if(protocol == 'RDP'):
+				# default config
+				remminaConfig = ('[remmina]\n'+
+					'name=$$host$$\n'+
+					'server=$$host$$\n'+
+					'username=$$username$$\n'+
+					'password=$$password$$\n'
+					'protocol=RDP\n'+
+					'scale=2\n'+
+					'window_width=1092\n'+
+					'window_height=720\n'+
+					'colordepth=0\n'+
+					'sound=off\n')
+				# use custom RDP config if provided
+				cfgPathRemminaTemplate = self.cfgDir+'/rdp.remmina.template'
+				if(os.path.isfile(cfgPathRemminaTemplate)):
+					with open(cfgPathRemminaTemplate, 'r') as f:
+						remminaConfig = f.read()
+				# write temp remmina config
 				with open(os.open(self.cfgPathRemmina, os.O_CREAT | os.O_WRONLY, 0o400), 'w') as f:
 					f.write(
-						'[remmina]\n'+
-						'name='+self.txtSearchComputer.text()+'\n'+
-						'server='+self.txtSearchComputer.text()+'\n'+
-						'username='+self.cfgConnectUsername+'\n'+
-						'password='+password+'\n'
-						'protocol=RDP\n'+
-						'scale=2\n'+
-						'window_width=1092\n'+
-						'window_height=720\n'+
-						'colordepth=0\n'
+						remminaConfig
+							.replace('$$host$$', self.txtSearchComputer.text())
+							.replace('$$username$$', self.cfgConnectUsername)
+							.replace('$$password$$', password)
 					)
 					f.close()
-				time.sleep(0.2)
+
 			elif(protocol == 'SSH'):
+				# default config
+				remminaConfig = ('[remmina]\n'+
+					'name=$$host$$\n'+
+					'server=$$host$$\n'+
+					'username=$$username$$\n'+
+					'password=$$password$$\n'
+					'protocol=SSH\n')
+				# use custom SSH config if provided
+				cfgPathRemminaTemplate = self.cfgDir+'/ssh.remmina.template'
+				if(os.path.isfile(cfgPathRemminaTemplate)):
+					with open(cfgPathRemminaTemplate, 'r') as f:
+						remminaConfig = f.read()
+				# write temp remmina config
 				with open(os.open(self.cfgPathRemmina, os.O_CREAT | os.O_WRONLY, 0o400), 'w') as f:
 					f.write(
-						'[remmina]\n'+
-						'name='+self.txtSearchComputer.text()+'\n'+
-						'server='+self.txtSearchComputer.text()+'\n'+
-						'username='+self.cfgConnectUsername+'\n'+
-						'password='+password+'\n'
-						'protocol=SSH\n'
+						remminaConfig
+							.replace('$$host$$', self.txtSearchComputer.text())
+							.replace('$$username$$', self.cfgConnectUsername)
+							.replace('$$password$$', password)
 					)
 					f.close()
-				time.sleep(0.2)
+
+			time.sleep(0.2)
 			subprocess.Popen(['remmina', '-c', self.cfgPathRemmina])
 		except Exception as e:
 			# display error
