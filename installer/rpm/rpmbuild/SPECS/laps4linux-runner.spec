@@ -24,15 +24,20 @@ This RPM contains the script and personalized config to run the lap4linux python
 %install
 rm -rf $RPM_BUILD_ROOT
 
+mkdir -p $RPM_BUILD_ROOT/usr/share
+cp -R usr/share/laps4linux-runner $RPM_BUILD_ROOT/usr/share
 mkdir -p $RPM_BUILD_ROOT/%{_sbindir}
-cp usr/sbin/laps-runner $RPM_BUILD_ROOT/%{_sbindir}/laps-runner
+cp -P usr/sbin/laps-runner $RPM_BUILD_ROOT/%{_sbindir}/laps-runner
 mkdir -p $RPM_BUILD_ROOT/%{_sysconfdir}
 cp etc/laps-runner.json $RPM_BUILD_ROOT/%{_sysconfdir}
 mkdir -p $RPM_BUILD_ROOT/%{_sysconfdir}/cron.hourly/
 cp etc/cron.hourly/laps-runner $RPM_BUILD_ROOT/%{_sysconfdir}/cron.hourly/
 
 %post
-sudo -H pip3 install ldap3 dpapi-ng[kerberos]
+DIR=/usr/share/laps4linux-runner
+python3 -m venv --system-site-packages $DIR/venv
+$DIR/venv/bin/pip3 install --upgrade $DIR
+$DIR/venv/bin/pip3 uninstall -y pip
 
 
 %clean
@@ -43,6 +48,12 @@ rm -rf $RPM_BUILD_ROOT
 %{_sbindir}/laps-runner
 %{_sysconfdir}/laps-runner.json
 %{_sysconfdir}/cron.hourly/laps-runner
+/usr/share/laps4linux-runner/laps_runner/filetime.py
+/usr/share/laps4linux-runner/laps_runner/__init__.py
+/usr/share/laps4linux-runner/laps_runner/laps_runner.py
+/usr/share/laps4linux-runner/README.md
+/usr/share/laps4linux-runner/requirements.txt
+/usr/share/laps4linux-runner/setup.py
 
 
 %changelog

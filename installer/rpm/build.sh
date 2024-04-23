@@ -11,31 +11,38 @@ yum install -y rpmdevtools rpmlint
 rpmdev-setuptree
 
 # get the version from the python script
-VERSION=$(awk '/PRODUCT_VERSION\s+=/ { print $3 }' ../../laps-runner.py | tr -d \' )
+VERSION=$(awk '/__version__\s+=/ { print $3 }' ../../laps-runner/laps_runner/__init__.py | tr -d \')
 
 # generate and fill the source folders
 mkdir -p laps4linux-client-$VERSION/usr/bin
+mkdir -p laps4linux-client-$VERSION/usr/share/laps4linux-client/laps_client
 mkdir -p laps4linux-client-$VERSION/usr/share/applications
 mkdir -p laps4linux-client-$VERSION/usr/share/pixmaps
 mkdir -p laps4linux-runner-$VERSION/usr/sbin
+mkdir -p laps4linux-runner-$VERSION/usr/share/laps4linux-runner/laps_runner
 mkdir -p laps4linux-runner-$VERSION/etc/cron.hourly
-cp ../../laps-gui.py laps4linux-client-$VERSION/usr/bin/laps-gui
-cp ../../laps-cli.py laps4linux-client-$VERSION/usr/bin/laps-cli
-cp ../../assets/LAPS4LINUX.desktop laps4linux-client-$VERSION/usr/share/applications
-cp ../../assets/laps.png laps4linux-client-$VERSION/usr/share/pixmaps
-cp ../../assets/laps-runner.cron laps4linux-runner-$VERSION/etc/cron.hourly/laps-runner
-cp ../../laps-runner.py laps4linux-runner-$VERSION/usr/sbin/laps-runner
-chmod +x laps4linux-client-$VERSION/usr/bin/laps-gui
-chmod +x laps4linux-client-$VERSION/usr/bin/laps-cli
-chmod +x laps4linux-runner-$VERSION/usr/sbin/laps-runner
+cp ../../laps-client/laps_client/*.py laps4linux-client-$VERSION/usr/share/laps4linux-client/laps_client
+cp ../../laps-client/requirements.txt laps4linux-client-$VERSION/usr/share/laps4linux-client
+cp ../../laps-client/setup.py         laps4linux-client-$VERSION/usr/share/laps4linux-client
+cp ../../README.md                    laps4linux-client-$VERSION/usr/share/laps4linux-client
+cp ../../assets/LAPS4LINUX.desktop    laps4linux-client-$VERSION/usr/share/applications
+cp ../../assets/laps.png              laps4linux-client-$VERSION/usr/share/pixmaps
+cp ../../assets/laps-runner.cron      laps4linux-runner-$VERSION/etc/cron.hourly/laps-runner
+cp ../../laps-runner/laps_runner/*.py laps4linux-runner-$VERSION/usr/share/laps4linux-runner/laps_runner
+cp ../../laps-runner/requirements.txt laps4linux-runner-$VERSION/usr/share/laps4linux-runner
+cp ../../laps-runner/setup.py         laps4linux-runner-$VERSION/usr/share/laps4linux-runner
+cp ../../README.md                    laps4linux-runner-$VERSION/usr/share/laps4linux-runner
+ln -sf /usr/share/laps4linux-client/venv/bin/laps-cli laps4linux-client-$VERSION/usr/bin/laps-cli
+ln -sf /usr/share/laps4linux-client/venv/bin/laps-gui laps4linux-client-$VERSION/usr/bin/laps-gui
+ln -sf /usr/share/laps4linux-runner/venv/bin/laps-runner laps4linux-runner-$VERSION/usr/sbin/laps-runner
 chmod +x laps4linux-runner-$VERSION/etc/cron.hourly/laps-runner
 
 # test if we have our own laps-runner config
-if [ -f ../../laps-runner.json ]; then
-    cp ../../laps-runner.json laps4linux-runner-$VERSION/etc
+if [ -f ../../laps-runner/laps-runner.json ]; then
+    cp ../../laps-runner/laps-runner.json laps4linux-runner-$VERSION/etc
 else
     echo 'WARNING: You are using the example json config file, make sure this is intended'
-    cp ../../laps-runner.example.json laps4linux-runner-$VERSION/etc/laps-runner.json
+    cp ../../laps-runner/laps-runner.json.example laps4linux-runner-$VERSION/etc/laps-runner.json
 fi
 
 # create .tar.gz source package
@@ -58,3 +65,6 @@ cd rpmbuild
 rpmbuild --define "_topdir $(pwd)" -bb SPECS/laps4linux-client.spec
 rpmbuild --define "_topdir $(pwd)" -bb SPECS/laps4linux-runner.spec
 
+# uninstall: rpm -e laps4linux-client
+# install:   rpm -i ...rpm
+# list:      rpm -qlp ...rpm
