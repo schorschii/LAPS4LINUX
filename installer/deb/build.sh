@@ -52,11 +52,11 @@ sudo install -D -m 644 ../../laps-runner/laps_runner/*.py      -t $BUILDDIR/$INS
 sudo install -D -m 644 ../../laps-runner/requirements.txt      -t $BUILDDIR/$INSTALLDIR
 sudo install -D -m 644 ../../laps-runner/setup.py              -t $BUILDDIR/$INSTALLDIR
 # test if we have our own laps-runner config
-if [ -f ../../laps-runner.json ]; then
-	sudo install -D -m 644 ../../laps-runner.json         $BUILDDIR/etc/laps-runner.json
+if [ -f ../../laps-runner/laps-runner.json ]; then
+	sudo install -D -m 644 ../../laps-runner/laps-runner.json         $BUILDDIR/etc/laps-runner.json
 else
 	echo 'WARNING: You are using the example json config file, make sure this is intended'
-	sudo install -D -m 644 ../../laps-runner.example.json $BUILDDIR/etc/laps-runner.json
+	sudo install -D -m 644 ../../laps-runner/laps-runner.json.example $BUILDDIR/etc/laps-runner.json
 fi
 
 # set file permissions
