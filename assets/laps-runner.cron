@@ -1,5 +1,7 @@
 #!/bin/sh
 
+# example file for `/etc/cron.hourly/laps-runner`
+
 SHELL=/bin/sh
 PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 

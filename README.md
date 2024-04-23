@@ -191,15 +191,7 @@ The runner is responsible for automatically changing the admin password of a Lin
 
 A detailed domain join guide is available [on my website](https://georg-sieber.de/?page=blog-linux-im-unternehmen) (attention: only in German).
 
-The runner should be called periodically via cron. It decides by the expiration time stored in the LDAP directory when the password should be changed.
-```
-*** /etc/cron.hourly/laps-runner ***
-
-SHELL=/bin/sh
-PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
-
-/usr/sbin/laps-runner --config /etc/laps-runner.json
-```
+The runner should be called periodically via cron ([example](assets/laps-runner.cron)). This does not mean that the password will be rotated every time the cron job runs - it decides by the expiration time stored in the LDAP directory when the password needs to be changed.
 
 Please make sure that `usermod` (for changing the password in the local database) is in you crontab `$PATH` (this is the default in Debian and Ubuntu based systems, but may not in other distros).
 
