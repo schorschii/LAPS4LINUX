@@ -1,13 +1,17 @@
 #!/bin/bash
 
-# Exit on error
+# exit on error
 set -e
 
-# Source debconf library.
+# source debconf library.
 #. /usr/share/debconf/confmodule
+
+DIR=/usr/share/laps4linux-client
+
+# create system-wide venv and install python libraries via pip
+python3 -m venv --system-site-packages $DIR/venv
+$DIR/venv/bin/pip3 install --upgrade $DIR
+$DIR/venv/bin/pip3 uninstall -y pip
 
 # register protocol scheme handler
 update-desktop-database
-
-# we need the newest ldap3 version from pyPI
-sudo -H pip3 install ldap3 dpapi-ng[kerberos]

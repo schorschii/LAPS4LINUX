@@ -1,15 +1,17 @@
 .DS_Store
 
+test*.py
+
 __pycache__/
 
 build/
 dist/
 
-setup/windows/*.exe
-setup/macos/target/*
-setup/deb/*.deb
-setup/deb/laps4linux-*/*
-!setup/deb/laps4linux-*/DEBIAN/
-!setup/deb/laps4linux-runner/etc
-setup/deb/laps4linux-runner/etc/*
-!setup/deb/laps4linux-runner/etc/cron.hourly/
+*.egg-info/
+venv/
+
+installer/windows/*.exe
+installer/macos/target/*
+installer/deb/*.deb
+installer/deb/laps4linux-*/*
+!installer/deb/laps4linux-*/DEBIAN/

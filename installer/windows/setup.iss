@@ -49,8 +49,8 @@ Root: HKCR; Subkey: "laps\shell\open"; Flags: uninsdeletekey
 Root: HKCR; Subkey: "laps\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """C:\Program Files\LAPS4LINUX\laps-gui.exe"" %1"
 
 [Files]
-Source: "..\..\dist\LAPS4LINUX\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
-Source: "..\..\dist\LAPS4LINUX\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "..\..\laps-client\dist\LAPS4LINUX\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\..\laps-client\dist\LAPS4LINUX\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
 [Icons]

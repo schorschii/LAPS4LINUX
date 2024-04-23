@@ -20,7 +20,7 @@ The management client enables administrators to view the current (decrypted) loc
 
 ### Command Line Interface (CLI)
 ```
-$ ./laps-cli.py notebook01 --set-expiry "2021-04-28 01:01:01"
+$ laps-cli notebook01 --set-expiry "2021-04-28 01:01:01"
 LAPS4LINUX CLI v1.0.0
 https://github.com/schorschii/laps4linux
 
@@ -33,7 +33,7 @@ New Expiration: 132640452610000000 (2021-04-28 01:01:01)
 Expiration Date Changed Successfully.
 
 
-$ ./laps-cli.py "*"
+$ laps-cli "*"
 LAPS4LINUX CLI v1.0.0
 https://github.com/schorschii/laps4linux
 
@@ -42,6 +42,21 @@ Connection: ldapserver01: user@example.com
 NOTEBOOK01$ : abc123
 NOTEBOOK02$ : 123abc
 ...
+```
+
+### Installation
+It is recommended to use the installation package provided on the [Github releases](https://github.com/schorschii/LAPS4LINUX/releases) page.
+
+Manual installation in a Python venv:
+```
+# install available python modules globally to avoid duplicate install in venv
+apt install python3-venv python3-pip python3-setuptools python3-qtpy python3-gssapi python3-dnspython python3-pycryptodome libkrb5-dev
+
+python3 -m venv venv --system-site-packages
+venv/bin/pip3 install .
+
+venv/bin/laps-gui
+venv/bin/laps-cli
 ```
 
 ### Configuration
@@ -187,6 +202,20 @@ PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 ```
 
 Please make sure that `usermod` (for changing the password in the local database) is in you crontab `$PATH` (this is the default in Debian and Ubuntu based systems, but may not in other distros).
+
+### Installation
+It is recommended to use the installation package provided on the [Github releases](https://github.com/schorschii/LAPS4LINUX/releases) page.
+
+Manual installation in a Python venv:
+```
+# install available python modules globally to avoid duplicate install in venv
+apt install python3-venv python3-pip python3-setuptools python3-gssapi python3-dnspython krb5-user libkrb5-dev
+
+python3 -m venv venv --system-site-packages
+venv/bin/pip3 install .
+
+venv/bin/laps-runner
+```
 
 ### Configuration
 Please configure the runner by editing the configuration file `/etc/laps-runner.json`.
