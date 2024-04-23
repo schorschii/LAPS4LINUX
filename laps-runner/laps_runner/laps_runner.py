@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from .__init__ import __title__, __version__, __website__
+from .__init__ import __title__, __version__, __website__, __author__, __copyright__
 from .filetime import dt_to_filetime, filetime_to_dt
 
 from pathlib import Path
@@ -27,10 +27,6 @@ import traceback
 
 
 class LapsRunner():
-	PRODUCT_NAME      = __title__ + ' Runner'
-	PRODUCT_VERSION   = __version__
-	PRODUCT_WEBSITE   = __website__
-
 	server     = None
 	connection = None
 	logger     = None
@@ -68,8 +64,8 @@ class LapsRunner():
 		self.logger.addHandler(logging.handlers.SysLogHandler(address = '/dev/log'))
 
 		# show note
-		print(self.PRODUCT_NAME+' v'+self.PRODUCT_VERSION)
-		print('If you like LAPS4LINUX please do not forget to give the repository a star ('+self.PRODUCT_WEBSITE+').')
+		print(__title__ + ' Runner' +' v'+__version__)
+		print('If you like LAPS4LINUX please do not forget to give the repository a star ('+__website__+').')
 		print('')
 
 	def getHostname(self):
@@ -170,7 +166,7 @@ class LapsRunner():
 		res = subprocess.run(cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL, universal_newlines=True)
 		if res.returncode == 0:
 			print('Password successfully changed in local database')
-			self.logger.debug(self.PRODUCT_NAME+': Changed password of user '+self.cfgUsername+' in local database')
+			self.logger.debug(__title__+': Changed password of user '+self.cfgUsername+' in local database')
 		else:
 			raise Exception(' '.join(cmd)+' returned non-zero exit code '+str(res.returncode))
 
@@ -309,7 +305,7 @@ def main():
 	runner = LapsRunner()
 
 	# parse arguments
-	parser = argparse.ArgumentParser()
+	parser = argparse.ArgumentParser(epilog=__copyright__+' '+__author__+' - https://georg-sieber.de')
 	parser.add_argument('-f', '--force', action='store_true', help='Force updating password, even if it is not expired')
 	parser.add_argument('-c', '--config', default=runner.cfgPath, help='Path to config file ['+str(runner.cfgPath)+']')
 	args = parser.parse_args()
@@ -333,7 +329,7 @@ def main():
 
 	except Exception as e:
 		print(traceback.format_exc())
-		runner.logger.critical(runner.PRODUCT_NAME+': Error while executing workflow: '+str(e))
+		runner.logger.critical(__title__+': Error while executing workflow: '+str(e))
 		exit(1)
 
 	return

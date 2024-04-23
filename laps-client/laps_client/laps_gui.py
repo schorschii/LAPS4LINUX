@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from .__init__ import __title__, __version__, __website__
+from .__init__ import __title__, __version__, __website__, __author__, __copyright__
 from .filetime import dt_to_filetime, filetime_to_dt
 
 from PyQt5.QtWidgets import *
@@ -35,7 +35,7 @@ class LapsAboutWindow(QDialog):
 		self.layout = QVBoxLayout(self)
 
 		labelAppName = QLabel(self)
-		labelAppName.setText(self.parentWidget().PRODUCT_NAME + ' v' + self.parentWidget().PRODUCT_VERSION)
+		labelAppName.setText(__title__ + ' GUI Client' + ' v' + __version__)
 		labelAppName.setStyleSheet('font-weight:bold')
 		labelAppName.setAlignment(Qt.AlignCenter)
 		self.layout.addWidget(labelAppName)
@@ -43,12 +43,12 @@ class LapsAboutWindow(QDialog):
 		labelCopyright = QLabel(self)
 		labelCopyright.setText(
 			'<br>'
-			'© 2021-2023 <a href="https://georg-sieber.de">Georg Sieber</a>'
+			+__copyright__+' <a href="https://georg-sieber.de">'+__author__+'</a>'
 			'<br>'
 			'<br>'
 			'GNU General Public License v3.0'
 			'<br>'
-			'<a href="'+self.parentWidget().PRODUCT_WEBSITE+'">'+self.parentWidget().PRODUCT_WEBSITE+'</a>'
+			'<a href="'+__website__+'">'+__website__+'</a>'
 			'<br>'
 			'<br>'
 			'If you like LAPS4LINUX please consider<br>making a donation to support further development.'
@@ -66,7 +66,6 @@ class LapsAboutWindow(QDialog):
 			'\n\n'
 			'LAPS was originally developed by Microsoft, this is an unofficial Linux/Unix implementation with some enhancements (e.g. the CLI/GUI client can display additional attributes).'
 		)
-		labelDescription.setStyleSheet('opacity:0.8')
 		labelDescription.setFixedWidth(450)
 		labelDescription.setWordWrap(True)
 		self.layout.addWidget(labelDescription)
@@ -147,9 +146,6 @@ class LapsPlainTextEdit(QPlainTextEdit):
 class LapsMainWindow(QMainWindow):
 	PLATFORM          = sys.platform.lower()
 
-	PRODUCT_NAME      = __title__ + ' GUI Client'
-	PRODUCT_VERSION   = __version__
-	PRODUCT_WEBSITE   = __website__
 	PROTOCOL_SCHEME   = 'laps://'
 	PRODUCT_ICON      = 'laps.png'
 	PRODUCT_ICON_PATH = '/usr/share/pixmaps'
@@ -323,7 +319,7 @@ class LapsMainWindow(QMainWindow):
 
 		# Window Settings
 		self.setMinimumSize(480, 300)
-		self.setWindowTitle(self.PRODUCT_NAME)
+		self.setWindowTitle(__title__)
 		self.statusBar.showMessage('Settings file: '+self.cfgPath)
 
 		# Handle Parameter - Automatic Search
@@ -505,7 +501,7 @@ class LapsMainWindow(QMainWindow):
 			)
 			for entry in self.connection.entries:
 				self.statusBar.showMessage('Found: '+str(entry['distinguishedName'])+' ('+self.GetConnectionString()+')')
-				self.setWindowTitle(str(entry['cn'])+' - '+self.PRODUCT_NAME)
+				self.setWindowTitle(str(entry['cn'])+' - '+__title__)
 				self.tmpDn = str(entry['distinguishedName'])
 				self.queryAttributes()
 				return

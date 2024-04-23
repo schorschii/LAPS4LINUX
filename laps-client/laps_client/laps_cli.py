@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from .__init__ import __title__, __version__, __website__
+from .__init__ import __title__, __version__, __website__, __author__, __copyright__
 from .filetime import dt_to_filetime, filetime_to_dt
 
 from pathlib import Path
@@ -20,10 +20,6 @@ import os
 
 class LapsCli():
 	PLATFORM          = sys.platform.lower()
-
-	PRODUCT_NAME      = __title__ + ' CLI Client'
-	PRODUCT_VERSION   = __version__
-	PRODUCT_WEBSITE   = __website__
 
 	gcModeOn    = False
 	server      = None
@@ -62,8 +58,8 @@ class LapsCli():
 		if(useKerberos != None): self.cfgUseKerberos = useKerberos
 
 		# show version information
-		print(self.PRODUCT_NAME+' v'+self.PRODUCT_VERSION)
-		print('If you like LAPS4LINUX please do not forget to give the repository a star ('+self.PRODUCT_WEBSITE+').')
+		print(__title__ + ' CLI Client' +' v'+__version__)
+		print('If you like LAPS4LINUX please do not forget to give the repository a star ('+__website__+').')
 
 	def GetAttributesAsDict(self):
 		finalDict = {}
@@ -489,7 +485,7 @@ def eprint(*args, **kwargs):
 	print(*args, file=sys.stderr, **kwargs)
 
 def main():
-	parser = argparse.ArgumentParser(epilog='© 2021-2023 Georg Sieber - https://georg-sieber.de')
+	parser = argparse.ArgumentParser(epilog=__copyright__+' '+__author__+' - https://georg-sieber.de')
 	parser.add_argument('search', default=None, nargs='*', metavar='COMPUTERNAME', help='Search for this computer(s) and display the admin password. Use "*" to display all computer passwords found in LDAP directory. If you omit this parameter, the interactive shell will be started, which allows you to do multiple queries in one session.')
 	parser.add_argument('-e', '--set-expiry', default=None, metavar='"2020-01-01 00:00:00"', help='Set new expiration date for computer found by search string.')
 	parser.add_argument('-K', '--no-kerberos', action='store_true', help='Do not use Kerberos authentication if available, ask for LDAP simple bind credentials.')
