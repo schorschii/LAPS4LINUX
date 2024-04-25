@@ -1,4 +1,4 @@
-# LAPS4LINUX Management Client
+# LAPS4LINUX Client
 The management client enables administrators to view the current (decrypted) local admin passwords. It can be used from command line or as graphical application.
 
 ### Graphical User Interface (GUI)
