@@ -47,6 +47,7 @@ if [ -d "$BUILDDIR/usr" ]; then
 fi
 
 # copy files in place
+sudo install -D -m 644 ../../README.md                         -t $BUILDDIR/$INSTALLDIR
 sudo install -D -m 644 ../../assets/laps-runner.cron              $BUILDDIR/etc/cron.hourly/laps-runner
 sudo install -D -m 644 ../../laps-runner/laps_runner/*.py      -t $BUILDDIR/$INSTALLDIR/laps_runner
 sudo install -D -m 644 ../../laps-runner/requirements.txt      -t $BUILDDIR/$INSTALLDIR
