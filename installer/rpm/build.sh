@@ -7,8 +7,12 @@ set -e
 cd "$(dirname "$0")"
 
 # ensure that the rpm build tools are installed
-yum install -y rpmdevtools rpmlint
-rpmdev-setuptree
+if command -v yum; then
+    yum install -y rpmdevtools rpmlint
+fi
+if command -v rpmdev-setuptree; then
+    rpmdev-setuptree
+fi
 
 # get the version from the python script
 VERSION=$(awk '/__version__\s+=/ { print $3 }' ../../laps-runner/laps_runner/__init__.py | tr -d \')
