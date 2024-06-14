@@ -330,7 +330,7 @@ def main():
 	except Exception as e:
 		print(traceback.format_exc())
 		runner.logger.critical(__title__+': Error while executing workflow: '+str(e))
-		exit(1)
+		sys.exit(1)
 
 	return
 
