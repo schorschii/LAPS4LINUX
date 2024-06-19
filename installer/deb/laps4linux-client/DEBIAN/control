@@ -3,7 +3,7 @@ Version: 1.8.0
 Section: base
 Priority: optional
 Architecture: all
-Depends: python3, python3-venv, python3-pip, python3-setuptools, python3-qtpy, python3-gssapi, python3-dnspython, python3-pycryptodome, libkrb5-dev
+Depends: python3, python3-venv, python3-pip, python3-setuptools, python3-qtpy, python3-gssapi, python3-dnspython, python3-pycryptodome, libkrb5-dev, desktop-file-utils
 Conflicts: laps4linux, laps4linux-gui, laps4linux-cli
 Maintainer: Georg Sieber <it@georg-sieber.de>
 Description: Linux implementation of the Local Administrator Password Solution (LAPS) GUI from Microsoft.
