@@ -11,7 +11,7 @@ BUILDDIR=laps4linux-client
 
 # empty / create necessary directories
 if [ -d "$BUILDDIR/usr" ]; then
-        rm -r $BUILDDIR/usr
+	rm -r $BUILDDIR/usr
 fi
 
 # copy files in place
@@ -34,7 +34,7 @@ BUILDDIR=laps4linux-runner
 
 # empty / create necessary directories
 if [ -d "$BUILDDIR/usr" ]; then
-        rm -r $BUILDDIR/usr
+	rm -r $BUILDDIR/usr
 fi
 
 # copy files in place
@@ -45,10 +45,10 @@ install -D -m 644 ../../laps-runner/requirements.txt      -t $BUILDDIR/$INSTALLD
 install -D -m 644 ../../laps-runner/setup.py              -t $BUILDDIR/$INSTALLDIR
 # test if we have our own laps-runner config
 if [ -f ../../laps-runner/laps-runner.json ]; then
-        install -D -m 644 ../../laps-runner/laps-runner.json         $BUILDDIR/etc/laps-runner.json
+	install -D -m 644 ../../laps-runner/laps-runner.json         $BUILDDIR/etc/laps-runner.json
 else
-        echo 'WARNING: You are using the example json config file, make sure this is intended'
-        install -D -m 644 ../../laps-runner/laps-runner.json.example $BUILDDIR/etc/laps-runner.json
+	echo 'WARNING: You are using the example json config file, make sure this is intended'
+	install -D -m 644 ../../laps-runner/laps-runner.json.example $BUILDDIR/etc/laps-runner.json
 fi
 
 # make binaries available in PATH
