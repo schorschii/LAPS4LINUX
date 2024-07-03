@@ -170,6 +170,7 @@ class LapsMainWindow(QMainWindow):
 	cfgUseStartTls = True
 	cfgServer      = []
 	cfgDomain      = None
+	cfgLdapQuery   = '(&(objectClass=computer)(cn=%1))'
 	cfgUsername    = ''
 	cfgPassword    = ''
 	cfgLdapAttributes              = {
@@ -495,14 +496,14 @@ class LapsMainWindow(QMainWindow):
 		try:
 			# start LDAP search
 			self.connection.search(
-				search_base=self.createLdapBase(self.connection),
-				search_filter='(&(objectCategory=computer)(name='+computerName+'))',
-				attributes=['cn', 'distinguishedName']
+				search_base = self.createLdapBase(self.connection),
+				search_filter = self.cfgLdapQuery.replace('%1', computerName),
+				attributes = ['cn']
 			)
 			for entry in self.connection.entries:
-				self.statusBar.showMessage('Found: '+str(entry['distinguishedName'])+' ('+self.GetConnectionString()+')')
+				self.statusBar.showMessage('Found: '+entry.entry_dn+' ('+self.GetConnectionString()+')')
 				self.setWindowTitle(str(entry['cn'])+' - '+__title__)
-				self.tmpDn = str(entry['distinguishedName'])
+				self.tmpDn = entry.entry_dn
 				self.queryAttributes()
 				return
 
@@ -539,9 +540,9 @@ class LapsMainWindow(QMainWindow):
 
 		# start LDAP search
 		self.connection.search(
-			search_base=self.tmpDn,
-			search_filter='(objectCategory=computer)',
-			attributes=ldap3.ALL_ATTRIBUTES
+			search_base = self.tmpDn,
+			search_filter = '(objectClass=*)',
+			attributes = ldap3.ALL_ATTRIBUTES
 		)
 		# display result
 		for entry in self.connection.entries:
@@ -834,6 +835,7 @@ class LapsMainWindow(QMainWindow):
 			self.cfgUseStartTls = cfgJson.get('use-starttls', self.cfgUseStartTls)
 			self.cfgServer = cfgJson.get('server', self.cfgServer)
 			self.cfgDomain = cfgJson.get('domain', self.cfgDomain)
+			self.cfgLdapQuery = cfgJson.get('ldap-query', self.cfgLdapQuery)
 			self.cfgUsername = cfgJson.get('username', self.cfgUsername)
 			self.cfgLdapAttributePassword = cfgJson.get('ldap-attribute-password', self.cfgLdapAttributePassword)
 			self.cfgLdapAttributePasswordExpiry = cfgJson.get('ldap-attribute-password-expiry', self.cfgLdapAttributePasswordExpiry)
@@ -860,6 +862,7 @@ class LapsMainWindow(QMainWindow):
 					'use-starttls': self.cfgUseStartTls,
 					'server': saveServers,
 					'domain': self.cfgDomain,
+					'ldap-query': self.cfgLdapQuery,
 					'username': self.cfgUsername,
 					'ldap-attribute-password': self.cfgLdapAttributePassword,
 					'ldap-attribute-password-expiry': self.cfgLdapAttributePasswordExpiry,

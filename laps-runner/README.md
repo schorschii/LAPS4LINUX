@@ -29,6 +29,7 @@ Please configure the runner by editing the configuration file `/etc/laps-runner.
 
   - `server`: Array of domain controllers with items like `{"address": "dc1.example.com", "port": 389, "ssl": false}`. Leave empty for DNS auto discovery.
   - `domain`: Your domain name (e.g. `example.com`). Leave empty for DNS auto discovery.
+  - `ldap-query`: LDAP filter for getting the computer object, default: `(&(objectClass=computer)(cn=%1))`. `%1` is replaced by the computer name.
   - `use-starttls`: Boolean which indicates wheter to use StartTLS on unencrypted LDAP connections (requires valid server certificate).
   - `client-keytab-file`: The Kerberos keytab file with the machine secret.
   - `cred-cache-file`: File where to store the kerberos ticket for the LDAP connection.

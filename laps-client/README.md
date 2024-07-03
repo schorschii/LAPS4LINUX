@@ -55,6 +55,7 @@ You can create a preset config file `/etc/laps-client.json` which will be loaded
 
   - `server`: Array of domain controllers with items like `{"address": "dc1.example.com", "port": 389, "ssl": false}`. Leave empty for DNS auto discovery.
   - `domain`: Your domain name (e.g. `example.com`). Leave empty for DNS auto discovery.
+  - `ldap-query`: LDAP filter for getting the computer object, default: `(&(objectClass=computer)(cn=%1))`. `%1` is replaced by the computer name.
   - `use-starttls`: Boolean which indicates wheter to use StartTLS on unencrypted LDAP connections (requires valid server certificate).
   - `username`: The username for LDAP simple binds.
   - `use-kerberos`: Boolean which indicates wheter to use Kerberos for LDAP bind before falling back to simple bind.

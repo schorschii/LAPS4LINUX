@@ -16,8 +16,9 @@
             "ssl": true
         }
     ],
-    "domain": "example.com",
     "use-starttls": true,
+    "domain": "example.com",
+    "ldap-query": "(&(objectClass=computer)(cn=%1))",
 
     "username": "johndoe",
     "use-kerberos": true,

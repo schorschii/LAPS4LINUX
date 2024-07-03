@@ -17,8 +17,9 @@
             "ssl": false
         }
     ],
-    "domain-EXAMPLE": "example.com",
     "use-starttls": true,
+    "domain-EXAMPLE": "example.com",
+    "ldap-query-EXAMPLE": "(&(objectClass=computer)(cn=%1))",
 
     "cred-cache-file": "/tmp/laps.temp",
     "client-keytab-file": "/etc/krb5.keytab",

@@ -38,6 +38,7 @@ class LapsRunner():
 	cfgUseStartTls      = True
 	cfgServer           = []
 	cfgDomain           = ''
+	cfgLdapQuery        = '(&(objectClass=computer)(cn=%1))'
 
 	cfgHostname         = None
 	cfgUsername         = 'root' # the user, whose password should be changed
@@ -124,12 +125,12 @@ class LapsRunner():
 		# start query
 		self.connection.search(
 			search_base = self.createLdapBase(self.connection),
-			search_filter = '(&(objectCategory=computer)(name='+computerName+'))',
+			search_filter = self.cfgLdapQuery.replace('%1', computerName),
 			attributes = ldap3.ALL_ATTRIBUTES
 		)
 		for entry in self.connection.entries:
 			# display result
-			self.tmpDn = str(entry['distinguishedName'])
+			self.tmpDn = entry.entry_dn
 			try:
 				self.tmpPassword = entry[self.cfgLdapAttributePassword][0]
 			except Exception:
@@ -209,9 +210,9 @@ class LapsRunner():
 
 			# remove obsolete history entries
 			self.connection.search(
-				search_base=self.tmpDn,
-				search_filter='(objectCategory=computer)',
-				attributes=[self.cfgLdapAttributePasswordHistory]
+				search_base = self.tmpDn,
+				search_filter = '(objectClass=*)',
+				attributes = [self.cfgLdapAttributePasswordHistory]
 			)
 			counter = 0
 			deleteEntries = []
@@ -287,6 +288,7 @@ class LapsRunner():
 					'ssl': bool(server['ssl'])
 				})
 			self.cfgDomain = cfgJson.get('domain', self.cfgDomain)
+			self.cfgLdapQuery = cfgJson.get('ldap-query', self.cfgLdapQuery)
 			self.cfgCredCacheFile = cfgJson.get('cred-cache-file', self.cfgCredCacheFile)
 			self.cfgClientKeytabFile = cfgJson.get('client-keytab-file', self.cfgClientKeytabFile)
 			self.cfgUsername = cfgJson.get('password-change-user', self.cfgUsername)
