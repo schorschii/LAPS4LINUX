@@ -404,15 +404,15 @@ class LapsCli():
 			return False
 
 	def createLdapBase(self, conn):
-		if conn.server.info:
-			return conn.server.info.raw['defaultNamingContext'][0].decode('utf-8')
-		elif self.cfgDomain != '':
+		if self.cfgDomain:
 			# convert FQDN "example.com" to LDAP path notation "DC=example,DC=com"
 			search_base = ''
 			base = self.cfgDomain.split('.')
 			for b in base:
 				search_base += 'DC=' + b + ','
 			return search_base[:-1]
+		elif conn.server.info and 'defaultNamingContext' in conn.server.info.raw:
+			return conn.server.info.raw['defaultNamingContext'][0].decode('utf-8')
 		else:
 			raise Exception('Could not create LDAP search base: reading defaultNamingContext from LDAP directory failed and no domain given.')
 
