@@ -4,7 +4,7 @@ This document describes how LAPS(4LINUX) can be used with OpenLDAP. This guide a
 All LAPS4LINUX features can be used with OpenLDAP **except password encryption**, since the encryption relies on proprietary RPC calls only available on Windows Server.
 
 ## 1. Kerberos Setup
-The LAPS runner uses Kerberos for authentication, therefore you need to set up Kerberos authentication for your OpenLDAP. [This guide](https://ubuntu.com/server/docs/how-to-set-up-kerberos-with-openldap-backend) from Ubuntu describes how to configure a Kerberos server (can be run on the same host like Microsoft AD) by using your OpenLDAP as backend.
+The LAPS runner uses Kerberos for authentication, therefore you need to set up Kerberos authentication for your OpenLDAP. [This guide](https://ubuntu.com/server/docs/how-to-set-up-kerberos-with-openldap-backend) from Ubuntu describes how to configure a Kerberos server (can be run on the same server as known from Microsoft AD) by using your OpenLDAP as backend.
 
 After your Kerberos server is running, you need to create a principal and a corresponding keytab for your OpenLDAP server to enable Kerberos authentication in your OpenLDAP.
 ```
@@ -33,12 +33,10 @@ olcAttributeTypes: {5}( 1.2.840.113556.1.6.44.1.7 NAME 'msLAPS-CurrentPasswordVe
 olcObjectClasses: {0}( 1.1.3.7.1 NAME 'computer' DESC 'Computer object' SUP person STRUCTURAL MAY ( msLAPS-PasswordExpirationTime $ msLAPS-Password $ msLAPS-EncryptedPassword $ msLAPS-EncryptedPasswordHistory $ msLAPS-EncryptedDSRMPassword $ msLAPS-EncryptedDSRMPasswordHistory $ msLAPS-CurrentPasswordVersion ) )
 ```
 
-Set ACLs to restrict access to the computer object itself and for a specific group of admin users. This can be tricky and highly depends on what specific ACLs you already added to your OpenLDAP config, since the order is important.
-
 ## 3. Create Appropriate ACLs
 You need to add ACLs so that only a group of administrators can read and the computer itself can write the LAPS attributes.
 
-OpenLDAP ACLs are tricky and highly depends on your existing ACLs since the order is important. Therefore, the following example may needs to be adjusted for your OpenLDAP setup!
+OpenLDAP ACLs are tricky and highly depend on your existing ACLs since the order is important. Therefore, the following example may needs to be adjusted for your specific OpenLDAP setup!
 
 `ldapmodify -Y EXTERNAL -H ldapi:///`:
 ```
