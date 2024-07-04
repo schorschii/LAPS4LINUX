@@ -57,7 +57,7 @@ You can create a preset config file `/etc/laps-client.json` which will be loaded
   - `domain`: Your domain name (e.g. `example.com`). Leave empty for DNS auto discovery.
   - `ldap-query`: LDAP filter for getting the computer object, default: `(&(objectClass=computer)(cn=%1))`. `%1` is replaced by the computer name.
   - `use-starttls`: Boolean which indicates wheter to use StartTLS on unencrypted LDAP connections (requires valid server certificate).
-  - `username`: The username for LDAP simple binds.
+  - `username`: The username for LDAP simple binds. For Microsoft AD, you need to append the domain (`user@example.com`). For OpenLDAP, you need to enter your user DN (`dn=user,dc=example,dc=com`).
   - `use-kerberos`: Boolean which indicates wheter to use Kerberos for LDAP bind before falling back to simple bind.
   - `ldap-attributes`: A dict of LDAP attributes to display. Dict key is the display name and the corresponding value is the LDAP attribute name. The dict value can also be a list of strings. Then, the first non-empty LDAP attribute will be displayed.
   - `ldap-attribute-password`: The LDAP attribute name which contains the admin password. The client will try to decrypt this value (in case of Native LAPS) and use it for Remmina connections. Can also be a list of strings.

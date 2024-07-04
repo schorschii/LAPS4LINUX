@@ -735,7 +735,7 @@ class LapsMainWindow(QMainWindow):
 		try:
 			self.connection = ldap3.Connection(
 				self.server,
-				user=self.cfgUsername+'@'+self.cfgDomain,
+				user=self.cfgUsername,
 				password=self.cfgPassword,
 				authentication=ldap3.SIMPLE,
 				auto_referrals=True,
@@ -779,7 +779,7 @@ class LapsMainWindow(QMainWindow):
 		# try to bind to server with username and password
 		try:
 			self.connection = ldap3.Connection(server,
-				user=self.cfgUsername+'@'+self.cfgDomain,
+				user=self.cfgUsername,
 				password=self.cfgPassword,
 				authentication=ldap3.SIMPLE,
 				auto_referrals=True,
