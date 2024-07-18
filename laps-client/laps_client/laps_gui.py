@@ -3,6 +3,7 @@
 
 from .__init__ import __title__, __version__, __website__, __author__, __copyright__
 from .filetime import dt_to_filetime, filetime_to_dt
+from . import laps_common
 
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
@@ -17,7 +18,6 @@ from functools import partial
 import dpapi_ng
 import ldap3
 import ssl
-import getpass
 import json
 import sys
 import os
@@ -718,13 +718,22 @@ class LapsMainWindow(QMainWindow):
 
 		# ask for username and password for SIMPLE bind
 		if self.cfgUsername == '':
-			item, ok = QInputDialog.getText(self, '👤 Username', 'Please enter the username which should be used to connect to:\n'+str(self.cfgServer), QLineEdit.Normal, getpass.getuser())
+			item, ok = QInputDialog.getText(self,
+				'👤 Username',
+				'Please enter the username which should be used to connect to:\n'+str(self.cfgServer),
+				QLineEdit.Normal,
+				laps_common.proposeUsername(self.cfgDomain)
+			)
 			if ok and item:
 				self.cfgUsername = item
 				self.connection = None
 			else: return False
 		if self.cfgPassword == '':
-			item, ok = QInputDialog.getText(self, '🔑 Password for »'+self.cfgUsername+'«', 'Please enter the password which should be used to connect to:\n'+str(self.cfgServer), QLineEdit.Password)
+			item, ok = QInputDialog.getText(self,
+				'🔑 Password for »'+self.cfgUsername+'«',
+				'Please enter the password which should be used to connect to:\n'+str(self.cfgServer),
+				QLineEdit.Password
+			)
 			if ok and item:
 				self.cfgPassword = item
 				self.connection = None
