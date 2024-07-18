@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 
 from .__init__ import __title__, __version__, __website__, __author__, __copyright__
+from .__init__ import proposeUsername
 from .filetime import dt_to_filetime, filetime_to_dt
-from . import laps_common
 
 from pathlib import Path
 from os import path, makedirs, rename
@@ -332,7 +332,7 @@ class LapsCli():
 
 		# ask for username and password for SIMPLE bind
 		if self.cfgUsername == '':
-			defaultUsername = laps_common.proposeUsername(self.cfgDomain)
+			defaultUsername = proposeUsername(self.cfgDomain)
 			item = input('👤 Username ['+defaultUsername+']: ') or defaultUsername
 			if item and item.strip() != '':
 				self.cfgUsername = item

@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 
 from .__init__ import __title__, __version__, __website__, __author__, __copyright__
+from .__init__ import proposeUsername
 from .filetime import dt_to_filetime, filetime_to_dt
-from . import laps_common
 
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
@@ -722,7 +722,7 @@ class LapsMainWindow(QMainWindow):
 				'👤 Username',
 				'Please enter the username which should be used to connect to:\n'+str(self.cfgServer),
 				QLineEdit.Normal,
-				laps_common.proposeUsername(self.cfgDomain)
+				proposeUsername(self.cfgDomain)
 			)
 			if ok and item:
 				self.cfgUsername = item

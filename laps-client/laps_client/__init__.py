@@ -6,3 +6,11 @@ __version__   = '1.9.0'
 __website__   = 'https://github.com/schorschii/LAPS4LINUX'
 
 __all__ = [__author__, __license__, __version__]
+
+
+
+import getpass
+
+
+def proposeUsername(domain):
+	return getpass.getuser() + ('@'+domain if domain else '')
