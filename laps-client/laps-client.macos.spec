@@ -1,6 +1,7 @@
 # -*- mode: python ; coding: utf-8 -*-
 
 block_cipher = None
+version      = '1.9.0'
 
 # find the SHA-1 hash of you Developer ID Application certificate
 # for signing via `security find-identity -v -p codesigning` or use `None`
@@ -114,7 +115,7 @@ app = BUNDLE(coll,
     name='LAPS4LINUX.app',
     icon='../assets/laps.icns',
     bundle_identifier='systems.sieber.laps4mac',
-    version='1.8.0',
+    version=version,
     info_plist={
       'CFBundleURLTypes': [
          {
