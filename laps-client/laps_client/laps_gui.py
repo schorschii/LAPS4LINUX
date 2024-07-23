@@ -651,6 +651,7 @@ class LapsMainWindow(QMainWindow):
 			if ok and item != None:
 				self.cfgDomain = item
 				self.server = None
+			else: return False
 		if len(self.cfgServer) == 0:
 			# query domain controllers by dns lookup
 			searchDomain = '.'+self.cfgDomain if self.cfgDomain!='' else ''
