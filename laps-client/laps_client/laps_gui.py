@@ -573,6 +573,12 @@ class LapsMainWindow(QMainWindow):
 			return
 
 		try:
+			# clear text boxes
+			for title, attribute in self.GetAttributesAsDict().items():
+				textBox = self.refLdapAttributesTextBoxes[str(title)]
+				self.updateTextboxText(textBox, '')
+				textBox.setToolTip('')
+
 			# start LDAP search
 			self.connection.search(
 				search_base = self.createLdapBase(self.connection),
@@ -589,10 +595,6 @@ class LapsMainWindow(QMainWindow):
 
 			# no result found
 			self.statusBar.showMessage('No Result For: '+computerName+' ('+self.GetConnectionString()+')')
-			for title, attribute in self.GetAttributesAsDict().items():
-				textBox = self.refLdapAttributesTextBoxes[str(title)]
-				self.updateTextboxText(textBox, '')
-				textBox.setToolTip('')
 		except Exception as e:
 			# display error
 			self.statusBar.showMessage(str(e))
@@ -648,7 +650,7 @@ class LapsMainWindow(QMainWindow):
 
 					# handle non-existing attributes
 					if(value == None):
-						self.updateTextboxText(textBox, '')
+						pass
 
 					# if this is the password attribute -> try to parse Native LAPS format
 					elif(len(value) > 0 and
