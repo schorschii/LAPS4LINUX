@@ -147,14 +147,15 @@ class LapsCalendarWindow(QDialog):
 				parentWidget.OnClickSearch(None)
 				self.close()
 			else:
-				parentWidget.showErrorDialog('Error',
+				parentWidget.showInfoDialog('Error',
 					'Unable to change expiration date to '+str(newExpirationDateTime)+'.'
-					+'\n\n'+str(parentWidget.connection.result['message']), parentWidget.tmpDn+' ('+parentWidget.GetConnectionString()+')'
+					+'\n\n'+str(parentWidget.connection.result['message']), parentWidget.tmpDn+' ('+parentWidget.GetConnectionString()+')',
+					icon=QMessageBox.Critical
 				)
 
 		except Exception as e:
 			# display error
-			parentWidget.showErrorDialog('Error setting new expiration date', str(e))
+			parentWidget.showInfoDialog('Error setting new expiration date', str(e), icon=QMessageBox.Critical)
 			# reset connection
 			parentWidget.server = None
 			parentWidget.connection = None
@@ -716,7 +717,7 @@ class LapsMainWindow(QMainWindow):
 				return decrypted.decode('utf-8').replace("\x00", "")
 			except Exception as e:
 				if(lastDecryptionError != str(e)):
-					self.showErrorDialog('Decryption Error', str(e))
+					self.showInfoDialog('Decryption Error', str(e), icon=QMessageBox.Critical)
 					lastDecryptionError = str(e)
 
 	def parseLapsValue(self, ldapValue):
@@ -788,7 +789,7 @@ class LapsMainWindow(QMainWindow):
 					serverArray.append(ldap3.Server(server['address'], port=port, use_ssl=server['ssl'], tls=self.tlsSettings, get_info=ldap3.ALL))
 				self.server = ldap3.ServerPool(serverArray, ldap3.FIRST, active=2, exhaust=True)
 			except Exception as e:
-				self.showErrorDialog('Error connecting to LDAP server', str(e))
+				self.showInfoDialog('Error connecting to LDAP server', str(e), icon=QMessageBox.Critical)
 				return False
 
 		# try to bind to server via Kerberos
@@ -850,7 +851,7 @@ class LapsMainWindow(QMainWindow):
 				return False
 			self.cfgUsername = ''
 			self.cfgPassword = ''
-			self.showErrorDialog('Error binding to LDAP server', str(e))
+			self.showInfoDialog('Error binding to LDAP server', str(e), icon=QMessageBox.Critical)
 			return False
 
 		return True # return if connection created successfully
@@ -890,7 +891,7 @@ class LapsMainWindow(QMainWindow):
 			if(self.cfgUseStartTls): self.connection.start_tls()
 			return True
 		except Exception as e:
-			self.showErrorDialog('Error binding to LDAP server', str(e))
+			self.showInfoDialog('Error binding to LDAP server', str(e), icon=QMessageBox.Critical)
 			return False
 
 	def createLdapBase(self, conn):
@@ -948,7 +949,7 @@ class LapsMainWindow(QMainWindow):
 			if(isinstance(tmpLdapAttributes, list) or isinstance(tmpLdapAttributes, dict)):
 				self.cfgLdapAttributes = tmpLdapAttributes
 		except Exception as e:
-			self.showErrorDialog('Error loading settings file', str(e))
+			self.showInfoDialog('Error loading settings file', str(e), icon=QMessageBox.Critical)
 
 	def SaveSettings(self):
 		try:
@@ -975,19 +976,10 @@ class LapsMainWindow(QMainWindow):
 					'use-autotype-enter': self.cfgUseAutotypeEnter,
 				}, json_file, indent=4)
 		except Exception as e:
-			self.showErrorDialog('Error saving settings file', str(e))
+			self.showInfoDialog('Error saving settings file', str(e), icon=QMessageBox.Critical)
 
-	def showErrorDialog(self, title, text, additionalText=''):
-		print('Error: '+text)
-		msg = QMessageBox()
-		msg.setIcon(QMessageBox.Critical)
-		msg.setWindowTitle(title)
-		msg.setText(text)
-		msg.setDetailedText(additionalText)
-		msg.setStandardButtons(QMessageBox.Ok)
-		retval = msg.exec_()
 	def showInfoDialog(self, title, text, additionalText='', icon=QMessageBox.Information):
-		print('Info: '+text)
+		print('Dialog:', title, ':', text, ':', additionalText, ':', icon)
 		msg = QMessageBox()
 		msg.setIcon(icon)
 		msg.setWindowTitle(title)
