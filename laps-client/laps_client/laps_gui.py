@@ -75,6 +75,30 @@ class LapsAboutWindow(QDialog):
 		self.setLayout(self.layout)
 		self.setWindowTitle('About')
 
+class LapsBarcodeWindow(QDialog):
+	def __init__(self, title, text, img, *args, **kwargs):
+		super(LapsBarcodeWindow, self).__init__(*args, **kwargs)
+		self.InitUI(title, text, img)
+
+	def InitUI(self, title, text, img):
+		self.layout = QVBoxLayout(self)
+
+		if(img.mode == '1'):
+			img = img.convert('RGBA')
+		img_bytes = img.tobytes('raw', 'RGBA')
+		labelImage = QLabel(self)
+		labelImage.setPixmap(QPixmap.fromImage(QImage(img_bytes, img.size[0], img.size[1], QImage.Format_RGBA8888)))
+		labelImage.setAlignment(Qt.AlignCenter)
+		self.layout.addWidget(labelImage)
+
+		labelCopyright = QLabel(self)
+		labelCopyright.setText(text)
+		labelCopyright.setAlignment(Qt.AlignCenter)
+		self.layout.addWidget(labelCopyright)
+
+		self.setLayout(self.layout)
+		self.setWindowTitle(title)
+
 class LapsCalendarWindow(QDialog):
 	def __init__(self, *args, **kwargs):
 		super(LapsCalendarWindow, self).__init__(*args, **kwargs)
@@ -156,6 +180,7 @@ class LapsMainWindow(QMainWindow):
 	server      = None
 	connection  = None
 	tmpDn       = ''
+	currentComputerName = ''
 
 	cfgPresetDirWindows = path.dirname(sys.executable) if getattr(sys, 'frozen', False) else sys.path[0]
 	cfgPresetDirUnix    = '/etc'
@@ -290,6 +315,7 @@ class LapsMainWindow(QMainWindow):
 			else:
 				txtAdditionalAttribute = QLineEdit()
 			txtAdditionalAttribute.setReadOnly(True)
+			txtAdditionalAttribute.contextMenuEvent = partial(self.OnContextMenu, txtAdditionalAttribute)
 
 			# set easy readable font
 			if(self.PLATFORM == 'win32'):
@@ -347,8 +373,35 @@ class LapsMainWindow(QMainWindow):
 	def OnQuit(self, e):
 		sys.exit()
 
+	def OnContextMenu(self, lineEdit, e):
+		menu = lineEdit.createStandardContextMenu()
+		qrAction = QAction('Show as QR code', self)
+		qrAction.triggered.connect(lambda: self.OnClickShowAsCode(lineEdit, 'qr'))
+		menu.addAction(qrAction)
+		barcodeAction = QAction('Show as barcode', self)
+		barcodeAction.triggered.connect(lambda: self.OnClickShowAsCode(lineEdit, 'barcode'))
+		menu.addAction(barcodeAction)
+		menu.exec(e.globalPos())
+
+	def OnClickShowAsCode(self, lineEdit, code):
+		if(isinstance(lineEdit, QPlainTextEdit)):
+			text = lineEdit.toPlainText()
+		else:
+			text = lineEdit.text()
+		if(not text): return
+		if(code == 'qr'):
+			import qrcode
+			img = qrcode.make(text).get_image()
+		else:
+			import barcode
+			barcode.base.Barcode.default_writer_options['write_text'] = False
+			img = barcode.Code128(text, writer=barcode.writer.ImageWriter()).render()
+		if(img):
+			dlg = LapsBarcodeWindow(self.currentComputerName, text, img, self)
+			dlg.show()
+
 	def OnClickCopy(self, lineEdit, e):
-		if(type(lineEdit) == QPlainTextEdit):
+		if(isinstance(lineEdit, QPlainTextEdit)):
 			text = lineEdit.toPlainText()
 		else:
 			text = lineEdit.text()
@@ -502,7 +555,8 @@ class LapsMainWindow(QMainWindow):
 			)
 			for entry in self.connection.entries:
 				self.statusBar.showMessage('Found: '+entry.entry_dn+' ('+self.GetConnectionString()+')')
-				self.setWindowTitle(str(entry['cn'])+' - '+__title__)
+				self.currentComputerName = str(entry['cn'])
+				self.setWindowTitle(self.currentComputerName+' - '+__title__)
 				self.tmpDn = entry.entry_dn
 				self.queryAttributes()
 				return

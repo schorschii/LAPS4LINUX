@@ -4,6 +4,8 @@ The management client enables administrators to view the current (decrypted) loc
 ### Graphical User Interface (GUI)
 ![screenshot](../.github/screenshot.png)
 
+With a right click on the attribute text boxes, you can display the content as barcode or QR code. With this, you can scan the password using an USB QR/barcode scanner to easily enter it on the client machine without typing it on the keyboard.
+
 ### Command Line Interface (CLI)
 ```
 $ laps-cli notebook01 --set-expiry "2021-04-28 01:01:01"

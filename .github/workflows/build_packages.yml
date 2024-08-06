@@ -135,7 +135,7 @@ jobs:
         run: |
           cd laps-client
           python -m venv venv
-          venv/bin/pip3 install pyinstaller .
+          venv/bin/pip3 install pyinstaller .[barcode]
           venv/bin/pyinstaller laps-client.macos.spec
           cd ..
 
@@ -181,7 +181,7 @@ jobs:
         run: |
           cd laps-client
           python -m venv venv
-          venv/Scripts/pip.exe install pyinstaller==5.13.2 .
+          venv/Scripts/pip.exe install pyinstaller==5.13.2 .[barcode]
           venv/Scripts/pyinstaller.exe laps-client.windows.spec
           cd ..
 

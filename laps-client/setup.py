@@ -15,6 +15,9 @@ setup(
       long_description=long_description,
       long_description_content_type='text/markdown',
       install_requires=[i.strip() for i in open('requirements.txt').readlines()],
+      extras_require={
+            'barcode': [i.strip() for i in open('requirements-barcode.txt').readlines()],
+      },
       license=__import__('laps_client').__license__,
       author='Georg Sieber',
       keywords='laps password administrator ad ldap',
