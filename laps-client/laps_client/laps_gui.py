@@ -208,6 +208,7 @@ class LapsMainWindow(QMainWindow):
 	cfgLdapAttributePasswordExpiry  = ['msLAPS-PasswordExpirationTime', 'ms-Mcs-AdmPwdExpirationTime']
 	cfgLdapAttributePasswordHistory = 'msLAPS-EncryptedPasswordHistory'
 	cfgConnectUsername              = 'administrator'
+	cfgUseAutotypeEnter             = False
 	refLdapAttributesTextBoxes      = {}
 
 
@@ -259,17 +260,22 @@ class LapsMainWindow(QMainWindow):
 
 		rdpAction = QAction('&RDP', self)
 		rdpAction.setShortcut('F5')
-		rdpAction.triggered.connect(self.OnClickRDP)
+		rdpAction.triggered.connect(lambda: self.RemoteConnection('RDP'))
 		connectMenu.addAction(rdpAction)
 		sshAction = QAction('&SSH', self)
 		sshAction.setShortcut('F6')
-		sshAction.triggered.connect(self.OnClickSSH)
+		sshAction.triggered.connect(lambda: self.RemoteConnection('SSH'))
 		connectMenu.addAction(sshAction)
-
-		# only available on linux as there is no reasonable way to open remote connections with password on other OSes
-		if(self.PLATFORM != 'linux'):
-			rdpAction.setEnabled(False)
-			sshAction.setEnabled(False)
+		connectMenu.addSeparator()
+		autotypeCodeAction = QAction('&Autotype QR code', self)
+		autotypeCodeAction.setShortcut('F7')
+		autotypeCodeAction.triggered.connect(self.OnClickAutotypeCode)
+		connectMenu.addAction(autotypeCodeAction)
+		autotypeSeparatorAction = QAction('Enter instead of Tab', self)
+		autotypeSeparatorAction.setCheckable(True)
+		autotypeSeparatorAction.setChecked(self.cfgUseAutotypeEnter)
+		autotypeSeparatorAction.triggered.connect(self.OnClickAutotypeEnter)
+		connectMenu.addAction(autotypeSeparatorAction)
 
 		# Help Menu
 		helpMenu = mainMenu.addMenu('&Help')
@@ -389,16 +395,7 @@ class LapsMainWindow(QMainWindow):
 		else:
 			text = lineEdit.text()
 		if(not text): return
-		if(code == 'qr'):
-			import qrcode
-			img = qrcode.make(text).get_image()
-		else:
-			import barcode
-			barcode.base.Barcode.default_writer_options['write_text'] = False
-			img = barcode.Code128(text, writer=barcode.writer.ImageWriter()).render()
-		if(img):
-			dlg = LapsBarcodeWindow(self.currentComputerName, text, img, self)
-			dlg.show()
+		self.showCode(text, code)
 
 	def OnClickCopy(self, lineEdit, e):
 		if(isinstance(lineEdit, QPlainTextEdit)):
@@ -411,6 +408,11 @@ class LapsMainWindow(QMainWindow):
 
 	def OnClickKerberos(self, e):
 		self.cfgUseKerberos = not self.cfgUseKerberos
+		self.SaveSettings()
+
+	def OnClickAutotypeEnter(self, e):
+		self.cfgUseAutotypeEnter = not self.cfgUseAutotypeEnter
+		self.SaveSettings()
 
 	def OnOpenAboutDialog(self, e):
 		dlg = LapsAboutWindow(self)
@@ -419,17 +421,46 @@ class LapsMainWindow(QMainWindow):
 	def OnReturnSearch(self):
 		self.OnClickSearch(None)
 
-	def OnClickRDP(self, e):
-		self.RemoteConnection('RDP')
+	def OnClickAutotypeCode(self):
+		separator = "\t"
+		if(self.cfgUseAutotypeEnter):
+			# for Linux login screens (lightdm etc.)
+			separator = "\n"
+		text = self.cfgConnectUsername + separator + self.getCurrentPassword()
+		self.showCode(text, 'qr')
 
-	def OnClickSSH(self, e):
-		self.RemoteConnection('SSH')
+	def showCode(self, text, code):
+		if(code == 'qr'):
+			import qrcode
+			img = qrcode.make(text).get_image()
+		else:
+			import barcode
+			barcode.base.Barcode.default_writer_options['write_text'] = False
+			img = barcode.Code128(text, writer=barcode.writer.ImageWriter()).render()
+		if(img):
+			dlg = LapsBarcodeWindow(self.currentComputerName, text, img, self)
+			dlg.show()
 
 	def versionTuple(self, v):
 		return tuple(map(int, (v.split('.'))))
 
+	def getCurrentPassword(self):
+		password = ''
+		for title, attribute in self.GetAttributesAsDict().items():
+			if((isinstance(self.cfgLdapAttributePassword, str) and isinstance(attribute, str) and attribute.upper() == self.cfgLdapAttributePassword.upper())
+			or attribute == self.cfgLdapAttributePassword):
+				if(title in self.refLdapAttributesTextBoxes):
+					password = self.refLdapAttributesTextBoxes[title].text()
+		return password
+
 	def RemoteConnection(self, protocol):
-		if(self.txtSearchComputer.text().strip() == ''): return
+		if(self.txtSearchComputer.text().strip() == ''):
+			return
+
+		# only available on linux as there is no reasonable way to open remote connections with password on other OSes
+		if(self.PLATFORM != 'linux'):
+			self.showInfoDialog('Nope.', 'Only available on non-shitty operating systems.', icon=QMessageBox.Warning)
+			return
 
 		try:
 			import subprocess, time
@@ -443,12 +474,7 @@ class LapsMainWindow(QMainWindow):
 				newRemmina = True
 
 			# get current admin password
-			password = ''
-			for title, attribute in self.GetAttributesAsDict().items():
-				if((isinstance(self.cfgLdapAttributePassword, str) and isinstance(attribute, str) and attribute.upper() == self.cfgLdapAttributePassword.upper())
-				or attribute == self.cfgLdapAttributePassword):
-					if(title in self.refLdapAttributesTextBoxes):
-						password = self.refLdapAttributesTextBoxes[title].text()
+			password = self.getCurrentPassword()
 
 			# passwords must be encrypted in old remmina connection files using the secret found in remmina.pref
 			if(not newRemmina):
@@ -906,6 +932,7 @@ class LapsMainWindow(QMainWindow):
 			self.cfgLdapAttributePasswordHistory = cfgJson.get('ldap-attribute-password-history', self.cfgLdapAttributePasswordHistory)
 			tmpLdapAttributes = cfgJson.get('ldap-attributes', self.cfgLdapAttributes)
 			self.cfgConnectUsername = str(cfgJson.get('connect-username', self.cfgConnectUsername))
+			self.cfgUseAutotypeEnter = cfgJson.get('use-autotype-enter', self.cfgUseAutotypeEnter)
 			if(isinstance(tmpLdapAttributes, list) or isinstance(tmpLdapAttributes, dict)):
 				self.cfgLdapAttributes = tmpLdapAttributes
 		except Exception as e:
@@ -932,7 +959,8 @@ class LapsMainWindow(QMainWindow):
 					'ldap-attribute-password-expiry': self.cfgLdapAttributePasswordExpiry,
 					'ldap-attribute-password-history': self.cfgLdapAttributePasswordHistory,
 					'ldap-attributes': self.cfgLdapAttributes,
-					'connect-username': self.cfgConnectUsername
+					'connect-username': self.cfgConnectUsername,
+					'use-autotype-enter': self.cfgUseAutotypeEnter,
 				}, json_file, indent=4)
 		except Exception as e:
 			self.showErrorDialog('Error saving settings file', str(e))
@@ -946,10 +974,10 @@ class LapsMainWindow(QMainWindow):
 		msg.setDetailedText(additionalText)
 		msg.setStandardButtons(QMessageBox.Ok)
 		retval = msg.exec_()
-	def showInfoDialog(self, title, text, additionalText=''):
+	def showInfoDialog(self, title, text, additionalText='', icon=QMessageBox.Information):
 		print('Info: '+text)
 		msg = QMessageBox()
-		msg.setIcon(QMessageBox.Information)
+		msg.setIcon(icon)
 		msg.setWindowTitle(title)
 		msg.setText(text)
 		msg.setDetailedText(additionalText)
