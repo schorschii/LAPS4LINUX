@@ -1,2 +1,4 @@
-python-barcode
+pillow # needed by both QR/barcode
+
+python-barcode[images]
 qrcode
