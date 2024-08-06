@@ -75,6 +75,45 @@ class LapsAboutWindow(QDialog):
 		self.setLayout(self.layout)
 		self.setWindowTitle('About')
 
+class LapsLoginWindow(QDialog):
+	def __init__(self, server, username, *args, **kwargs):
+		super(LapsLoginWindow, self).__init__(*args, **kwargs)
+
+		# window layout
+		self.buttonBox = QDialogButtonBox(QDialogButtonBox.Ok|QDialogButtonBox.Cancel)
+		#self.buttonBox.button(QDialogButtonBox.Ok).setText('Login')
+		#self.buttonBox.button(QDialogButtonBox.Cancel).setText('Exit')
+		self.buttonBox.accepted.connect(self.accept)
+		self.buttonBox.rejected.connect(self.reject)
+
+		self.layout = QGridLayout(self)
+
+		self.lblDescription = QLabel('Please enter the credentials which should be used to connect to:\n'+server)
+		self.layout.addWidget(self.lblDescription, 0, 0, 1, 2)
+
+		self.lblUsername = QLabel('Username')
+		self.layout.addWidget(self.lblUsername, 1, 0)
+		self.txtUsername = QLineEdit()
+		self.txtUsername.setText(username)
+		self.layout.addWidget(self.txtUsername, 1, 1, 1, 2)
+
+		self.lblPassword = QLabel('Password')
+		self.layout.addWidget(self.lblPassword, 2, 0)
+		self.txtPassword = QLineEdit()
+		self.txtPassword.setEchoMode(QLineEdit.Password)
+		self.layout.addWidget(self.txtPassword, 2, 1, 1, 2)
+
+		self.layout.addWidget(self.buttonBox, 3, 1, 1, 2)
+		self.setLayout(self.layout)
+
+		# window properties
+		self.setWindowTitle('LDAP Bind Credentials')
+		self.resize(350, 150)
+		#self.setWindowFlag(QtCore.Qt.WindowCloseButtonHint, False)
+
+		if(self.txtUsername.text() != ''):
+			self.txtPassword.setFocus()
+
 class LapsBarcodeWindow(QDialog):
 	def __init__(self, title, text, img, *args, **kwargs):
 		super(LapsBarcodeWindow, self).__init__(*args, **kwargs)
@@ -739,13 +778,13 @@ class LapsMainWindow(QMainWindow):
 
 	def checkCredentialsAndConnect(self):
 		# ask for server address and domain name if not already set via config file
-		if self.cfgDomain == None:
+		if(self.cfgDomain == None):
 			item, ok = QInputDialog.getText(self, '♕ Domain', 'Please enter your Domain name (e.g. example.com, leave empty to try auto discovery).')
 			if ok and item != None:
 				self.cfgDomain = item
 				self.server = None
 			else: return False
-		if len(self.cfgServer) == 0:
+		if(len(self.cfgServer) == 0):
 			# query domain controllers by dns lookup
 			searchDomain = '.'+self.cfgDomain if self.cfgDomain!='' else ''
 			try:
@@ -762,7 +801,7 @@ class LapsMainWindow(QMainWindow):
 					self.cfgServer.append(serverEntry)
 			except Exception as e: print('DNS auto discovery failed: '+str(e))
 			# ask user to enter server names if auto discovery was not successful
-			if len(self.cfgServer) == 0:
+			if(len(self.cfgServer) == 0):
 				item, ok = QInputDialog.getText(self, '💻 Server Address', 'Please enter your LDAP server IP address or DNS name.')
 				if ok and item:
 					self.cfgServer.append({
@@ -774,11 +813,11 @@ class LapsMainWindow(QMainWindow):
 		self.SaveSettings()
 
 		# disable STARTTLS if SSL is used (otherwise, ldap3 will try to do STARTTLS on port 636)
-		if len(self.cfgServer) > 0 and self.cfgServer[0]['ssl'] == True:
+		if(len(self.cfgServer) > 0 and self.cfgServer[0]['ssl'] == True):
 			self.cfgUseStartTls = False
 
 		# establish server connection
-		if self.server == None:
+		if(self.server == None):
 			try:
 				serverArray = []
 				for server in self.cfgServer:
@@ -811,28 +850,17 @@ class LapsMainWindow(QMainWindow):
 				return False
 
 		# ask for username and password for SIMPLE bind
-		if self.cfgUsername == '':
-			item, ok = QInputDialog.getText(self,
-				'👤 Username',
-				'Please enter the username which should be used to connect to:\n'+str(self.cfgServer),
-				QLineEdit.Normal,
-				proposeUsername(self.cfgDomain)
+		if(self.cfgUsername == '' or self.cfgPassword == ''):
+			loginWindow = LapsLoginWindow(
+				username = proposeUsername(self.cfgDomain) if self.cfgUsername == '' else self.cfgUsername,
+				server = str(self.cfgServer)
 			)
-			if ok and item:
-				self.cfgUsername = item
-				self.connection = None
-			else: return False
-		if self.cfgPassword == '':
-			item, ok = QInputDialog.getText(self,
-				'🔑 Password for »'+self.cfgUsername+'«',
-				'Please enter the password which should be used to connect to:\n'+str(self.cfgServer),
-				QLineEdit.Password
-			)
-			if ok and item:
-				self.cfgPassword = item
-				self.connection = None
-			else: return False
-		self.SaveSettings()
+			if(loginWindow.exec_() != QDialog.Accepted):
+				return False
+			self.connection = None
+			self.cfgUsername = loginWindow.txtUsername.text()
+			self.cfgPassword = loginWindow.txtPassword.text()
+			self.SaveSettings()
 
 		# try to bind to server with username and password
 		try:
@@ -849,7 +877,6 @@ class LapsMainWindow(QMainWindow):
 			if(isinstance(e, ldap3.core.exceptions.LDAPServerPoolExhaustedError)):
 				self.statusBar.showMessage(str(e))
 				return False
-			self.cfgUsername = ''
 			self.cfgPassword = ''
 			self.showInfoDialog('Error binding to LDAP server', str(e), icon=QMessageBox.Critical)
 			return False

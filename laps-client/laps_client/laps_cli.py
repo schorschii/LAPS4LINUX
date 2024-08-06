@@ -270,12 +270,12 @@ class LapsCli():
 
 	def checkCredentialsAndConnect(self):
 		# ask for server address and domain name if not already set via config file
-		if self.cfgDomain == None:
+		if(self.cfgDomain == None):
 			item = input('♕ Domain Name (e.g. example.com, leave empty to try auto discovery): ')
 			if item != None:
 				self.cfgDomain = item
 				self.server = None
-		if len(self.cfgServer) == 0:
+		if(len(self.cfgServer) == 0):
 			# query domain controllers by dns lookup
 			searchDomain = '.'+self.cfgDomain if self.cfgDomain!='' else ''
 			try:
@@ -292,7 +292,7 @@ class LapsCli():
 					self.cfgServer.append(serverEntry)
 			except Exception as e: print('DNS auto discovery failed: '+str(e))
 			# ask user to enter server names if auto discovery was not successful
-			if len(self.cfgServer) == 0:
+			if(len(self.cfgServer) == 0):
 				item = input('💻 LDAP Server Address: ')
 				if item and item.strip() != '':
 					self.cfgServer.append({
@@ -304,11 +304,11 @@ class LapsCli():
 		self.SaveSettings()
 
 		# disable STARTTLS if SSL is used (otherwise, ldap3 will try to do STARTTLS on port 636)
-		if len(self.cfgServer) > 0 and self.cfgServer[0]['ssl'] == True:
+		if(len(self.cfgServer) > 0 and self.cfgServer[0]['ssl'] == True):
 			self.cfgUseStartTls = False
 
 		# establish server connection
-		if self.server == None:
+		if(self.server == None):
 			try:
 				serverArray = []
 				for server in self.cfgServer:
@@ -340,14 +340,14 @@ class LapsCli():
 				raise Exception('Unable to connect to any of your LDAP servers')
 
 		# ask for username and password for SIMPLE bind
-		if self.cfgUsername == '':
+		if(self.cfgUsername == ''):
 			defaultUsername = proposeUsername(self.cfgDomain)
 			item = input('👤 Username ['+defaultUsername+']: ') or defaultUsername
 			if item and item.strip() != '':
 				self.cfgUsername = item
 				self.connection = None
 			else: return False
-		if self.cfgPassword == '':
+		if(self.cfgPassword == ''):
 			item = getpass.getpass('🔑 Password for »'+self.cfgUsername+'«: ')
 			if item and item.strip() != '':
 				self.cfgPassword = item
