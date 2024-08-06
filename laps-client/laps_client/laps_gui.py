@@ -626,63 +626,73 @@ class LapsMainWindow(QMainWindow):
 		)
 		# display result
 		for entry in self.connection.entries:
-			self.btnSetExpirationTime.setEnabled(True)
-			self.btnSearchComputer.setEnabled(True)
+			# we are looking at the main computer object
+			if(entry.entry_dn == self.tmpDn):
+				self.btnSetExpirationTime.setEnabled(True)
+				self.btnSearchComputer.setEnabled(True)
 
-			# evaluate attributes of interest
-			for title, attribute in self.GetAttributesAsDict().items():
-				textBox = self.refLdapAttributesTextBoxes[str(title)]
-				value = None
-				if(isinstance(attribute, list)):
-					for _attribute in attribute:
-						# use first non-empty attribute
-						if(str(_attribute) in entry and entry[str(_attribute)]):
-							value = entry[str(_attribute)]
-							attribute = str(_attribute)
-							break
-				elif(str(attribute) in entry):
-					value = entry[str(attribute)]
+				# evaluate attributes of interest
+				for title, attribute in self.GetAttributesAsDict().items():
+					if(attribute[:4] == 'sub:'): continue
+					textBox = self.refLdapAttributesTextBoxes[str(title)]
+					value = None
+					if(isinstance(attribute, list)):
+						for _attribute in attribute:
+							# use first non-empty attribute
+							if(str(_attribute) in entry and entry[str(_attribute)]):
+								value = entry[str(_attribute)]
+								attribute = str(_attribute)
+								break
+					elif(str(attribute) in entry):
+						value = entry[str(attribute)]
 
-				# handle non-existing attributes
-				if(value == None):
-					self.updateTextboxText(textBox, '')
+					# handle non-existing attributes
+					if(value == None):
+						self.updateTextboxText(textBox, '')
 
-				# if this is the password attribute -> try to parse Native LAPS format
-				elif(len(value) > 0 and
-					(str(attribute) == self.cfgLdapAttributePassword or (isinstance(self.cfgLdapAttributePassword, list) and str(attribute) in self.cfgLdapAttributePassword))
-				):
-					password, username, timestamp = self.parseLapsValue(value.values[0])
-					self.updateTextboxText(textBox, str(password))
-					if(username and password):
-						self.cfgConnectUsername = username
-						textBox.setToolTip(username+', '+timestamp)
+					# if this is the password attribute -> try to parse Native LAPS format
+					elif(len(value) > 0 and
+						(str(attribute) == self.cfgLdapAttributePassword or (isinstance(self.cfgLdapAttributePassword, list) and str(attribute) in self.cfgLdapAttributePassword))
+					):
+						password, username, timestamp = self.parseLapsValue(value.values[0])
+						self.updateTextboxText(textBox, str(password))
+						if(username and password):
+							self.cfgConnectUsername = username
+							textBox.setToolTip(username+', '+timestamp)
 
-				# if this is the encrypted password history attribute -> try to parse Native LAPS format
-				elif(len(value) > 0 and
-					(str(attribute) == self.cfgLdapAttributePasswordHistory or (isinstance(self.cfgLdapAttributePasswordHistory, list) and str(attribute) in self.cfgLdapAttributePasswordHistory))
-				):
-					lines = []
-					for _value in value.values:
-						password, username, timestamp = self.parseLapsValue(_value)
-						if(not username or not password):
-							lines.append(str(password))
-						else:
-							lines.append(password+'  '+username+'  '+timestamp)
-					self.updateTextboxText(textBox, "\n".join(lines))
+					# if this is the encrypted password history attribute -> try to parse Native LAPS format
+					elif(len(value) > 0 and
+						(str(attribute) == self.cfgLdapAttributePasswordHistory or (isinstance(self.cfgLdapAttributePasswordHistory, list) and str(attribute) in self.cfgLdapAttributePasswordHistory))
+					):
+						lines = []
+						for _value in value.values:
+							password, username, timestamp = self.parseLapsValue(_value)
+							if(not username or not password):
+								lines.append(str(password))
+							else:
+								lines.append(password+'  '+username+'  '+timestamp)
+						self.updateTextboxText(textBox, "\n".join(lines))
 
-				# if this is the expiry date attribute -> format date
-				elif(str(attribute) == self.cfgLdapAttributePasswordExpiry or (isinstance(self.cfgLdapAttributePasswordExpiry, list) and str(attribute) in self.cfgLdapAttributePasswordExpiry)):
-					try:
-						self.updateTextboxText(textBox, str(filetime_to_dt( int(str(value)) )) )
-					except Exception as e:
-						print(str(e))
+					# if this is the expiry date attribute -> format date
+					elif(str(attribute) == self.cfgLdapAttributePasswordExpiry or (isinstance(self.cfgLdapAttributePasswordExpiry, list) and str(attribute) in self.cfgLdapAttributePasswordExpiry)):
+						try:
+							self.updateTextboxText(textBox, str(filetime_to_dt( int(str(value)) )) )
+						except Exception as e:
+							print(str(e))
+							self.updateTextboxText(textBox, str(value))
+
+					# display raw value
+					else:
 						self.updateTextboxText(textBox, str(value))
 
-				# display raw value
-				else:
-					self.updateTextboxText(textBox, str(value))
-
-			return
+			# we are looking at a sub-item of the computer object, e.g. a BitLocker recovery key
+			else:
+				for title, attribute in self.GetAttributesAsDict().items():
+					textBox = self.refLdapAttributesTextBoxes[str(title)]
+					if(attribute[:4] != 'sub:'): continue
+					subattribute = str(attribute[4:])
+					if(subattribute in entry):
+						self.updateTextboxText(textBox, str(entry[subattribute]))
 
 	def updateTextboxText(self, textBox, text):
 		if(isinstance(textBox, QPlainTextEdit)):

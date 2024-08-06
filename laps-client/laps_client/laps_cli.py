@@ -157,57 +157,66 @@ class LapsCli():
 		)
 		# display result
 		for entry in self.connection.entries:
-			# evaluate attributes of interest
-			for title, attribute in self.GetAttributesAsDict().items():
-				value = None
-				if(isinstance(attribute, list)):
-					for _attribute in attribute:
-						# use first non-empty attribute
-						if(str(_attribute) in entry and entry[str(_attribute)]):
-							value = entry[str(_attribute)]
-							attribute = str(_attribute)
-							break
-				elif(str(attribute) in entry):
-					value = entry[str(attribute)]
+			# we are looking at the main computer object
+			if(entry.entry_dn == self.tmpDn):
+				# evaluate attributes of interest
+				for title, attribute in self.GetAttributesAsDict().items():
+					if(attribute[:4] == 'sub:'): continue
+					value = None
+					if(isinstance(attribute, list)):
+						for _attribute in attribute:
+							# use first non-empty attribute
+							if(str(_attribute) in entry and entry[str(_attribute)]):
+								value = entry[str(_attribute)]
+								attribute = str(_attribute)
+								break
+					elif(str(attribute) in entry):
+						value = entry[str(attribute)]
 
-				# handle non-existing attributes
-				if(value == None):
-					self.pushResult(str(title), '')
+					# handle non-existing attributes
+					if(value == None):
+						self.pushResult(str(title), '')
 
-				# if this is the password attribute -> try to parse Native LAPS format
-				elif(len(value) > 0 and
-					(str(attribute) == self.cfgLdapAttributePassword or (isinstance(self.cfgLdapAttributePassword, list) and str(attribute) in self.cfgLdapAttributePassword))
-				):
-					password, username, timestamp = self.parseLapsValue(value.values[0])
-					if(not username or not password):
-						self.pushResult(str(title), password)
-					else:
-						self.pushResult(str(title), password+'  ('+username+')  ('+timestamp+')')
-
-				# if this is the encrypted password history attribute -> try to parse Native LAPS format
-				elif(len(value) > 0 and
-					(str(attribute) == self.cfgLdapAttributePasswordHistory or (isinstance(self.cfgLdapAttributePasswordHistory, list) and str(attribute) in self.cfgLdapAttributePasswordHistory))
-				):
-					for _value in value.values:
-						password, username, timestamp = self.parseLapsValue(_value)
+					# if this is the password attribute -> try to parse Native LAPS format
+					elif(len(value) > 0 and
+						(str(attribute) == self.cfgLdapAttributePassword or (isinstance(self.cfgLdapAttributePassword, list) and str(attribute) in self.cfgLdapAttributePassword))
+					):
+						password, username, timestamp = self.parseLapsValue(value.values[0])
 						if(not username or not password):
 							self.pushResult(str(title), password)
 						else:
 							self.pushResult(str(title), password+'  ('+username+')  ('+timestamp+')')
 
-				# if this is the expiry date attribute -> format date
-				elif(str(attribute) == self.cfgLdapAttributePasswordExpiry or (isinstance(self.cfgLdapAttributePasswordExpiry, list) and str(attribute) in self.cfgLdapAttributePasswordExpiry)):
-					try:
-						self.pushResult(str(title), str(value)+' ('+str(filetime_to_dt( int(str(value)) ))+')')
-					except Exception as e:
-						eprint('Error:', str(e))
+					# if this is the encrypted password history attribute -> try to parse Native LAPS format
+					elif(len(value) > 0 and
+						(str(attribute) == self.cfgLdapAttributePasswordHistory or (isinstance(self.cfgLdapAttributePasswordHistory, list) and str(attribute) in self.cfgLdapAttributePasswordHistory))
+					):
+						for _value in value.values:
+							password, username, timestamp = self.parseLapsValue(_value)
+							if(not username or not password):
+								self.pushResult(str(title), password)
+							else:
+								self.pushResult(str(title), password+'  ('+username+')  ('+timestamp+')')
+
+					# if this is the expiry date attribute -> format date
+					elif(str(attribute) == self.cfgLdapAttributePasswordExpiry or (isinstance(self.cfgLdapAttributePasswordExpiry, list) and str(attribute) in self.cfgLdapAttributePasswordExpiry)):
+						try:
+							self.pushResult(str(title), str(value)+' ('+str(filetime_to_dt( int(str(value)) ))+')')
+						except Exception as e:
+							eprint('Error:', str(e))
+							self.pushResult(str(title), str(value))
+
+					# display raw value
+					else:
 						self.pushResult(str(title), str(value))
 
-				# display raw value
-				else:
-					self.pushResult(str(title), str(value))
-
-			return
+			# we are looking at a sub-item of the computer object, e.g. a BitLocker recovery key
+			else:
+				for title, attribute in self.GetAttributesAsDict().items():
+					if(attribute[:4] != 'sub:'): continue
+					subattribute = str(attribute[4:])
+					if(subattribute in entry):
+						self.pushResult(str(title), str(entry[subattribute]))
 
 	dpapiCache = dpapi_ng.KeyCache()
 	def decryptPassword(self, blob):

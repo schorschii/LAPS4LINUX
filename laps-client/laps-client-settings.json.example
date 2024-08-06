@@ -36,6 +36,7 @@
     "ldap-attributes": {
         "Operating System": "operatingSystem",
         "Last Logon Timestamp": "lastLogonTimestamp",
+        "Bitlocker Recovery Key": "sub:msFVE-RecoveryPassword",
         "Administrator Password": [
             "msLAPS-EncryptedPassword",
             "msLAPS-Password",

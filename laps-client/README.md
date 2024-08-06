@@ -1,5 +1,5 @@
 # LAPS4LINUX Client
-The management client enables administrators to view the current (decrypted) local admin passwords. It can be used from command line or as graphical application.
+The management client enables administrators to easily view the current (decrypted) local admin passwords and the Bitlocker recovery key too. It can be used from command line or as graphical application.
 
 ### Graphical User Interface (GUI)
 ![screenshot](../.github/screenshot.png)
@@ -61,7 +61,10 @@ You can create a preset config file `/etc/laps-client.json` which will be loaded
   - `use-starttls`: Boolean which indicates wheter to use StartTLS on unencrypted LDAP connections (requires valid server certificate).
   - `username`: The username for LDAP simple binds. For Microsoft AD, you need to append the domain (`user@example.com`). For OpenLDAP, you need to enter your user DN (`dn=user,dc=example,dc=com`).
   - `use-kerberos`: Boolean which indicates wheter to use Kerberos for LDAP bind before falling back to simple bind.
-  - `ldap-attributes`: A dict of LDAP attributes to display. Dict key is the display name and the corresponding value is the LDAP attribute name. The dict value can also be a list of strings. Then, the first non-empty LDAP attribute will be displayed.
+  - `ldap-attributes`: A dict of LDAP attributes to display.
+    - Dict key is the display name and the corresponding value is the LDAP attribute name.
+    - The dict value can also be a list of strings. Then, the first non-empty LDAP attribute will be displayed. This is useful when migrating to Native LAPS - you can display the new attribute value if exists, otherwise the old attribute value of Legacy LAPS is shown.
+    - When appending `sub:` to the dict value (= LDAP attribute name), the sub-enrties of the computer object are searched. This is useful for querying the Bitlocker recovery key (`sub:msFVE-RecoveryPassword`). Make sure that you have permission to view the Bitlocker keys!
   - `ldap-attribute-password`: The LDAP attribute name which contains the admin password. The client will try to decrypt this value (in case of Native LAPS) and use it for Remmina connections. Can also be a list of strings.
   - `ldap-attribute-password-expiry`: The LDAP attribute name which contains the admin password expiration date. The client will write the updated expiration date into this attribute. Can also be a list of strings.
   - `ldap-attribute-password-history`: The LDAP attribute name which contains the admin password history. The client will try to decrypt this value (in case of Native LAPS) and use it to display the password history. Can also be a list of strings.
