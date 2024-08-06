@@ -58,6 +58,7 @@ rm -rf $RPM_BUILD_ROOT
 /usr/share/laps4linux-client/laps_client/laps_gui.py
 /usr/share/laps4linux-client/README.md
 /usr/share/laps4linux-client/requirements.txt
+/usr/share/laps4linux-client/requirements-barcode.txt
 /usr/share/laps4linux-client/setup.py
 /usr/share/applications/LAPS4LINUX.desktop
 /usr/share/pixmaps/laps.png

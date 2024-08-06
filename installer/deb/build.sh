@@ -20,6 +20,7 @@ install -D -m 644 ../../assets/laps.png                   -t $BUILDDIR/usr/share
 install -D -m 644 ../../assets/LAPS4LINUX.desktop         -t $BUILDDIR/usr/share/applications
 install -D -m 644 ../../laps-client/laps_client/*.py      -t $BUILDDIR/$INSTALLDIR/laps_client
 install -D -m 644 ../../laps-client/requirements.txt      -t $BUILDDIR/$INSTALLDIR
+install -D -m 644 ../../laps-client/requirements-barcode.txt -t $BUILDDIR/$INSTALLDIR
 install -D -m 644 ../../laps-client/setup.py              -t $BUILDDIR/$INSTALLDIR
 
 # make binaries available in PATH

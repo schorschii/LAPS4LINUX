@@ -27,6 +27,7 @@ mkdir -p laps4linux-runner-$VERSION/usr/share/laps4linux-runner/laps_runner
 mkdir -p laps4linux-runner-$VERSION/etc/cron.hourly
 cp ../../laps-client/laps_client/*.py laps4linux-client-$VERSION/usr/share/laps4linux-client/laps_client
 cp ../../laps-client/requirements.txt laps4linux-client-$VERSION/usr/share/laps4linux-client
+cp ../../laps-client/requirements-barcode.txt laps4linux-client-$VERSION/usr/share/laps4linux-client
 cp ../../laps-client/setup.py         laps4linux-client-$VERSION/usr/share/laps4linux-client
 cp ../../README.md                    laps4linux-client-$VERSION/usr/share/laps4linux-client
 cp ../../assets/LAPS4LINUX.desktop    laps4linux-client-$VERSION/usr/share/applications
