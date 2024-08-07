@@ -337,6 +337,7 @@ class LapsMainWindow(QMainWindow):
 		gridLine += 1
 		self.txtSearchComputer = QLineEdit()
 		self.txtSearchComputer.returnPressed.connect(self.OnReturnSearch)
+		self.txtSearchComputer.contextMenuEvent = partial(self.OnContextMenu, self.txtSearchComputer)
 		grid.addWidget(self.txtSearchComputer, gridLine, 0)
 		self.btnSearchComputer = QPushButton('Search')
 		self.btnSearchComputer.clicked.connect(self.OnClickSearch)
