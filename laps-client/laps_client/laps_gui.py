@@ -115,33 +115,57 @@ class LapsLoginWindow(QDialog):
 			self.txtPassword.setFocus()
 
 class LapsBarcodeWindow(QDialog):
-	def __init__(self, title, text, img, *args, **kwargs):
+	def __init__(self, title, value, img, *args, **kwargs):
 		super(LapsBarcodeWindow, self).__init__(*args, **kwargs)
-		self.InitUI(title, text, img)
+		self.title = title
+		self.value = value
+		self.img = img
+		self.InitUI()
 
-	def InitUI(self, title, text, img):
+	def InitUI(self):
 		parentWidget = self.parentWidget()
 
-		self.layout = QVBoxLayout(self)
+		# Menubar
+		mainMenu = QMenuBar(self)
+		fileMenu = mainMenu.addMenu('&File')
+		saveAction = QAction('&Save image', self)
+		saveAction.setShortcut('F2')
+		saveAction.triggered.connect(self.OnClickSave)
+		fileMenu.addAction(saveAction)
+		fileMenu.addSeparator()
+		closeAction = QAction('&Close', self)
+		closeAction.triggered.connect(self.OnClickClose)
+		fileMenu.addAction(closeAction)
 
-		if(img.mode == '1'):
-			img = img.convert('RGBA')
-		img_bytes = img.tobytes('raw', 'RGBA')
+		self.layout = QVBoxLayout()
+		self.layout.setContentsMargins(20, 50, 20, 20)
+
+		if(self.img.mode == '1'):
+			self.img = self.img.convert('RGBA')
+		img_bytes = self.img.tobytes('raw', 'RGBA')
 		labelImage = QLabel(self)
 		c = QCursor(Qt.BlankCursor)
 		labelImage.setCursor(c)
-		labelImage.setPixmap(QPixmap.fromImage(QImage(img_bytes, img.size[0], img.size[1], QImage.Format_RGBA8888)))
+		labelImage.setPixmap(QPixmap.fromImage(QImage(img_bytes, self.img.size[0], self.img.size[1], QImage.Format_RGBA8888)))
 		labelImage.setAlignment(Qt.AlignCenter)
 		self.layout.addWidget(labelImage)
 
 		labelText = QLabel(self)
-		labelText.setText(text)
+		labelText.setText(self.value)
 		labelText.setAlignment(Qt.AlignCenter)
 		labelText.setFont(parentWidget.textBoxFont)
 		self.layout.addWidget(labelText)
 
 		self.setLayout(self.layout)
-		self.setWindowTitle(title)
+		self.setWindowTitle(self.title)
+
+	def OnClickSave(self):
+		fileName, _ = QFileDialog.getSaveFileName(self, 'Save image', self.title+'.png', 'PNG Files (*.png);;All Files (*.*)')
+		if(fileName):
+			self.img.save(fileName)
+
+	def OnClickClose(self):
+		self.close()
 
 class LapsCalendarWindow(QDialog):
 	def __init__(self, *args, **kwargs):
