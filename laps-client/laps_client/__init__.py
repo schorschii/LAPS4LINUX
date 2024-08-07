@@ -14,3 +14,12 @@ import getpass
 
 def proposeUsername(domain):
 	return getpass.getuser() + ('@'+domain if domain else '')
+
+def compileServerUris(servers):
+	uris = []
+	for server in servers:
+		uris.append(
+			('ldaps://' if server['ssl'] else 'ldap://')
+			+ str(server['address']) + ':' + str(server['port'])
+		)
+	return uris

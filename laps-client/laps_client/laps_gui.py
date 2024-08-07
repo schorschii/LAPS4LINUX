@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from .__init__ import __title__, __version__, __website__, __author__, __copyright__
-from .__init__ import proposeUsername
+from .__init__ import proposeUsername, compileServerUris
 from .filetime import dt_to_filetime, filetime_to_dt
 
 from PyQt5.QtWidgets import *
@@ -860,7 +860,7 @@ class LapsMainWindow(QMainWindow):
 		if(self.cfgUsername == '' or self.cfgPassword == ''):
 			loginWindow = LapsLoginWindow(
 				username = proposeUsername(self.cfgDomain) if self.cfgUsername == '' else self.cfgUsername,
-				server = str(self.cfgServer)
+				server = str(compileServerUris(self.cfgServer))
 			)
 			if(loginWindow.exec_() != QDialog.Accepted):
 				return False
