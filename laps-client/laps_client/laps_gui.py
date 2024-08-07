@@ -748,10 +748,11 @@ class LapsMainWindow(QMainWindow):
 		lastDecryptionError = ''
 		for server in self.server.servers:
 			try:
+				kerberos_auth = (self.cfgUsername=='' or self.cfgPassword=='')
 				decrypted = dpapi_ng.ncrypt_unprotect_secret(
 					blob, server = server.host,
-					username = None if self.cfgUsername=='' else self.cfgUsername,
-					password = None if self.cfgPassword=='' else self.cfgPassword,
+					username = None if kerberos_auth else self.cfgUsername,
+					password = None if kerberos_auth else self.cfgPassword,
 					cache = self.dpapiCache
 				)
 				return decrypted.decode('utf-8').replace("\x00", "")
