@@ -120,20 +120,25 @@ class LapsBarcodeWindow(QDialog):
 		self.InitUI(title, text, img)
 
 	def InitUI(self, title, text, img):
+		parentWidget = self.parentWidget()
+
 		self.layout = QVBoxLayout(self)
 
 		if(img.mode == '1'):
 			img = img.convert('RGBA')
 		img_bytes = img.tobytes('raw', 'RGBA')
 		labelImage = QLabel(self)
+		c = QCursor(Qt.BlankCursor)
+		labelImage.setCursor(c)
 		labelImage.setPixmap(QPixmap.fromImage(QImage(img_bytes, img.size[0], img.size[1], QImage.Format_RGBA8888)))
 		labelImage.setAlignment(Qt.AlignCenter)
 		self.layout.addWidget(labelImage)
 
-		labelCopyright = QLabel(self)
-		labelCopyright.setText(text)
-		labelCopyright.setAlignment(Qt.AlignCenter)
-		self.layout.addWidget(labelCopyright)
+		labelText = QLabel(self)
+		labelText.setText(text)
+		labelText.setAlignment(Qt.AlignCenter)
+		labelText.setFont(parentWidget.textBoxFont)
+		self.layout.addWidget(labelText)
 
 		self.setLayout(self.layout)
 		self.setWindowTitle(title)
@@ -366,12 +371,12 @@ class LapsMainWindow(QMainWindow):
 
 			# set easy readable font
 			if(self.PLATFORM == 'win32'):
-				font = QFont('Consolas', 14)
-				font.setBold(True)
+				self.textBoxFont = QFont('Consolas', 14)
+				self.textBoxFont.setBold(True)
 			else:
-				font = QFontDatabase.systemFont(QFontDatabase.FixedFont)
-				font.setPointSize(18 if self.PLATFORM=='darwin' else 14)
-			txtAdditionalAttribute.setFont(font)
+				self.textBoxFont = QFontDatabase.systemFont(QFontDatabase.FixedFont)
+				self.textBoxFont.setPointSize(18 if self.PLATFORM=='darwin' else 14)
+			txtAdditionalAttribute.setFont(self.textBoxFont)
 
 			# add textbox to layout
 			grid.addWidget(txtAdditionalAttribute, gridLine, 0)
