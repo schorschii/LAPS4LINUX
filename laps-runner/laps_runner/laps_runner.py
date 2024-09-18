@@ -25,6 +25,12 @@ import logging
 import logging.handlers
 import traceback
 
+def rotate_and_pack_msdatetime(dt):
+	# MS AD uses upper time and lower time. The current ordering is backwards, which this fixes
+	# this can be seen by using dnSpy to trace attempts to get-lapsadpassword, which fail on validating the datetime.
+	left,right = struct.unpack('<LL',struct.pack('Q',dt))
+	packed = struct.pack('<LL',right,left)
+	return packed
 
 class LapsRunner():
 	server     = None
@@ -249,7 +255,7 @@ class LapsRunner():
 		# 8-12 - blob size, uint32
 		# 12-16 - flags, currently always 0
 		preMagic = (
-			struct.pack('<Q', dt_to_filetime(datetime.now()))
+			rotate_and_pack_msdatetime(dt_to_filetime(datetime.now()))
 			+ struct.pack('<i', len(encrypted))
 			+ b'\x00\x00\x00\x00'
 		)
