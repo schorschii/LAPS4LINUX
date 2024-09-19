@@ -249,7 +249,7 @@ class LapsRunner():
 		# 8-12 - blob size, uint32
 		# 12-16 - flags, currently always 0
 		preMagic = (
-			rotate_and_pack_msdatetime(dt_to_filetime(datetime.now()))
+			self.rotate_and_pack_msdatetime(dt_to_filetime(datetime.now()))
 			+ struct.pack('<i', len(encrypted))
 			+ b'\x00\x00\x00\x00'
 		)
