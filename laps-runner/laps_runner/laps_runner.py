@@ -166,7 +166,7 @@ class LapsRunner():
 		cmd = ['usermod', '-p', newPasswordHashed, self.cfgUsername]
 		res = subprocess.run(cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL, universal_newlines=True)
 		if res.returncode == 0:
-			print('Password successfully changed in local database')
+			print('Password of user '+self.cfgUsername+' successfully changed in local database')
 			self.logger.debug(__title__+': Changed password of user '+self.cfgUsername+' in local database')
 		else:
 			raise Exception(' '.join(cmd)+' returned non-zero exit code '+str(res.returncode))
