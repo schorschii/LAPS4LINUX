@@ -316,6 +316,7 @@ def main():
 	# parse arguments
 	parser = argparse.ArgumentParser(epilog=__copyright__+' '+__author__+' - https://georg-sieber.de')
 	parser.add_argument('-f', '--force', action='store_true', help='Force updating password, even if it is not expired')
+	parser.add_argument('-p', '--pam', action='store_true', help='PAM mode - update password if configured user has logged out, even if it is not expired')
 	parser.add_argument('-c', '--config', default=runner.cfgPath, help='Path to config file ['+str(runner.cfgPath)+']')
 	args = parser.parse_args()
 	if args.config: runner.cfgPath = args.config
@@ -333,6 +334,17 @@ def main():
 		elif args.force:
 			print('Updating password (forced update)...')
 			runner.updatePassword()
+		elif args.pam:
+			if 'PAM_TYPE' not in os.environ or 'PAM_USER' not in os.environ:
+				raise Exception('PAM_TYPE or PAM_USER missing!')
+			if os.environ['PAM_TYPE'] != 'close_session':
+				runner.logger.debug(__title__+': PAM_TYPE is not close_session, exiting.')
+				sys.exit(0)
+			if os.environ['PAM_USER'] != runner.cfgUsername:
+				runner.logger.debug(__title__+': PAM_USER does not match the configured user, exiting.')
+				sys.exit(0)
+			print('Updating password (forced update by PAM logout)...')
+			runner.updatePassword()
 		else:
 			print('Password will expire in '+str(runner.tmpExpiryDate)+', no need to update.')
 
@@ -345,4 +357,3 @@ def main():
 
 if __name__ == '__main__':
 	main()
-

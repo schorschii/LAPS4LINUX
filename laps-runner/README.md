@@ -54,6 +54,12 @@ Important:
 
 You can call the runner with the `-f` parameter to force updating the password directly after installation. You should do this to check if the runner is working properly.
 
+### Automatically Rotate Password After Logout
+If LAPS4LINUX should automatically change the password after logout, you need to add the following line into your PAM config. The exact config file depends on your Linux distribution, e.g. `/etc/pam.d/common-session` on Ubuntu.
+```
+session   optional   pam_exec.so quiet /usr/sbin/laps-runner --pam
+```
+
 ### Hostnames Longer Than 15 Characters
 Computer objects in the Microsoft Active Directory can not be longer than 15 characters. If you join a computer with a longer hostname, it will be registered with a different "short name". You have to enter this short name in the config file (setting `hostname`) in order to make the Kerberos authentication work. You can find out the short name by inspecting your keytab: `sudo klist -k /etc/krb5.keytab`.
 
