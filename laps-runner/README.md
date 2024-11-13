@@ -55,10 +55,25 @@ Important:
 You can call the runner with the `-f` parameter to force updating the password directly after installation. You should do this to check if the runner is working properly.
 
 ### Automatically Rotate Password After Logout
-If LAPS4LINUX should automatically change the password after logout, you need to add the following line into your PAM config. The exact config file depends on your Linux distribution, e.g. `/etc/pam.d/common-session` on Ubuntu.
+If LAPS4LINUX should automatically change the password after logout, you need to add the following line into your PAM config. The exact config file depends on your Linux distribution, e.g. `/etc/pam.d/common-session` (use `/etc/pam.d/common-session-noninteractive` if you like to rotate the password on sudo usage too).
 ```
-session   optional   pam_exec.so quiet /usr/sbin/laps-runner --pam
+session   optional   pam_exec.so type=close_session seteuid quiet /usr/sbin/laps-runner --pam
 ```
+
+For Ubuntu, you should use a separate PAM config instead: `/usr/share/pam-configs/laps`.
+```
+Name: LAPS4LINUX configuration
+Default: yes
+Priority: 0
+
+Session-Type: Additional
+Session-Interactive-Only: yes
+Session:
+        optional pam_exec.so type=close_session seteuid quiet /usr/sbin/laps-runner --pam
+```
+Use `Session-Interactive-Only: no` if you like to rotate the password on sudo usage too. Add the parameter `--pam-service login` if you do not want to change the password on `sudo -i` usage.
+
+Then, run `pam-auth-update` to automatically generate the files under `/etc/pam.d/` with the necessary line for LAPS.
 
 ### Hostnames Longer Than 15 Characters
 Computer objects in the Microsoft Active Directory can not be longer than 15 characters. If you join a computer with a longer hostname, it will be registered with a different "short name". You have to enter this short name in the config file (setting `hostname`) in order to make the Kerberos authentication work. You can find out the short name by inspecting your keytab: `sudo klist -k /etc/krb5.keytab`.
