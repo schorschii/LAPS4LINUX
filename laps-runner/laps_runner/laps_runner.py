@@ -317,6 +317,7 @@ def main():
 	parser = argparse.ArgumentParser(epilog=__copyright__+' '+__author__+' - https://georg-sieber.de')
 	parser.add_argument('-f', '--force', action='store_true', help='Force updating password, even if it is not expired')
 	parser.add_argument('-p', '--pam', action='store_true', help='PAM mode - update password if configured user has logged out, even if it is not expired')
+	parser.add_argument('-s', '--pam-service', default=None, help='Only change password in PAM mode if PAM_SERVICE matches the given value (e.g. "login" or "sudo-i")')
 	parser.add_argument('-c', '--config', default=runner.cfgPath, help='Path to config file ['+str(runner.cfgPath)+']')
 	args = parser.parse_args()
 	if args.config: runner.cfgPath = args.config
@@ -337,8 +338,8 @@ def main():
 		elif args.pam:
 			if 'PAM_TYPE' not in os.environ or 'PAM_USER' not in os.environ:
 				raise Exception('PAM_TYPE or PAM_USER missing!')
-			if os.environ['PAM_TYPE'] != 'close_session':
-				runner.logger.debug(__title__+': PAM_TYPE is not close_session, exiting.')
+			if args.pam_service and os.environ['PAM_SERVICE'] != args.pam_service:
+				runner.logger.debug(__title__+': PAM_SERVICE is not "'+str(args.pam_service)+'" but "'+os.environ['PAM_SERVICE']+'", exiting.')
 				sys.exit(0)
 			if os.environ['PAM_USER'] != runner.cfgUsername:
 				runner.logger.debug(__title__+': PAM_USER does not match the configured user, exiting.')
