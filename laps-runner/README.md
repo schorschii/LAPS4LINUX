@@ -71,7 +71,7 @@ Session-Interactive-Only: yes
 Session:
         optional pam_exec.so type=close_session seteuid quiet /usr/sbin/laps-runner --pam
 ```
-Use `Session-Interactive-Only: no` if you like to rotate the password on sudo usage too. Add the parameter `--pam-service login` if you do not want to change the password on `sudo -i` usage.
+Use `Session-Interactive-Only: no` if you like to rotate the password on sudo usage too. You can add the parameter `--pam-service login` if you do not want to change the password on `sudo -i` usage. The `--pam-service` parameter can be used multiple times - this allows you to trigger LAPS on multiple, specific PAM service events.
 
 Then, run `pam-auth-update` to automatically generate the files under `/etc/pam.d/` with the necessary line for LAPS.
 
