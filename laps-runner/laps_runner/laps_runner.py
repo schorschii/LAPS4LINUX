@@ -10,6 +10,7 @@ from crypt import crypt
 from datetime import datetime, timedelta
 from dns import resolver, rdatatype
 from shutil import which
+from pid import PidFile, PidFileAlreadyLockedError, PidFileAlreadyRunningError
 import struct
 import ssl
 import ldap3
@@ -324,30 +325,40 @@ def main():
 
 	# start workflow
 	try:
-		runner.LoadSettings()
-		runner.initKerberos()
-		runner.connectToServer()
-		runner.searchComputer()
+		with PidFile(__title__+'-runner') as p:
+			runner.LoadSettings()
+			runner.initKerberos()
+			runner.connectToServer()
+			runner.searchComputer()
 
-		if runner.tmpExpiryDate < datetime.now():
-			print('Updating password (expired '+str(runner.tmpExpiryDate)+')')
-			runner.updatePassword()
-		elif args.force:
-			print('Updating password (forced update)...')
-			runner.updatePassword()
-		elif args.pam:
-			if 'PAM_TYPE' not in os.environ or 'PAM_USER' not in os.environ:
-				raise Exception('PAM_TYPE or PAM_USER missing!')
-			if args.pam_service and os.environ['PAM_SERVICE'] not in args.pam_service:
-				runner.logger.debug(__title__+': PAM_SERVICE "'+os.environ['PAM_SERVICE']+'" is not one of '+str(args.pam_service)+', exiting.')
-				sys.exit(0)
-			if os.environ['PAM_USER'] != runner.cfgUsername:
-				runner.logger.debug(__title__+': PAM_USER does not match the configured user, exiting.')
-				sys.exit(0)
-			print('Updating password (forced update by PAM logout)...')
-			runner.updatePassword()
-		else:
-			print('Password will expire in '+str(runner.tmpExpiryDate)+', no need to update.')
+			if runner.tmpExpiryDate < datetime.now():
+				print('Updating password (expired '+str(runner.tmpExpiryDate)+')')
+				runner.updatePassword()
+
+			elif args.force:
+				print('Updating password (forced update)...')
+				runner.updatePassword()
+
+			elif args.pam:
+				if 'PAM_TYPE' not in os.environ or 'PAM_USER' not in os.environ:
+					raise Exception('PAM_TYPE or PAM_USER missing!')
+				if args.pam_service and os.environ['PAM_SERVICE'] not in args.pam_service:
+					runner.logger.debug(__title__+': PAM_SERVICE "'+os.environ['PAM_SERVICE']+'" is not one of '+str(args.pam_service)+', exiting.')
+					sys.exit(0)
+				if os.environ['PAM_USER'] != runner.cfgUsername:
+					runner.logger.debug(__title__+': PAM_USER does not match the configured user, exiting.')
+					sys.exit(0)
+				print('Updating password (forced update by PAM logout)...')
+				runner.updatePassword()
+
+			else:
+				print('Password will expire in '+str(runner.tmpExpiryDate)+', no need to update.')
+
+	except (PidFileAlreadyLockedError, PidFileAlreadyRunningError) as e:
+		print(e)
+		print('Already running, exiting.')
+		runner.logger.critical(__title__+': already running ('+str(e)+')')
+		sys.exit(2)
 
 	except Exception as e:
 		print(traceback.format_exc())
