@@ -69,11 +69,13 @@ Priority: 0
 Session-Type: Additional
 Session-Interactive-Only: yes
 Session:
-        optional pam_exec.so type=close_session seteuid quiet /usr/sbin/laps-runner --pam
+        optional pam_exec.so type=close_session seteuid quiet /usr/sbin/laps-runner-pam
 ```
-Use `Session-Interactive-Only: no` if you like to rotate the password on sudo usage too. You can add the parameter `--pam-service login` if you do not want to change the password on `sudo -i` usage. The `--pam-service` parameter can be used multiple times - this allows you to trigger LAPS on multiple, specific PAM service events.
+Use `Session-Interactive-Only: no` if you like to rotate the password on sudo usage too.
 
 Then, run `pam-auth-update` to automatically generate the files under `/etc/pam.d/` with the necessary line for LAPS.
+
+You can add `login` to the array `pam-services` in the config file if you do not want to change the password on `sudo -i` usage. Since this config option is an array, this allows you to trigger LAPS on multiple, specific PAM service events.
 
 If you want the runner to wait a certain time after logout until the password should be changed, set `pam-grace-period` in the runner config to the desired number of seconds, e.g. 300 for 5 minutes.
 

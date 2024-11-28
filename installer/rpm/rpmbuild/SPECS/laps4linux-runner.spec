@@ -32,6 +32,8 @@ mkdir -p $RPM_BUILD_ROOT/%{_sysconfdir}
 cp etc/laps-runner.json $RPM_BUILD_ROOT/%{_sysconfdir}
 mkdir -p $RPM_BUILD_ROOT/%{_sysconfdir}/cron.hourly/
 cp etc/cron.hourly/laps-runner $RPM_BUILD_ROOT/%{_sysconfdir}/cron.hourly/
+mkdir -p $RPM_BUILD_ROOT/%{_sbindir}
+cp usr/sbin/laps-runner-pam $RPM_BUILD_ROOT/%{_sbindir}/laps-runner-pam
 
 %post
 DIR=/usr/share/laps4linux-runner
@@ -46,6 +48,7 @@ rm -rf $RPM_BUILD_ROOT
 
 %files
 %{_sbindir}/laps-runner
+%{_sbindir}/laps-runner-pam
 %{_sysconfdir}/laps-runner.json
 %{_sysconfdir}/cron.hourly/laps-runner
 /usr/share/laps4linux-runner/laps_runner/filetime.py

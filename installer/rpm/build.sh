@@ -33,6 +33,7 @@ cp ../../README.md                    laps4linux-client-$VERSION/usr/share/laps4
 cp ../../assets/LAPS4LINUX.desktop    laps4linux-client-$VERSION/usr/share/applications
 cp ../../assets/laps.png              laps4linux-client-$VERSION/usr/share/pixmaps
 cp ../../assets/laps-runner.cron      laps4linux-runner-$VERSION/etc/cron.hourly/laps-runner
+cp ../../laps-runner/laps-runner-pam  laps4linux-runner-$VERSION/usr/sbin/laps-runner-pam
 cp ../../laps-runner/laps_runner/*.py laps4linux-runner-$VERSION/usr/share/laps4linux-runner/laps_runner
 cp ../../laps-runner/requirements.txt laps4linux-runner-$VERSION/usr/share/laps4linux-runner
 cp ../../laps-runner/setup.py         laps4linux-runner-$VERSION/usr/share/laps4linux-runner

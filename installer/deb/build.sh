@@ -41,6 +41,7 @@ fi
 # copy files in place
 install -D -m 644 ../../README.md                         -t $BUILDDIR/$INSTALLDIR
 install -D -m 755 ../../assets/laps-runner.cron              $BUILDDIR/etc/cron.hourly/laps-runner
+install -D -m 755 ../../laps-runner/laps-runner-pam       -t $BUILDDIR/usr/sbin
 install -D -m 644 ../../laps-runner/laps_runner/*.py      -t $BUILDDIR/$INSTALLDIR/laps_runner
 install -D -m 644 ../../laps-runner/requirements.txt      -t $BUILDDIR/$INSTALLDIR
 install -D -m 644 ../../laps-runner/setup.py              -t $BUILDDIR/$INSTALLDIR

@@ -45,7 +45,6 @@ class LapsRunner():
 	cfgHostname         = None
 	cfgUsername         = 'root' # the user, whose password should be changed
 	cfgDaysValid        = 30 # how long the new password should be valid
-	cfgPamGracePeriod   = 0  # timeout in seconds to wait before changing the password after logout (PAM mode)
 	cfgLength           = 15 # the generated password length
 	cfgAlphabet         = string.ascii_letters+string.digits+string.punctuation # allowed chars for the new password
 
@@ -55,6 +54,9 @@ class LapsRunner():
 	cfgLdapAttributePassword        = 'msLAPS-Password'
 	cfgLdapAttributePasswordHistory = 'msLAPS-EncryptedPasswordHistory'
 	cfgLdapAttributePasswordExpiry  = 'msLAPS-PasswordExpirationTime'
+
+	cfgPamServices      = [] # PAM_SERVICE filter
+	cfgPamGracePeriod   = 0  # timeout in seconds to wait before changing the password after logout
 
 	tmpDn         = ''
 	tmpPassword   = None
@@ -312,7 +314,8 @@ class LapsRunner():
 			self.cfgLdapAttributePasswordHistory = str(cfgJson.get('ldap-attribute-password-history', self.cfgLdapAttributePasswordHistory))
 			self.cfgLdapAttributePasswordExpiry = str(cfgJson.get('ldap-attribute-password-expiry', self.cfgLdapAttributePasswordExpiry))
 			self.cfgHostname = cfgJson.get('hostname', self.cfgHostname)
-			self.cfgPamGracePeriod = cfgJson.get('pam-grace-period', self.cfgPamGracePeriod)
+			self.cfgPamServices = cfgJson.get('pam-services', self.cfgPamServices)
+			self.cfgPamGracePeriod = int(cfgJson.get('pam-grace-period', self.cfgPamGracePeriod))
 
 def main():
 	runner = LapsRunner()
@@ -321,7 +324,6 @@ def main():
 	parser = argparse.ArgumentParser(epilog=__copyright__+' '+__author__+' - https://georg-sieber.de')
 	parser.add_argument('-f', '--force', action='store_true', help='Force updating password, even if it is not expired')
 	parser.add_argument('-p', '--pam', action='store_true', help='PAM mode - update password if configured user has logged out, even if it is not expired')
-	parser.add_argument('-s', '--pam-service', default=None, nargs='+', help='Only change password in PAM mode if PAM_SERVICE matches the given value (e.g. "login" or "sudo-i")')
 	parser.add_argument('-c', '--config', default=runner.cfgPath, help='Path to config file ['+str(runner.cfgPath)+']')
 	args = parser.parse_args()
 	if args.config: runner.cfgPath = args.config
@@ -343,10 +345,10 @@ def main():
 				runner.updatePassword()
 
 			elif args.pam:
-				if 'PAM_TYPE' not in os.environ or 'PAM_USER' not in os.environ:
-					raise Exception('PAM_TYPE or PAM_USER missing!')
-				if args.pam_service and os.environ['PAM_SERVICE'] not in args.pam_service:
-					runner.logger.debug(__title__+': PAM_SERVICE "'+os.environ['PAM_SERVICE']+'" is not one of '+str(args.pam_service)+', exiting.')
+				if 'PAM_SERVICE' not in os.environ or 'PAM_USER' not in os.environ:
+					raise Exception('PAM_SERVICE or PAM_USER missing!')
+				if runner.cfgPamServices and os.environ['PAM_SERVICE'] not in runner.cfgPamServices:
+					runner.logger.debug(__title__+': PAM_SERVICE "'+os.environ['PAM_SERVICE']+'" is not one of '+str(runner.cfgPamServices)+', exiting.')
 					sys.exit(0)
 				if os.environ['PAM_USER'] != runner.cfgUsername:
 					runner.logger.debug(__title__+': PAM_USER does not match the configured user, exiting.')
@@ -354,7 +356,7 @@ def main():
 				if runner.cfgPamGracePeriod:
 					runner.logger.debug(__title__+': PAM timeout - waiting '+str(runner.cfgPamGracePeriod)+' seconds...')
 					time.sleep(runner.cfgPamGracePeriod)
-				print('Updating password (forced update by PAM logout)...')
+				print('Updating password (forced update by PAM)...')
 				runner.updatePassword()
 
 			else:
