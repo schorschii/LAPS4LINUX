@@ -11,6 +11,7 @@ from datetime import datetime, timedelta
 from dns import resolver, rdatatype
 from shutil import which
 from pid import PidFile, PidFileAlreadyLockedError, PidFileAlreadyRunningError
+import time
 import struct
 import ssl
 import ldap3
@@ -44,6 +45,7 @@ class LapsRunner():
 	cfgHostname         = None
 	cfgUsername         = 'root' # the user, whose password should be changed
 	cfgDaysValid        = 30 # how long the new password should be valid
+	cfgPamGracePeriod   = 0  # timeout in seconds to wait before changing the password after logout (PAM mode)
 	cfgLength           = 15 # the generated password length
 	cfgAlphabet         = string.ascii_letters+string.digits+string.punctuation # allowed chars for the new password
 
@@ -310,6 +312,7 @@ class LapsRunner():
 			self.cfgLdapAttributePasswordHistory = str(cfgJson.get('ldap-attribute-password-history', self.cfgLdapAttributePasswordHistory))
 			self.cfgLdapAttributePasswordExpiry = str(cfgJson.get('ldap-attribute-password-expiry', self.cfgLdapAttributePasswordExpiry))
 			self.cfgHostname = cfgJson.get('hostname', self.cfgHostname)
+			self.cfgPamGracePeriod = cfgJson.get('pam-grace-period', self.cfgPamGracePeriod)
 
 def main():
 	runner = LapsRunner()
@@ -348,6 +351,9 @@ def main():
 				if os.environ['PAM_USER'] != runner.cfgUsername:
 					runner.logger.debug(__title__+': PAM_USER does not match the configured user, exiting.')
 					sys.exit(0)
+				if runner.cfgPamGracePeriod:
+					runner.logger.debug(__title__+': PAM timeout - waiting '+str(runner.cfgPamGracePeriod)+' seconds...')
+					time.sleep(runner.cfgPamGracePeriod)
 				print('Updating password (forced update by PAM logout)...')
 				runner.updatePassword()
 

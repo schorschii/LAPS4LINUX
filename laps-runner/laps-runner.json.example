@@ -36,5 +36,7 @@
     "password-change-user": "root",
     "password-days-valid": 30,
     "password-length": 15,
-    "password-alphabet": "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+    "password-alphabet": "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789",
+
+    "pam-grace-period": 0
 }

@@ -75,6 +75,8 @@ Use `Session-Interactive-Only: no` if you like to rotate the password on sudo us
 
 Then, run `pam-auth-update` to automatically generate the files under `/etc/pam.d/` with the necessary line for LAPS.
 
+If you want the runner to wait a certain time after logout until the password should be changed, set `pam-grace-period` in the runner config to the desired number of seconds, e.g. 300 for 5 minutes.
+
 ### Hostnames Longer Than 15 Characters
 Computer objects in the Microsoft Active Directory can not be longer than 15 characters. If you join a computer with a longer hostname, it will be registered with a different "short name". You have to enter this short name in the config file (setting `hostname`) in order to make the Kerberos authentication work. You can find out the short name by inspecting your keytab: `sudo klist -k /etc/krb5.keytab`.
 
