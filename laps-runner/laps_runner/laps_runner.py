@@ -359,7 +359,7 @@ def main():
 					runner.logger.debug(__title__+': PAM_USER does not match the configured user, exiting.')
 					sys.exit(0)
 				if runner.cfgPamGracePeriod:
-					runner.logger.debug(__title__+': PAM timeout - waiting '+str(runner.cfgPamGracePeriod)+' seconds...')
+					runner.logger.debug(__title__+': PAM grace period - waiting '+str(runner.cfgPamGracePeriod)+' seconds...')
 					# set expiration in directory, e.g. to handle reboots
 					runner.setExpiry(datetime.now() + timedelta(seconds=runner.cfgPamGracePeriod))
 					# wait grace period
