@@ -234,6 +234,11 @@ class LapsRunner():
 						raise Exception('Could not remove old password from history in LDAP directory: '+str(self.connection.result))
 				break
 
+	def setExpiry(self, newExpirationDate):
+		self.connection.modify(self.tmpDn, {
+			self.cfgLdapAttributePasswordExpiry: [(ldap3.MODIFY_REPLACE, [str( dt_to_filetime(newExpirationDate) )])],
+		})
+
 	def encryptPassword(self, content):
 		import dpapi_ng
 		encrypted = None
@@ -355,6 +360,9 @@ def main():
 					sys.exit(0)
 				if runner.cfgPamGracePeriod:
 					runner.logger.debug(__title__+': PAM timeout - waiting '+str(runner.cfgPamGracePeriod)+' seconds...')
+					# set expiration in directory, e.g. to handle reboots
+					runner.setExpiry(datetime.now() + timedelta(seconds=runner.cfgPamGracePeriod))
+					# wait grace period
 					time.sleep(runner.cfgPamGracePeriod)
 				print('Updating password (forced update by PAM)...')
 				runner.updatePassword()
