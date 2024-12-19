@@ -1,5 +1,5 @@
-cryptography
-dnspython
+cryptography>=3.1.0
+dnspython>=2.0.0
 dpapi-ng[kerberos]>=0.2.0
 gssapi; sys_platform != "win32"  # needs libkrb5-dev
 winkerberos; sys_platform == "win32"
