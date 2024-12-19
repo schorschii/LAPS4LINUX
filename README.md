@@ -1,12 +1,14 @@
 <img align="right" style="width:180px" src="assets/laps.png">
 
 # LAPS4LINUX
-Linux and macOS implementation of the Local Administrator Password Solution (LAPS) from Microsoft. The client is also executable under Windows and provides additional features (e.g. display additional LDAP values, directly start remote connections and it can be called with `laps://` protocol scheme parameter to directly start search).
+Linux and macOS implementation of the Local Administrator Password Solution (LAPS) from Microsoft.
 
-LAPS in general is a system which periodically changes local admin passwords on domain computers and stores them (encrypted) in the LDAP directory (i.e. Active Directory), where domain administrators can decrypt and view them. This ensures that people who leave the company do not have access to local admin accounts anymore and that every local admin has a strong unique password set.
+LAPS is a system which periodically changes local admin passwords on domain computers and stores them (encrypted) in the LDAP directory (i.e. Active Directory), where domain administrators can decrypt and view them. This ensures that people who leave the company do not have access to local admin accounts anymore and that every local admin has a strong unique password set.
 
 ## Client
 The management client enables administrators to view the current (decrypted) local admin passwords. It can be used from command line or as graphical application.
+
+The client is also executable under Windows and provides an improved UI compared with the original tools from Microsoft and additional features (e.g. display additional LDAP values, directly start remote connections and it can be called with `laps://` protocol scheme parameter to directly start search).
 
 Read [README.md in the laps-client dir](laps-client/) for more information.
 
