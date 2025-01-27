@@ -84,7 +84,8 @@ gui_exe = EXE(gui_pyz, gui_a.scripts, [],
     disable_windowed_traceback=False,
     target_arch=None,
     codesign_identity=codesign_identity,
-    entitlements_file=None
+    entitlements_file=None,
+    argv_emulation=True
 )
 
 cli_pyz = PYZ(cli_a.pure, cli_a.zipped_data, cipher=block_cipher)
@@ -120,6 +121,7 @@ app = BUNDLE(coll,
       'CFBundleURLTypes': [
          {
            'CFBundleURLName': 'Local Administrator Password Solution',
+           'CFBundleTypeRole': 'Viewer',
            'CFBundleURLSchemes': ['laps']
          }
        ]
