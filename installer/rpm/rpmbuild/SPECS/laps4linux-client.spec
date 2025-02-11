@@ -38,6 +38,7 @@ cp usr/share/pixmaps/laps.png $RPM_BUILD_ROOT/usr/share/pixmaps
 %post
 DIR=/usr/share/laps4linux-client
 python3 -m venv --system-site-packages $DIR/venv
+$DIR/venv/bin/pip3 install --upgrade pip==25.0.0
 $DIR/venv/bin/pip3 install --upgrade $DIR[barcode]
 $DIR/venv/bin/pip3 uninstall -y pip
 if command -v update-desktop-database; then

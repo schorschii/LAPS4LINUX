@@ -38,6 +38,7 @@ cp usr/sbin/laps-runner-pam $RPM_BUILD_ROOT/%{_sbindir}/laps-runner-pam
 %post
 DIR=/usr/share/laps4linux-runner
 python3 -m venv --system-site-packages $DIR/venv
+$DIR/venv/bin/pip3 install --upgrade pip==25.0.0
 $DIR/venv/bin/pip3 install --upgrade $DIR
 $DIR/venv/bin/pip3 uninstall -y pip
 
