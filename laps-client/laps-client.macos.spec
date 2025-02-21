@@ -1,7 +1,7 @@
 # -*- mode: python ; coding: utf-8 -*-
 
 block_cipher = None
-version      = '1.11.4'
+version      = '1.11.5'
 
 # find the SHA-1 hash of you Developer ID Application certificate
 # for signing via `security find-identity -v -p codesigning` or use `None`

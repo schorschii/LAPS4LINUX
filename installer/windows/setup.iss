@@ -2,7 +2,7 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "LAPS4LINUX"
-#define MyAppVersion "1.11.4"
+#define MyAppVersion "1.11.5"
 #define MyAppPublisher "Sieber Systems"
 #define MyAppURL "https://github.com/schorschii/LAPS4LINUX"
 #define MyAppExeName "laps-gui.exe"
