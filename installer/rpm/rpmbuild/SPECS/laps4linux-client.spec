@@ -37,7 +37,22 @@ cp usr/share/pixmaps/laps.png $RPM_BUILD_ROOT/usr/share/pixmaps
 
 %post
 DIR=/usr/share/laps4linux-client
-python3 -m venv --system-site-packages $DIR/venv
+PYTHON_BIN=python3
+if [[ "$(python3 --version)" == "Python 3.0"* ]] \
+|| [[ "$(python3 --version)" == "Python 3.1"* ]] \
+|| [[ "$(python3 --version)" == "Python 3.2"* ]] \
+|| [[ "$(python3 --version)" == "Python 3.3"* ]] \
+|| [[ "$(python3 --version)" == "Python 3.4"* ]] \
+|| [[ "$(python3 --version)" == "Python 3.5"* ]] \
+|| [[ "$(python3 --version)" == "Python 3.6"* ]] \
+|| [[ "$(python3 --version)" == "Python 3.7"* ]]; then
+	echo "Default Python version on this system ($(python3 --version)) is not compatible with LAPS4LINUX! Install at least Python 3.8."
+	if command -v python3.8; then
+		PYTHON_BIN=python3.8
+		echo "Found compatible Python version: $PYTHON_BIN"
+	fi
+fi
+$PYTHON_BIN -m venv --system-site-packages --clear $DIR/venv
 $DIR/venv/bin/pip3 install --upgrade pip==25.0.0
 $DIR/venv/bin/pip3 install --upgrade $DIR[barcode]
 $DIR/venv/bin/pip3 uninstall -y pip
