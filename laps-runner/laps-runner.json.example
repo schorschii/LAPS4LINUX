@@ -39,5 +39,10 @@
     "password-alphabet": "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789",
 
     "pam-services-EXAMPLE": ["login"],
-    "pam-grace-period-EXAMPLE": 300
+    "pam-grace-period-EXAMPLE": 300,
+
+    "hooks": {
+        "ipmitool": ["ipmitool", "user", "set", "password", "$PASSWORD$"],
+        "influx": ["influx", "user", "password", "--name", "$USERNAME$", "--password", "$PASSWORD$"]
+    }
 }

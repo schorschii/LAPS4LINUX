@@ -58,6 +58,8 @@ class LapsRunner():
 	cfgPamServices      = [] # PAM_SERVICE filter
 	cfgPamGracePeriod   = 0  # timeout in seconds to wait before changing the password after logout
 
+	cfgHooks      = {}
+
 	tmpDn         = ''
 	tmpPassword   = None
 	tmpExpiry     = ''
@@ -175,6 +177,20 @@ class LapsRunner():
 			self.logger.debug(__title__+': Changed password of user '+self.cfgUsername+' in local database')
 		else:
 			raise Exception(' '.join(cmd)+' returned non-zero exit code '+str(res.returncode))
+
+		# execute hooks
+		if(not isinstance(self.cfgHooks, dict)): return
+		for hookName, hookArgs in self.cfgHooks.items():
+			if(not isinstance(hookArgs, list)): continue
+			replacements = {'$PASSWORD$':newPassword, '$USERNAME$':self.cfgUsername}
+			cmd = [replacements.get(n, n) for n in hookArgs]
+			res = subprocess.run(cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL, universal_newlines=True)
+			if res.returncode == 0:
+				print('Hook '+hookName+' successfully executed')
+				self.logger.debug(__title__+': Hook '+hookName+' successfully executed')
+			else:
+				print('Error: hook '+hookName+' returned non-zero exit code '+str(res.returncode))
+				self.logger.debug(__title__+': '+'Error: hook '+hookName+' returned non-zero exit code '+str(res.returncode))
 
 	def setPasswordAndExpiry(self, newPassword, newExpirationDate):
 		# check if dn of target computer object is known
@@ -321,6 +337,7 @@ class LapsRunner():
 			self.cfgHostname = cfgJson.get('hostname', self.cfgHostname)
 			self.cfgPamServices = cfgJson.get('pam-services', self.cfgPamServices)
 			self.cfgPamGracePeriod = int(cfgJson.get('pam-grace-period', self.cfgPamGracePeriod))
+			self.cfgHooks = cfgJson.get('hooks', self.cfgHooks)
 
 def main():
 	runner = LapsRunner()
