@@ -41,7 +41,7 @@
     "pam-services-EXAMPLE": ["login"],
     "pam-grace-period-EXAMPLE": 300,
 
-    "hooks": {
+    "hooks-EXAMPLE": {
         "ipmitool": ["ipmitool", "user", "set", "password", "$PASSWORD$"],
         "influx": ["influx", "user", "password", "--name", "$USERNAME$", "--password", "$PASSWORD$"]
     }
