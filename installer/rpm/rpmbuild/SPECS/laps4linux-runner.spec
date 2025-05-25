@@ -53,9 +53,9 @@ if [[ "$(python3 --version)" == "Python 3.0"* ]] \
 	fi
 fi
 $PYTHON_BIN -m venv --system-site-packages --clear $DIR/venv
-$DIR/venv/bin/pip3 install --upgrade pip==25.0.0
+$DIR/venv/bin/pip3 install --upgrade pip==25.0.0 setuptools==80.8.0
 $DIR/venv/bin/pip3 install --upgrade $DIR
-$DIR/venv/bin/pip3 uninstall -y pip
+$DIR/venv/bin/pip3 uninstall -y pip setuptools
 
 
 %clean
