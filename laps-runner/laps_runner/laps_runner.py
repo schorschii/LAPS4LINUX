@@ -290,7 +290,21 @@ class LapsRunner():
 		return packed
 
 	def generatePassword(self):
-		return ''.join(secrets.choice(self.cfgAlphabet) for i in range(self.cfgLength))
+		if isinstance(self.cfgAlphabet, str):
+			return ''.join(secrets.choice(self.cfgAlphabet) for i in range(self.cfgLength))
+		else:
+			password = ""
+			full_alphabet = ""
+			for alphabet in self.cfgAlphabet:
+				password += secrets.choice(alphabet)
+				full_alphabet += alphabet
+			for i in range(self.cfgLength - len(self.cfgAlphabet)):
+				password += secrets.choice(alphabet)
+			password_list = list(password)
+			# shuffle all characters
+			secrets.SystemRandom().shuffle(password_list)
+			password = "".join(password_list)
+			return password
 
 	def createLdapBase(self, conn):
 		if self.cfgDomain:
@@ -327,7 +341,7 @@ class LapsRunner():
 			self.cfgUsername = cfgJson.get('password-change-user', self.cfgUsername)
 			self.cfgDaysValid = int(cfgJson.get('password-days-valid', self.cfgDaysValid))
 			self.cfgLength = int(cfgJson.get('password-length', self.cfgLength))
-			self.cfgAlphabet = str(cfgJson.get('password-alphabet', self.cfgAlphabet))
+			self.cfgAlphabet = cfgJson.get('password-alphabet', self.cfgAlphabet)
 			self.cfgUseNativeLapsAttributeSchema = bool(cfgJson.get('native-laps', self.cfgUseNativeLapsAttributeSchema))
 			self.cfgSecurityDescriptor = cfgJson.get('security-descriptor', self.cfgSecurityDescriptor)
 			self.cfgHistorySize = cfgJson.get('history-size', self.cfgHistorySize)
