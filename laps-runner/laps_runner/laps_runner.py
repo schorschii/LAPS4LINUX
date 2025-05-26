@@ -299,7 +299,7 @@ class LapsRunner():
 				password += secrets.choice(alphabet)
 				full_alphabet += alphabet
 			for i in range(self.cfgLength - len(self.cfgAlphabet)):
-				password += secrets.choice(alphabet)
+				password += secrets.choice(full_alphabet)
 			password_list = list(password)
 			# shuffle all characters
 			secrets.SystemRandom().shuffle(password_list)
