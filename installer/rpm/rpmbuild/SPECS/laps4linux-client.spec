@@ -52,7 +52,7 @@ if [[ "$(python3 --version)" == "Python 3.0"* ]] \
 		echo "Found compatible Python version: $PYTHON_BIN"
 	fi
 fi
-$PYTHON_BIN -m venv --system-site-packages --clear $DIR/venv
+$PYTHON_BIN -m venv --clear $DIR/venv
 $DIR/venv/bin/pip3 install --upgrade pip==25.0.0 setuptools==80.8.0
 $DIR/venv/bin/pip3 install --upgrade $DIR[barcode]
 $DIR/venv/bin/pip3 uninstall -y pip setuptools
