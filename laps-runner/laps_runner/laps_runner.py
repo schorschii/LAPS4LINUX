@@ -293,8 +293,8 @@ class LapsRunner():
 		if isinstance(self.cfgAlphabet, str):
 			return ''.join(secrets.choice(self.cfgAlphabet) for i in range(self.cfgLength))
 		else:
-			password = ""
-			full_alphabet = ""
+			password = ''
+			full_alphabet = ''
 			for alphabet in self.cfgAlphabet:
 				password += secrets.choice(alphabet)
 				full_alphabet += alphabet
@@ -303,7 +303,7 @@ class LapsRunner():
 			password_list = list(password)
 			# shuffle all characters
 			secrets.SystemRandom().shuffle(password_list)
-			password = "".join(password_list)
+			password = ''.join(password_list)
 			return password
 
 	def createLdapBase(self, conn):
