@@ -6,13 +6,5 @@ set -e
 # source debconf library.
 #. /usr/share/debconf/confmodule
 
-DIR=/usr/share/laps4linux-client
-
-# create system-wide venv and install python libraries via pip
-python3 -m venv --system-site-packages $DIR/venv
-$DIR/venv/bin/pip3 install --upgrade pip==25.0.0 setuptools==80.8.0
-$DIR/venv/bin/pip3 install --upgrade $DIR[barcode]
-$DIR/venv/bin/pip3 uninstall -y pip setuptools
-
 # register protocol scheme handler
 update-desktop-database

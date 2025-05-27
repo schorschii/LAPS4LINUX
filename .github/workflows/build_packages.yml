@@ -30,6 +30,20 @@ jobs:
         name: Get version name for Github release title
         run: cd laps-client && echo "version=$(python3 -c 'import laps_client; print(laps_client.__version__)')" >> $GITHUB_OUTPUT
 
+      - name: Compile LAPS-Client
+        run: |
+          cd laps-client
+          python3 -m venv venv
+          venv/bin/pip3 install pyinstaller .
+          venv/bin/pyinstaller laps-client.linux.spec
+
+      - name: Compile LAPS-Runner
+        run: |
+          cd laps-runner
+          python3 -m venv venv
+          venv/bin/pip3 install pyinstaller .
+          venv/bin/pyinstaller laps-runner.linux.spec
+
       - name: Execute deb build
         run: cd installer/deb/ && ./build.sh
 
