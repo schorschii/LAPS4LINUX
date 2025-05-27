@@ -9,7 +9,7 @@ on:
 jobs:
   create_release_deb: # used to identify the output in other jobs
     name: Create Release with Debian and RPM package
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     permissions:
       contents: write
