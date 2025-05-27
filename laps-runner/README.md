@@ -43,7 +43,7 @@ Please configure the runner by editing the configuration file `/etc/laps-runner.
   - `password-change-user`: The Linux user whose password should be rotated.
   - `password-days-valid`: The amount of days how long a password should be valid.
   - `password-length`: Determines how long a generated password should be.
-  - `password-alphabet`: Determines the chars to use for password generation.
+  - `password-alphabet`: Determines the chars to use for password generation. Can be either just a character string or a list of character strings. In the latter case, the password contains at least one character from each string.
   - `hooks`: Dict of commands to execute after password change. The dict key should be a string (displayed in log output) and the value should be an array of parameters. Parameter `$PASSWORD$` and `$USERNAME$` will be replaced accordingly. Have a look at the sample config file for example hooks. You can use this feature to align other passwords with the local admin/root, e.g. your BIOS/UEFI password or the password of local database admin accounts.
 
 Important:
