@@ -34,7 +34,7 @@ jobs:
         run: |
           cd laps-client
           python3 -m venv venv
-          venv/bin/pip3 install pyinstaller .
+          venv/bin/pip3 install pyinstaller .[barcode]
           venv/bin/pyinstaller laps-client.linux.spec
 
       - name: Compile LAPS-Runner
