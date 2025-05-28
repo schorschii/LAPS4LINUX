@@ -45,10 +45,20 @@ if [[ "$(python3 --version)" == "Python 3.0"* ]] \
 || [[ "$(python3 --version)" == "Python 3.4"* ]] \
 || [[ "$(python3 --version)" == "Python 3.5"* ]] \
 || [[ "$(python3 --version)" == "Python 3.6"* ]] \
-|| [[ "$(python3 --version)" == "Python 3.7"* ]]; then
-	echo "Default Python version on this system ($(python3 --version)) is not compatible with LAPS4LINUX! Install at least Python 3.8."
-	if command -v python3.8; then
-		PYTHON_BIN=python3.8
+|| [[ "$(python3 --version)" == "Python 3.7"* ]] \
+|| [[ "$(python3 --version)" == "Python 3.8"* ]]; then
+	echo "Default Python version on this system ($(python3 --version)) is not compatible with LAPS4LINUX! Install at least Python 3.9."
+	if command -v python3.9; then
+		PYTHON_BIN=python3.9
+		echo "Found compatible Python version: $PYTHON_BIN"
+	elif command -v python3.10; then
+		PYTHON_BIN=python3.10
+		echo "Found compatible Python version: $PYTHON_BIN"
+	elif command -v python3.11; then
+		PYTHON_BIN=python3.11
+		echo "Found compatible Python version: $PYTHON_BIN"
+	elif command -v python3.12; then
+		PYTHON_BIN=python3.12
 		echo "Found compatible Python version: $PYTHON_BIN"
 	fi
 fi
