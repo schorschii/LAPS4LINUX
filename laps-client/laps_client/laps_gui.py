@@ -13,6 +13,7 @@ from os import path, makedirs, rename
 from datetime import datetime
 from dns import resolver, rdatatype
 from functools import partial
+import traceback
 import dpapi_ng
 import ldap3
 import ssl
@@ -630,7 +631,7 @@ class LapsMainWindow(QtWidgets.QMainWindow):
 		except Exception as e:
 			# display error
 			self.statusBar.showMessage(str(e))
-			print(str(e))
+			print(traceback.format_exc())
 
 	def OnClickSearch(self, e):
 		# check and escape input
