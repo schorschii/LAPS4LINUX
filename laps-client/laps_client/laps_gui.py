@@ -398,7 +398,7 @@ class LapsMainWindow(QtWidgets.QMainWindow):
 
 			# set easy readable font
 			if(self.PLATFORM == 'win32'):
-				self.textBoxFont = QFont('Consolas', 14)
+				self.textBoxFont = QtGui.QFont('Consolas', 14)
 				self.textBoxFont.setBold(True)
 			else:
 				self.textBoxFont = QtGui.QFontDatabase.systemFont(QtGui.QFontDatabase.SystemFont.FixedFont)
