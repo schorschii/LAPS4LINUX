@@ -24,7 +24,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          sudo apt update && sudo apt install -y rpm rpmlint qttools5-dev-tools qtchooser libkrb5-dev python3-venv $(cat installer/deb/laps4linux-client/DEBIAN/control | grep 'Depends' | cut -d: -f2 | sed -e 's/,/ /g' | sed -r 's/\([<>=.0-9]+\)//g') $(cat installer/deb/laps4linux-runner/DEBIAN/control | grep 'Depends' | cut -d: -f2 | sed -e 's/,/ /g' | sed -r 's/\([<>=.0-9]+\)//g')
+          sudo apt update && sudo apt install -y rpm rpmlint qttools5-dev-tools qtchooser libkrb5-dev python3-venv python3-pip $(cat installer/deb/laps4linux-client/DEBIAN/control | grep 'Depends' | cut -d: -f2 | sed -e 's/,/ /g' | sed -r 's/\([<>=.0-9]+\)//g') $(cat installer/deb/laps4linux-runner/DEBIAN/control | grep 'Depends' | cut -d: -f2 | sed -e 's/,/ /g' | sed -r 's/\([<>=.0-9]+\)//g')
 
       - id: get_version
         name: Get version name for Github release title
@@ -34,6 +34,7 @@ jobs:
         run: |
           cd laps-client
           python3 -m venv venv
+          venv/bin/pip3 install --upgrade pip
           venv/bin/pip3 install pyinstaller .[barcode]
           venv/bin/pyinstaller laps-client.linux.spec
 
@@ -41,6 +42,7 @@ jobs:
         run: |
           cd laps-runner
           python3 -m venv venv
+          venv/bin/pip3 install --upgrade pip
           venv/bin/pip3 install pyinstaller .
           venv/bin/pyinstaller laps-runner.linux.spec
 
