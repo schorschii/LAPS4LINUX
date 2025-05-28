@@ -5,9 +5,7 @@ from .__init__ import __title__, __version__, __website__, __author__, __copyrig
 from .__init__ import proposeUsername, compileServerUris
 from .filetime import dt_to_filetime, filetime_to_dt
 
-from PyQt5.QtWidgets import *
-from PyQt5.QtGui import *
-from PyQt5.QtCore import *
+from PyQt6 import QtWidgets, QtGui, QtCore
 
 from urllib.parse import unquote
 from pathlib import Path
@@ -23,24 +21,24 @@ import sys
 import os
 
 
-class LapsAboutWindow(QDialog):
+class LapsAboutWindow(QtWidgets.QDialog):
 	def __init__(self, *args, **kwargs):
 		super(LapsAboutWindow, self).__init__(*args, **kwargs)
 		self.InitUI()
 
 	def InitUI(self):
-		self.buttonBox = QDialogButtonBox(QDialogButtonBox.Ok)
+		self.buttonBox = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.StandardButton.Ok)
 		self.buttonBox.accepted.connect(self.accept)
 
-		self.layout = QVBoxLayout(self)
+		self.layout = QtWidgets.QVBoxLayout(self)
 
-		labelAppName = QLabel(self)
+		labelAppName = QtWidgets.QLabel(self)
 		labelAppName.setText(__title__ + ' GUI Client' + ' v' + __version__)
 		labelAppName.setStyleSheet('font-weight:bold')
-		labelAppName.setAlignment(Qt.AlignCenter)
+		labelAppName.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
 		self.layout.addWidget(labelAppName)
 
-		labelCopyright = QLabel(self)
+		labelCopyright = QtWidgets.QLabel(self)
 		labelCopyright.setText(
 			'<br>'
 			+__copyright__+' <a href="https://georg-sieber.de">'+__author__+'</a>'
@@ -55,10 +53,10 @@ class LapsAboutWindow(QDialog):
 			'<br>'
 		)
 		labelCopyright.setOpenExternalLinks(True)
-		labelCopyright.setAlignment(Qt.AlignCenter)
+		labelCopyright.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
 		self.layout.addWidget(labelCopyright)
 
-		labelDescription = QLabel(self)
+		labelDescription = QtWidgets.QLabel(self)
 		labelDescription.setText(
 			'LAPS4LINUX client allows you to query local administrator passwords for LAPS runner managed workstations in your domain from your LDAP (Active Directory) server.'
 			'\n\n'
@@ -75,32 +73,33 @@ class LapsAboutWindow(QDialog):
 		self.setLayout(self.layout)
 		self.setWindowTitle('About')
 
-class LapsLoginWindow(QDialog):
+class LapsLoginWindow(QtWidgets.QDialog):
 	def __init__(self, server, username, *args, **kwargs):
 		super(LapsLoginWindow, self).__init__(*args, **kwargs)
 
 		# window layout
-		self.buttonBox = QDialogButtonBox(QDialogButtonBox.Ok|QDialogButtonBox.Cancel)
-		#self.buttonBox.button(QDialogButtonBox.Ok).setText('Login')
-		#self.buttonBox.button(QDialogButtonBox.Cancel).setText('Exit')
+		self.buttonBox = QtWidgets.QDialogButtonBox(
+			QtWidgets.QDialogButtonBox.StandardButton.Ok
+			| QtWidgets.QDialogButtonBox.StandardButton.Cancel
+		)
 		self.buttonBox.accepted.connect(self.accept)
 		self.buttonBox.rejected.connect(self.reject)
 
-		self.layout = QGridLayout(self)
+		self.layout = QtWidgets.QGridLayout(self)
 
-		self.lblDescription = QLabel('Please enter the credentials which should be used to connect to:\n'+server)
+		self.lblDescription = QtWidgets.QLabel('Please enter the credentials which should be used to connect to:\n'+server)
 		self.layout.addWidget(self.lblDescription, 0, 0, 1, 2)
 
-		self.lblUsername = QLabel('Username')
+		self.lblUsername = QtWidgets.QLabel('Username')
 		self.layout.addWidget(self.lblUsername, 1, 0)
-		self.txtUsername = QLineEdit()
+		self.txtUsername = QtWidgets.QLineEdit()
 		self.txtUsername.setText(username)
 		self.layout.addWidget(self.txtUsername, 1, 1, 1, 2)
 
-		self.lblPassword = QLabel('Password')
+		self.lblPassword = QtWidgets.QLabel('Password')
 		self.layout.addWidget(self.lblPassword, 2, 0)
-		self.txtPassword = QLineEdit()
-		self.txtPassword.setEchoMode(QLineEdit.Password)
+		self.txtPassword = QtWidgets.QLineEdit()
+		self.txtPassword.setEchoMode(QtWidgets.QLineEdit.EchoMode.Password)
 		self.layout.addWidget(self.txtPassword, 2, 1, 1, 2)
 
 		self.layout.addWidget(self.buttonBox, 3, 1, 1, 2)
@@ -114,7 +113,7 @@ class LapsLoginWindow(QDialog):
 		if(self.txtUsername.text() != ''):
 			self.txtPassword.setFocus()
 
-class LapsBarcodeWindow(QDialog):
+class LapsBarcodeWindow(QtWidgets.QDialog):
 	def __init__(self, title, value, img, *args, **kwargs):
 		super(LapsBarcodeWindow, self).__init__(*args, **kwargs)
 		self.title = title
@@ -126,33 +125,33 @@ class LapsBarcodeWindow(QDialog):
 		parentWidget = self.parentWidget()
 
 		# Menubar
-		mainMenu = QMenuBar(self)
+		mainMenu = QtWidgets.QMenuBar(self)
 		fileMenu = mainMenu.addMenu('&File')
-		saveAction = QAction('&Save image', self)
+		saveAction = QtGui.QAction('&Save image', self)
 		saveAction.setShortcut('F2')
 		saveAction.triggered.connect(self.OnClickSave)
 		fileMenu.addAction(saveAction)
 		fileMenu.addSeparator()
-		closeAction = QAction('&Close', self)
+		closeAction = QtGui.QAction('&Close', self)
 		closeAction.triggered.connect(self.OnClickClose)
 		fileMenu.addAction(closeAction)
 
-		self.layout = QVBoxLayout()
+		self.layout = QtWidgets.QVBoxLayout()
 		self.layout.setContentsMargins(20, 50, 20, 20)
 
 		if(self.img.mode == '1'):
 			self.img = self.img.convert('RGBA')
 		img_bytes = self.img.tobytes('raw', 'RGBA')
-		labelImage = QLabel(self)
-		c = QCursor(Qt.BlankCursor)
+		labelImage = QtWidgets.QLabel(self)
+		c = QtGui.QCursor(QtCore.Qt.CursorShape.BlankCursor)
 		labelImage.setCursor(c)
-		labelImage.setPixmap(QPixmap.fromImage(QImage(img_bytes, self.img.size[0], self.img.size[1], QImage.Format_RGBA8888)))
-		labelImage.setAlignment(Qt.AlignCenter)
+		labelImage.setPixmap(QtGui.QPixmap.fromImage(QtGui.QImage(img_bytes, self.img.size[0], self.img.size[1], QtGui.QImage.Format.Format_RGBA8888)))
+		labelImage.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
 		self.layout.addWidget(labelImage)
 
-		labelText = QLabel(self)
+		labelText = QtWidgets.QLabel(self)
 		labelText.setText(self.value)
-		labelText.setAlignment(Qt.AlignCenter)
+		labelText.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
 		labelText.setFont(parentWidget.textBoxFont)
 		self.layout.addWidget(labelText)
 
@@ -160,26 +159,29 @@ class LapsBarcodeWindow(QDialog):
 		self.setWindowTitle(self.title)
 
 	def OnClickSave(self):
-		fileName, _ = QFileDialog.getSaveFileName(self, 'Save image', self.title+'.png', 'PNG Files (*.png);;All Files (*.*)')
+		fileName, _ = QtWidgets.QFileDialog.getSaveFileName(self, 'Save image', self.title+'.png', 'PNG Files (*.png);;All Files (*.*)')
 		if(fileName):
 			self.img.save(fileName)
 
 	def OnClickClose(self):
 		self.close()
 
-class LapsCalendarWindow(QDialog):
+class LapsCalendarWindow(QtWidgets.QDialog):
 	def __init__(self, *args, **kwargs):
 		super(LapsCalendarWindow, self).__init__(*args, **kwargs)
 		self.InitUI()
 
 	def InitUI(self):
-		self.buttonBox = QDialogButtonBox(QDialogButtonBox.Ok|QDialogButtonBox.Cancel)
+		self.buttonBox = QtWidgets.QDialogButtonBox(
+			QtWidgets.QDialogButtonBox.StandardButton.Ok
+			| QtWidgets.QDialogButtonBox.StandardButton.Cancel
+		)
 		self.buttonBox.accepted.connect(self.OnClickAccept)
 		self.buttonBox.rejected.connect(self.OnClickReject)
 
-		self.layout = QVBoxLayout(self)
+		self.layout = QtWidgets.QVBoxLayout(self)
 
-		self.cwNewExpirationTime = QCalendarWidget()
+		self.cwNewExpirationTime = QtWidgets.QCalendarWidget()
 		self.layout.addWidget(self.cwNewExpirationTime)
 
 		self.layout.addWidget(self.buttonBox)
@@ -218,12 +220,12 @@ class LapsCalendarWindow(QDialog):
 				parentWidget.showInfoDialog('Error',
 					'Unable to change expiration date to '+str(newExpirationDateTime)+'.'
 					+'\n\n'+str(parentWidget.connection.result['message']), parentWidget.tmpDn+' ('+parentWidget.GetConnectionString()+')',
-					icon=QMessageBox.Critical
+					icon=QtWidgets.QMessageBox.Icon.Critical
 				)
 
 		except Exception as e:
 			# display error
-			parentWidget.showInfoDialog('Error setting new expiration date', str(e), icon=QMessageBox.Critical)
+			parentWidget.showInfoDialog('Error setting new expiration date', str(e), icon=QtWidgets.QMessageBox.Icon.Critical)
 			# reset connection
 			parentWidget.server = None
 			parentWidget.connection = None
@@ -231,12 +233,12 @@ class LapsCalendarWindow(QDialog):
 	def OnClickReject(self):
 		self.close()
 
-class LapsPlainTextEdit(QPlainTextEdit):
+class LapsPlainTextEdit(QtWidgets.QPlainTextEdit):
 	# default sizeHint of (256,192) is too large for our password history
 	def sizeHint(self):
-		return QSize(200, 90)
+		return QtCore.QSize(200, 90)
 
-class LapsMainWindow(QMainWindow):
+class LapsMainWindow(QtWidgets.QMainWindow):
 	PLATFORM          = sys.platform.lower()
 
 	PROTOCOL_SCHEME   = 'laps://'
@@ -293,7 +295,7 @@ class LapsMainWindow(QMainWindow):
 			self.PRODUCT_ICON_PATH = sys._MEIPASS
 		self.iconPath = path.join(self.PRODUCT_ICON_PATH, self.PRODUCT_ICON)
 		if(path.exists(self.iconPath)):
-			self.icon = QIcon(self.iconPath)
+			self.icon = QtGui.QIcon(self.iconPath)
 			self.setWindowIcon(self.icon)
 
 		# Menubar
@@ -302,24 +304,24 @@ class LapsMainWindow(QMainWindow):
 		# File Menu
 		fileMenu = mainMenu.addMenu('&File')
 
-		searchAction = QAction('&Search', self)
+		searchAction = QtGui.QAction('&Search', self)
 		searchAction.setShortcut('F2')
 		searchAction.triggered.connect(self.OnClickSearch)
 		fileMenu.addAction(searchAction)
 		if(self.cfgLdapAttributePasswordExpiry):
-			setExpirationDateAction = QAction('Set &Expiration', self)
+			setExpirationDateAction = QtGui.QAction('Set &Expiration', self)
 			setExpirationDateAction.setShortcut('F3')
 			setExpirationDateAction.triggered.connect(self.OnClickSetExpiry)
 			fileMenu.addAction(setExpirationDateAction)
 		fileMenu.addSeparator()
-		kerberosAction = QAction('&Kerberos Authentication', self)
+		kerberosAction = QtGui.QAction('&Kerberos Authentication', self)
 		kerberosAction.setShortcut('Ctrl+K')
 		kerberosAction.setCheckable(True)
 		kerberosAction.setChecked(self.cfgUseKerberos)
 		kerberosAction.triggered.connect(self.OnClickKerberos)
 		fileMenu.addAction(kerberosAction)
 		fileMenu.addSeparator()
-		quitAction = QAction('&Quit', self)
+		quitAction = QtGui.QAction('&Quit', self)
 		quitAction.setShortcut('Ctrl+Q')
 		quitAction.triggered.connect(self.OnQuit)
 		fileMenu.addAction(quitAction)
@@ -327,20 +329,20 @@ class LapsMainWindow(QMainWindow):
 		# Connection Menu
 		connectMenu = mainMenu.addMenu('&Connect')
 
-		rdpAction = QAction('&RDP', self)
+		rdpAction = QtGui.QAction('&RDP', self)
 		rdpAction.setShortcut('F5')
 		rdpAction.triggered.connect(lambda: self.RemoteConnection('RDP'))
 		connectMenu.addAction(rdpAction)
-		sshAction = QAction('&SSH', self)
+		sshAction = QtGui.QAction('&SSH', self)
 		sshAction.setShortcut('F6')
 		sshAction.triggered.connect(lambda: self.RemoteConnection('SSH'))
 		connectMenu.addAction(sshAction)
 		connectMenu.addSeparator()
-		autotypeCodeAction = QAction('&Autotype QR code', self)
+		autotypeCodeAction = QtGui.QAction('&Autotype QR code', self)
 		autotypeCodeAction.setShortcut('F7')
 		autotypeCodeAction.triggered.connect(self.OnClickAutotypeCode)
 		connectMenu.addAction(autotypeCodeAction)
-		autotypeSeparatorAction = QAction('Enter instead of Tab', self)
+		autotypeSeparatorAction = QtGui.QAction('Enter instead of Tab', self)
 		autotypeSeparatorAction.setCheckable(True)
 		autotypeSeparatorAction.setChecked(self.cfgUseAutotypeEnter)
 		autotypeSeparatorAction.triggered.connect(self.OnClickAutotypeEnter)
@@ -349,7 +351,7 @@ class LapsMainWindow(QMainWindow):
 		# Help Menu
 		helpMenu = mainMenu.addMenu('&Help')
 
-		aboutAction = QAction('&About', self)
+		aboutAction = QtGui.QAction('&About', self)
 		aboutAction.setShortcut('F1')
 		aboutAction.triggered.connect(self.OnOpenAboutDialog)
 		helpMenu.addAction(aboutAction)
@@ -358,28 +360,28 @@ class LapsMainWindow(QMainWindow):
 		self.statusBar = self.statusBar()
 
 		# Window Content
-		grid = QGridLayout()
+		grid = QtWidgets.QGridLayout()
 		gridLine = 0
 
-		self.lblSearchComputer = QLabel('Computer Name')
+		self.lblSearchComputer = QtWidgets.QLabel('Computer Name')
 		grid.addWidget(self.lblSearchComputer, gridLine, 0)
 		gridLine += 1
-		self.txtSearchComputer = QLineEdit()
+		self.txtSearchComputer = QtWidgets.QLineEdit()
 		self.txtSearchComputer.returnPressed.connect(self.OnReturnSearch)
 		self.txtSearchComputer.contextMenuEvent = partial(self.OnContextMenu, self.txtSearchComputer)
 		grid.addWidget(self.txtSearchComputer, gridLine, 0)
-		self.btnSearchComputer = QPushButton('Search')
+		self.btnSearchComputer = QtWidgets.QPushButton('Search')
 		self.btnSearchComputer.clicked.connect(self.OnClickSearch)
 		grid.addWidget(self.btnSearchComputer, gridLine, 1)
 		gridLine += 1
 
-		self.btnSetExpirationTime = QPushButton('Set')
+		self.btnSetExpirationTime = QtWidgets.QPushButton('Set')
 		self.btnSetExpirationTime.setEnabled(False)
 		self.btnSetExpirationTime.clicked.connect(self.OnClickSetExpiry)
 
 		for title, attribute in self.GetAttributesAsDict().items():
 			# create label
-			lblAdditionalAttribute = QLabel(str(title))
+			lblAdditionalAttribute = QtWidgets.QLabel(str(title))
 			grid.addWidget(lblAdditionalAttribute, gridLine, 0)
 			gridLine += 1
 
@@ -387,9 +389,9 @@ class LapsMainWindow(QMainWindow):
 			if(attribute == self.cfgLdapAttributePasswordHistory
 			or (isinstance(self.cfgLdapAttributePasswordHistory, list) and attribute in self.cfgLdapAttributePasswordHistory)):
 				txtAdditionalAttribute = LapsPlainTextEdit()
-				txtAdditionalAttribute.setLineWrapMode(QPlainTextEdit.LineWrapMode.NoWrap)
+				txtAdditionalAttribute.setLineWrapMode(QtWidgets.QPlainTextEdit.LineWrapMode.NoWrap)
 			else:
-				txtAdditionalAttribute = QLineEdit()
+				txtAdditionalAttribute = QtWidgets.QLineEdit()
 			txtAdditionalAttribute.setReadOnly(True)
 			txtAdditionalAttribute.contextMenuEvent = partial(self.OnContextMenu, txtAdditionalAttribute)
 
@@ -398,7 +400,7 @@ class LapsMainWindow(QMainWindow):
 				self.textBoxFont = QFont('Consolas', 14)
 				self.textBoxFont.setBold(True)
 			else:
-				self.textBoxFont = QFontDatabase.systemFont(QFontDatabase.FixedFont)
+				self.textBoxFont = QtGui.QFontDatabase.systemFont(QtGui.QFontDatabase.SystemFont.FixedFont)
 				self.textBoxFont.setPointSize(18 if self.PLATFORM=='darwin' else 14)
 			txtAdditionalAttribute.setFont(self.textBoxFont)
 
@@ -411,12 +413,12 @@ class LapsMainWindow(QMainWindow):
 			or (isinstance(self.cfgLdapAttributePasswordExpiry, list) and attribute in self.cfgLdapAttributePasswordExpiry)):
 				grid.addWidget(self.btnSetExpirationTime, gridLine, 1)
 			else:
-				btnCopy = QPushButton('Copy')
+				btnCopy = QtWidgets.QPushButton('Copy')
 				btnCopy.clicked.connect(partial(self.OnClickCopy, txtAdditionalAttribute))
 				grid.addWidget(btnCopy, gridLine, 1)
 			gridLine += 1
 
-		widget = QWidget(self)
+		widget = QtWidgets.QWidget(self)
 		widget.setLayout(grid)
 		self.setCentralWidget(widget)
 
@@ -451,16 +453,16 @@ class LapsMainWindow(QMainWindow):
 
 	def OnContextMenu(self, lineEdit, e):
 		menu = lineEdit.createStandardContextMenu()
-		qrAction = QAction('Show as QR code', self)
+		qrAction = QtGui.QAction('Show as QR code', self)
 		qrAction.triggered.connect(lambda: self.OnClickShowAsCode(lineEdit, 'qr'))
 		menu.addAction(qrAction)
-		barcodeAction = QAction('Show as barcode', self)
+		barcodeAction = QtGui.QAction('Show as barcode', self)
 		barcodeAction.triggered.connect(lambda: self.OnClickShowAsCode(lineEdit, 'barcode'))
 		menu.addAction(barcodeAction)
 		menu.exec(e.globalPos())
 
 	def OnClickShowAsCode(self, lineEdit, code):
-		if(isinstance(lineEdit, QPlainTextEdit)):
+		if(isinstance(lineEdit, QtWidgets.QPlainTextEdit)):
 			text = lineEdit.toPlainText()
 		else:
 			text = lineEdit.text()
@@ -468,13 +470,13 @@ class LapsMainWindow(QMainWindow):
 		self.showCode(text, code)
 
 	def OnClickCopy(self, lineEdit, e):
-		if(isinstance(lineEdit, QPlainTextEdit)):
+		if(isinstance(lineEdit, QtWidgets.QPlainTextEdit)):
 			text = lineEdit.toPlainText()
 		else:
 			text = lineEdit.text()
-		cb = QApplication.clipboard()
-		cb.clear(mode=cb.Clipboard)
-		cb.setText(text, mode=cb.Clipboard)
+		cb = QtWidgets.QApplication.clipboard()
+		cb.clear(mode=QtGui.QClipboard.Mode.Clipboard)
+		cb.setText(text, mode=QtGui.QClipboard.Mode.Clipboard)
 
 	def OnClickKerberos(self, e):
 		self.cfgUseKerberos = not self.cfgUseKerberos
@@ -486,7 +488,7 @@ class LapsMainWindow(QMainWindow):
 
 	def OnOpenAboutDialog(self, e):
 		dlg = LapsAboutWindow(self)
-		dlg.exec_()
+		dlg.exec()
 
 	def OnReturnSearch(self):
 		self.OnClickSearch(None)
@@ -529,7 +531,7 @@ class LapsMainWindow(QMainWindow):
 
 		# only available on linux as there is no reasonable way to open remote connections with password on other OSes
 		if(self.PLATFORM != 'linux'):
-			self.showInfoDialog('Nope.', 'Only available on non-shitty operating systems.', icon=QMessageBox.Warning)
+			self.showInfoDialog('Nope.', 'Only available on non-shitty operating systems.', icon=QtWidgets.QMessageBox.Icon.Warning)
 			return
 
 		try:
@@ -682,7 +684,7 @@ class LapsMainWindow(QMainWindow):
 		if self.tmpDn.strip() == '': return
 
 		dlg = LapsCalendarWindow(self)
-		dlg.exec_()
+		dlg.exec()
 
 	def queryAttributes(self):
 		if(not self.reconnectForAttributeQuery()):
@@ -767,7 +769,7 @@ class LapsMainWindow(QMainWindow):
 						self.updateTextboxText(textBox, str(entry[subattribute]))
 
 	def updateTextboxText(self, textBox, text):
-		if(isinstance(textBox, QPlainTextEdit)):
+		if(isinstance(textBox, QtWidgets.QPlainTextEdit)):
 			textBox.setPlainText(text)
 		else:
 			textBox.setText(text)
@@ -787,7 +789,7 @@ class LapsMainWindow(QMainWindow):
 				return decrypted.decode('utf-8').replace("\x00", "")
 			except Exception as e:
 				if(lastDecryptionError != str(e)):
-					self.showInfoDialog('Decryption Error', str(e), icon=QMessageBox.Critical)
+					self.showInfoDialog('Decryption Error', str(e), icon=QtWidgets.QMessageBox.Icons.Critical)
 					lastDecryptionError = str(e)
 
 	def parseLapsValue(self, ldapValue):
@@ -859,7 +861,7 @@ class LapsMainWindow(QMainWindow):
 					serverArray.append(ldap3.Server(server['address'], port=port, use_ssl=server['ssl'], tls=self.tlsSettings, get_info=ldap3.ALL))
 				self.server = ldap3.ServerPool(serverArray, ldap3.FIRST, active=2, exhaust=True)
 			except Exception as e:
-				self.showInfoDialog('Error connecting to LDAP server', str(e), icon=QMessageBox.Critical)
+				self.showInfoDialog('Error connecting to LDAP server', str(e), icon=QtWidgets.QMessageBox.Icon.Critical)
 				return False
 
 		# try to bind to server via Kerberos
@@ -886,7 +888,7 @@ class LapsMainWindow(QMainWindow):
 				username = proposeUsername(self.cfgDomain) if self.cfgUsername == '' else self.cfgUsername,
 				server = str(compileServerUris(self.cfgServer))
 			)
-			if(loginWindow.exec_() != QDialog.Accepted):
+			if(loginWindow.exec() != QtWidgets.QDialog.DialogCode.Accepted):
 				return False
 			self.connection = None
 			self.cfgUsername = loginWindow.txtUsername.text()
@@ -909,7 +911,7 @@ class LapsMainWindow(QMainWindow):
 				self.statusBar.showMessage(str(e))
 				return False
 			self.cfgPassword = ''
-			self.showInfoDialog('Error binding to LDAP server', str(e), icon=QMessageBox.Critical)
+			self.showInfoDialog('Error binding to LDAP server', str(e), icon=QtWidgets.QMessageBox.Icon.Critical)
 			return False
 
 		return True # return if connection created successfully
@@ -949,7 +951,7 @@ class LapsMainWindow(QMainWindow):
 			if(self.cfgUseStartTls): self.connection.start_tls()
 			return True
 		except Exception as e:
-			self.showInfoDialog('Error binding to LDAP server', str(e), icon=QMessageBox.Critical)
+			self.showInfoDialog('Error binding to LDAP server', str(e), icon=QtWidgets.QMessageBox.Icon.Critical)
 			return False
 
 	def createLdapBase(self, conn):
@@ -1007,7 +1009,7 @@ class LapsMainWindow(QMainWindow):
 			if(isinstance(tmpLdapAttributes, list) or isinstance(tmpLdapAttributes, dict)):
 				self.cfgLdapAttributes = tmpLdapAttributes
 		except Exception as e:
-			self.showInfoDialog('Error loading settings file', str(e), icon=QMessageBox.Critical)
+			self.showInfoDialog('Error loading settings file', str(e), icon=QtWidgets.QMessageBox.Icon.Critical)
 
 	def SaveSettings(self):
 		try:
@@ -1034,23 +1036,23 @@ class LapsMainWindow(QMainWindow):
 					'use-autotype-enter': self.cfgUseAutotypeEnter,
 				}, json_file, indent=4)
 		except Exception as e:
-			self.showInfoDialog('Error saving settings file', str(e), icon=QMessageBox.Critical)
+			self.showInfoDialog('Error saving settings file', str(e), icon=QtWidgets.QMessageBox.Icon.Critical)
 
-	def showInfoDialog(self, title, text, additionalText='', icon=QMessageBox.Information):
+	def showInfoDialog(self, title, text, additionalText='', icon=QtWidgets.QMessageBox.Icon.Information):
 		print('Dialog:', title, ':', text, ':', additionalText, ':', icon)
-		msg = QMessageBox()
+		msg = QtWidgets.QMessageBox()
 		msg.setIcon(icon)
 		msg.setWindowTitle(title)
 		msg.setText(text)
 		msg.setDetailedText(additionalText)
-		msg.setStandardButtons(QMessageBox.Ok)
-		retval = msg.exec_()
+		msg.setStandardButtons(QtWidgets.QMessageBox.StandardButton.Ok)
+		retval = msg.exec()
 
 def main():
-	app = QApplication(sys.argv)
+	app = QtWidgets.QApplication(sys.argv)
 	window = LapsMainWindow()
 	window.show()
-	sys.exit(app.exec_())
+	sys.exit(app.exec())
 
 if __name__ == '__main__':
 	main()
