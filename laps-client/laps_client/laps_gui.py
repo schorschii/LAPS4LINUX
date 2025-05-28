@@ -517,6 +517,16 @@ class LapsMainWindow(QtWidgets.QMainWindow):
 	def versionTuple(self, v):
 		return tuple(map(int, (v.split('.'))))
 
+	def prepareEnvironment(self):
+		# restore library search path for subprocess (modified by PyInstaller)
+		# see https://pyinstaller.org/en/v6.9.0/common-issues-and-pitfalls.html#launching-external-programs-from-the-frozen-application
+		sub_env = os.environ.copy()
+		if('LD_LIBRARY_PATH_ORIG' in sub_env):
+			sub_env['LD_LIBRARY_PATH'] = sub_env['LD_LIBRARY_PATH_ORIG']
+		elif('LD_LIBRARY_PATH' in sub_env):
+			del sub_env['LD_LIBRARY_PATH']
+		return sub_env
+
 	def getCurrentPassword(self):
 		password = ''
 		for title, attribute in self.GetAttributesAsDict().items():
@@ -542,7 +552,7 @@ class LapsMainWindow(QtWidgets.QMainWindow):
 			# check remmina existence and version
 			if(which('remmina') is None): raise Exception('Remmina is not installed')
 			newRemmina = False
-			res = subprocess.run('remmina --version | grep org.remmina.Remmina | cut -d- -f2 | cut -d"(" -f1 | xargs', shell=True, stdout=subprocess.PIPE, stdin=subprocess.DEVNULL)
+			res = subprocess.run('remmina --version | grep org.remmina.Remmina | cut -d- -f2 | cut -d"(" -f1 | xargs', shell=True, env=self.prepareEnvironment(), stdout=subprocess.PIPE, stdin=subprocess.DEVNULL)
 			if(self.versionTuple(res.stdout.decode('utf-8')) >= self.versionTuple('1.4.25')):
 				newRemmina = True
 
@@ -627,7 +637,7 @@ class LapsMainWindow(QtWidgets.QMainWindow):
 					f.close()
 
 			time.sleep(0.2)
-			subprocess.Popen(['remmina', '-c', self.cfgPathRemmina])
+			subprocess.Popen(['remmina', '-c', self.cfgPathRemmina], env=self.prepareEnvironment())
 		except Exception as e:
 			# display error
 			self.statusBar.showMessage(str(e))

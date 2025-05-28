@@ -82,10 +82,20 @@ class LapsRunner():
 		else:
 			return self.cfgHostname.strip().upper()
 
+	def prepareEnvironment(self):
+		# restore library search path for subprocess (modified by PyInstaller)
+		# see https://pyinstaller.org/en/v6.9.0/common-issues-and-pitfalls.html#launching-external-programs-from-the-frozen-application
+		sub_env = os.environ.copy()
+		if('LD_LIBRARY_PATH_ORIG' in sub_env):
+			sub_env['LD_LIBRARY_PATH'] = sub_env['LD_LIBRARY_PATH_ORIG']
+		elif('LD_LIBRARY_PATH' in sub_env):
+			del sub_env['LD_LIBRARY_PATH']
+		return sub_env
+
 	def initKerberos(self):
 		# query new kerberos ticket
 		cmd = ['kinit', '-k', '-c', self.cfgCredCacheFile, self.getHostname()+'$']
-		res = subprocess.run(cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL, universal_newlines=True)
+		res = subprocess.run(cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL, universal_newlines=True, env=self.prepareEnvironment())
 		if res.returncode != 0: raise Exception(' '.join(cmd)+' returned non-zero exit code '+str(res.returncode))
 
 	def connectToServer(self):
@@ -171,7 +181,7 @@ class LapsRunner():
 
 		# update password in local database
 		cmd = ['usermod', '-p', newPasswordHashed, self.cfgUsername]
-		res = subprocess.run(cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL, universal_newlines=True)
+		res = subprocess.run(cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL, universal_newlines=True, env=self.prepareEnvironment())
 		if res.returncode == 0:
 			print('Password of user '+self.cfgUsername+' successfully changed in local database')
 			self.logger.debug(__title__+': Changed password of user '+self.cfgUsername+' in local database')
@@ -184,7 +194,7 @@ class LapsRunner():
 			if(not isinstance(hookArgs, list)): continue
 			replacements = {'$PASSWORD$':newPassword, '$USERNAME$':self.cfgUsername}
 			cmd = [replacements.get(n, n) for n in hookArgs]
-			res = subprocess.run(cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL, universal_newlines=True)
+			res = subprocess.run(cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL, universal_newlines=True, env=self.prepareEnvironment())
 			if res.returncode == 0:
 				print('Hook '+hookName+' successfully executed')
 				self.logger.debug(__title__+': Hook '+hookName+' successfully executed')
