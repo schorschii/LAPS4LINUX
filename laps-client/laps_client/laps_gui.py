@@ -1060,6 +1060,13 @@ class LapsMainWindow(QtWidgets.QMainWindow):
 		retval = msg.exec()
 
 def main():
+	# as long as we want to support Debian 11 and Ubuntu 22.04,
+	# we need to fall back to X11 Qt Platform Plugin because those
+	# distros have a too old libwayland on board, causing a crash
+	# "undefined symbol: wl_proxy_marshal_flags"
+	if(sys.platform == 'linux'):
+		os.environ.setdefault('QT_QPA_PLATFORM', 'xcb')
+
 	app = QtWidgets.QApplication(sys.argv)
 	window = LapsMainWindow()
 	window.show()
