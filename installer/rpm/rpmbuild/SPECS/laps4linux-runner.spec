@@ -9,6 +9,7 @@ URL:            https://github.com/schorschii/LAPS4LINUX
 Source0:        %{name}-%{version}.tar.gz
 
 Requires:       krb5-workstation krb5-devel gcc
+AutoReqProv:    no
 
 %description
 This RPM contains the script and personalized config to run the lap4linux python script
