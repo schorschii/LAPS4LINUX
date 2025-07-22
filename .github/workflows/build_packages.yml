@@ -47,7 +47,10 @@ jobs:
           venv/bin/pyinstaller laps-runner.linux.spec
 
       - name: Execute deb build
-        run: cd installer/deb/ && ./build.sh
+        run: |
+          sed -i "s/Architecture: all/Architecture: amd64/g" installer/deb/laps4linux-client/DEBIAN/control
+          sed -i "s/Architecture: all/Architecture: amd64/g" installer/deb/laps4linux-runner/DEBIAN/control
+          cd installer/deb/ && ./build.sh
 
       - name: Execute rpm build
         run: cd installer/rpm/ && ./build.sh
@@ -71,7 +74,7 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: installer/deb/laps4linux-client.deb
-          asset_name: laps4linux-client-${{ steps.get_version.outputs.version }}.deb
+          asset_name: laps4linux-client-${{ steps.get_version.outputs.version }}-amd64.deb
           asset_content_type: application/vnd.debian.binary-package
       - name: Upload deb runner artifact
         uses: actions/upload-release-asset@v1
@@ -80,7 +83,7 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: installer/deb/laps4linux-runner.deb
-          asset_name: laps4linux-runner-${{ steps.get_version.outputs.version }}.deb
+          asset_name: laps4linux-runner-${{ steps.get_version.outputs.version }}-amd64.deb
           asset_content_type: application/vnd.debian.binary-package
 
       - name: Get rpm client artifact
@@ -108,6 +111,63 @@ jobs:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ${{ env.ARTIFACT_PATH }}
           asset_name: ${{ env.ARTIFACT_NAME }}
+          asset_content_type: application/vnd.debian.binary-package
+
+  create_release_deb_arm:
+    name: Create ARM Debian package
+    runs-on: ubuntu-22.04-arm
+    needs: create_release_deb
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Install dependencies
+        run: |
+          sudo apt update && sudo apt install -y rpm rpmlint qttools5-dev-tools qtchooser libkrb5-dev python3-venv python3-pip $(cat installer/deb/laps4linux-client/DEBIAN/control | grep 'Depends' | cut -d: -f2 | sed -e 's/,/ /g' | sed -r 's/\([<>=.0-9]+\)//g') $(cat installer/deb/laps4linux-runner/DEBIAN/control | grep 'Depends' | cut -d: -f2 | sed -e 's/,/ /g' | sed -r 's/\([<>=.0-9]+\)//g')
+
+      - name: Compile LAPS-Client
+        run: |
+          cd laps-client
+          python3 -m venv venv
+          venv/bin/pip3 install --upgrade pip
+          venv/bin/pip3 install pyinstaller .[barcode]
+          venv/bin/pyinstaller laps-client.linux.spec
+
+      - name: Compile LAPS-Runner
+        run: |
+          cd laps-runner
+          python3 -m venv venv
+          venv/bin/pip3 install --upgrade pip
+          venv/bin/pip3 install pyinstaller .
+          venv/bin/pyinstaller laps-runner.linux.spec
+
+      - name: Execute deb build
+        run: |
+          sed -i "s/Architecture: all/Architecture: arm64/g" installer/deb/laps4linux-client/DEBIAN/control
+          sed -i "s/Architecture: all/Architecture: arm64/g" installer/deb/laps4linux-runner/DEBIAN/control
+          cd installer/deb/ && ./build.sh
+
+      - name: Upload deb client artifact
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          upload_url: ${{ needs.create_release_deb.outputs.upload_url }}
+          asset_path: installer/deb/laps4linux-client.deb
+          asset_name: laps4linux-client-${{ needs.create_release_deb.outputs.version }}-arm64.deb
+          asset_content_type: application/vnd.debian.binary-package
+      - name: Upload deb runner artifact
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          upload_url: ${{ needs.create_release_deb.outputs.upload_url }}
+          asset_path: installer/deb/laps4linux-runner.deb
+          asset_name: laps4linux-runner-${{ needs.create_release_deb.outputs.version }}-arm64.deb
           asset_content_type: application/vnd.debian.binary-package
 
   create_pkg:
