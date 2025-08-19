@@ -3,6 +3,9 @@ from PyInstaller.utils.hooks import collect_submodules
 
 hiddenimports = []
 hiddenimports += collect_submodules('gssapi.raw')
+hiddenimports += collect_submodules('passlib')
+hiddenimports += collect_submodules('passlib.context')
+hiddenimports += collect_submodules('passlib.handlers.sha2_crypt')
 
 block_cipher = None
 

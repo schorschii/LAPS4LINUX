@@ -6,11 +6,11 @@ from .filetime import dt_to_filetime, filetime_to_dt
 
 from pathlib import Path
 from os import path
-from crypt import crypt
 from datetime import datetime, timedelta
 from dns import resolver, rdatatype
 from shutil import which
 from pid import PidFile, PidFileAlreadyLockedError, PidFileAlreadyRunningError
+from passlib.context import CryptContext
 import time
 import struct
 import ssl
@@ -161,7 +161,7 @@ class LapsRunner():
 				self.tmpExpiryDate = filetime_to_dt( int(str(entry[self.cfgLdapAttributePasswordExpiry])) )
 			except Exception as e:
 				print('Unable to parse date '+str(self.tmpExpiry)+' - assuming that no expiration date is set.')
-				self.tmpExpiryDate = datetime.utcfromtimestamp(0)
+				self.tmpExpiryDate = datetime.fromtimestamp(0, datetime.timezone.utc)
 			return True
 
 		# no result found
@@ -173,7 +173,7 @@ class LapsRunner():
 
 		# generate new values
 		newPassword = self.generatePassword()
-		newPasswordHashed = crypt(newPassword)
+		newPasswordHashed = CryptContext(schemes=["sha512_crypt"]).hash(newPassword)
 		newExpirationDate = datetime.now() + timedelta(days=self.cfgDaysValid)
 
 		# update in directory
