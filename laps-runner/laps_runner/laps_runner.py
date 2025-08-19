@@ -161,7 +161,7 @@ class LapsRunner():
 				self.tmpExpiryDate = filetime_to_dt( int(str(entry[self.cfgLdapAttributePasswordExpiry])) )
 			except Exception as e:
 				print('Unable to parse date '+str(self.tmpExpiry)+' - assuming that no expiration date is set.')
-				self.tmpExpiryDate = datetime.utcfromtimestamp(0)
+				self.tmpExpiryDate = datetime.fromtimestamp(0, datetime.timezone.utc)
 			return True
 
 		# no result found
