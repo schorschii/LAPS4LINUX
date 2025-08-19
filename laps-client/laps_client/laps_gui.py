@@ -823,7 +823,7 @@ class LapsMainWindow(QtWidgets.QMainWindow):
 	def checkCredentialsAndConnect(self):
 		# ask for server address and domain name if not already set via config file
 		if(self.cfgDomain == None):
-			item, ok = QInputDialog.getText(self, '♕ Domain', 'Please enter your Domain name (e.g. example.com, leave empty to try auto discovery).')
+			item, ok = QtWidgets.QInputDialog.getText(self, '♕ Domain', 'Please enter your Domain name (e.g. example.com, leave empty to try auto discovery).')
 			if ok and item != None:
 				self.cfgDomain = item
 				self.server = None
@@ -846,7 +846,7 @@ class LapsMainWindow(QtWidgets.QMainWindow):
 			except Exception as e: print('DNS auto discovery failed: '+str(e))
 			# ask user to enter server names if auto discovery was not successful
 			if(len(self.cfgServer) == 0):
-				item, ok = QInputDialog.getText(self, '💻 Server Address', 'Please enter your LDAP server IP address or DNS name.')
+				item, ok = QtWidgets.QInputDialog.getText(self, '💻 Server Address', 'Please enter your LDAP server IP address or DNS name.')
 				if ok and item:
 					self.cfgServer.append({
 						'address': item,
