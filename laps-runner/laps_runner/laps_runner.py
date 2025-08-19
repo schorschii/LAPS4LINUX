@@ -6,7 +6,6 @@ from .filetime import dt_to_filetime, filetime_to_dt
 
 from pathlib import Path
 from os import path
-from crypt import crypt
 from datetime import datetime, timedelta
 from dns import resolver, rdatatype
 from shutil import which
