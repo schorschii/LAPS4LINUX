@@ -11,6 +11,7 @@ from datetime import datetime, timedelta
 from dns import resolver, rdatatype
 from shutil import which
 from pid import PidFile, PidFileAlreadyLockedError, PidFileAlreadyRunningError
+from passlib.context import CryptContext
 import time
 import struct
 import ssl
@@ -173,7 +174,7 @@ class LapsRunner():
 
 		# generate new values
 		newPassword = self.generatePassword()
-		newPasswordHashed = crypt(newPassword)
+		newPasswordHashed = CryptContext(schemes=["sha512_crypt"]).hash(newPassword)
 		newExpirationDate = datetime.now() + timedelta(days=self.cfgDaysValid)
 
 		# update in directory
