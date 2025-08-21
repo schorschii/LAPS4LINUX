@@ -6,7 +6,7 @@ from .filetime import dt_to_filetime, filetime_to_dt
 
 from pathlib import Path
 from os import path
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from dns import resolver, rdatatype
 from shutil import which
 from pid import PidFile, PidFileAlreadyLockedError, PidFileAlreadyRunningError
@@ -161,7 +161,7 @@ class LapsRunner():
 				self.tmpExpiryDate = filetime_to_dt( int(str(entry[self.cfgLdapAttributePasswordExpiry])) )
 			except Exception as e:
 				print('Unable to parse date '+str(self.tmpExpiry)+' - assuming that no expiration date is set.')
-				self.tmpExpiryDate = datetime.fromtimestamp(0, datetime.timezone.utc)
+				self.tmpExpiryDate = datetime.fromtimestamp(0, timezone.utc)
 			return True
 
 		# no result found
