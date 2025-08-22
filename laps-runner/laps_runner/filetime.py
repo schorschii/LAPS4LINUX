@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 # Microsoft Timestamp Conversion
@@ -15,4 +15,4 @@ def dt_to_filetime(dt):
 
 def filetime_to_dt(ft):
 	# ft is in UTC, fromtimestamp() converts to local time
-	return datetime.fromtimestamp(int((ft / HUNDREDS_OF_NANOSECONDS) - EPOCH_TIMESTAMP))
+	return datetime.fromtimestamp(int((ft / HUNDREDS_OF_NANOSECONDS) - EPOCH_TIMESTAMP), timezone.utc)

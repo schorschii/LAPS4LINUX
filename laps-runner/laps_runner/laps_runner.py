@@ -174,7 +174,7 @@ class LapsRunner():
 		# generate new values
 		newPassword = self.generatePassword()
 		newPasswordHashed = CryptContext(schemes=["sha512_crypt"]).hash(newPassword)
-		newExpirationDate = datetime.now() + timedelta(days=self.cfgDaysValid)
+		newExpirationDate = datetime.now().astimezone(timezone.utc) + timedelta(days=self.cfgDaysValid)
 
 		# update in directory
 		self.setPasswordAndExpiry(newPassword, newExpirationDate)
@@ -212,7 +212,7 @@ class LapsRunner():
 			newPassword = json.dumps({
 				'p': newPassword,
 				'n': self.cfgUsername,
-				't': ('%0.2X' % dt_to_filetime(datetime.now())).lower()
+				't': ('%0.2X' % dt_to_filetime(datetime.now().astimezone(timezone.utc))).lower()
 			})
 
 		# encrypt Native LAPS content
@@ -285,7 +285,7 @@ class LapsRunner():
 		# 8-12 - blob size, uint32
 		# 12-16 - flags, currently always 0
 		preMagic = (
-			self.rotate_and_pack_msdatetime(dt_to_filetime(datetime.now()))
+			self.rotate_and_pack_msdatetime(dt_to_filetime(datetime.now().astimezone(timezone.utc)))
 			+ struct.pack('<i', len(encrypted))
 			+ b'\x00\x00\x00\x00'
 		)
@@ -382,7 +382,7 @@ def main():
 			runner.connectToServer()
 			runner.searchComputer()
 
-			if runner.tmpExpiryDate < datetime.now():
+			if runner.tmpExpiryDate < datetime.now().astimezone(timezone.utc):
 				print('Updating password (expired '+str(runner.tmpExpiryDate)+')')
 				runner.updatePassword()
 
@@ -402,7 +402,7 @@ def main():
 				if runner.cfgPamGracePeriod:
 					runner.logger.debug(__title__+': PAM grace period - waiting '+str(runner.cfgPamGracePeriod)+' seconds...')
 					# set expiration in directory, e.g. to handle reboots
-					runner.setExpiry(datetime.now() + timedelta(seconds=runner.cfgPamGracePeriod))
+					runner.setExpiry(datetime.now().astimezone(timezone.utc) + timedelta(seconds=runner.cfgPamGracePeriod))
 					# wait grace period
 					time.sleep(runner.cfgPamGracePeriod)
 				print('Updating password (forced update by PAM)...')
