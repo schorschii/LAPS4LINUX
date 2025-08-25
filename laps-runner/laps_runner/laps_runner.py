@@ -180,14 +180,14 @@ class LapsRunner():
 
 		# generate new values
 		newPassword = self.generatePassword()
-		newPasswordHashed = CryptContext(schemes=["sha512_crypt"]).hash(newPassword)
+		newPasswordHashed = CryptContext(schemes=['sha512_crypt']).hash(newPassword)
 		newExpirationDate = datetime.now() + timedelta(days=self.cfgDaysValid)
 
 		# update password in local database
 		self.updateLocalPassword(self.cfgUsername, newPasswordHashed)
 
-		print('Password of user '+self.cfgUsername+' successfully changed in local database')
-		self.logger.debug(__title__+': Changed password of user '+self.cfgUsername+' in local database')
+		print('Password of user "'+self.cfgUsername+'" successfully changed in local database')
+		self.logger.debug(__title__+': Changed password of user "'+self.cfgUsername+'" in local database')
 
 		# update in directory
 		try:
@@ -197,8 +197,8 @@ class LapsRunner():
 
 			self.updateLocalPassword(self.cfgUsername, oldPasswordHashed)
 
-			print('Password of user '+self.cfgUsername+' successfully reverted in local database')
-			self.logger.debug(__title__+': Reverted password of user '+self.cfgUsername+' in local database')
+			print('Password of user "'+self.cfgUsername+'" successfully reverted in local database')
+			self.logger.debug(__title__+': Reverted password of user "'+self.cfgUsername+'" in local database')
 
 			raise
 
@@ -210,11 +210,11 @@ class LapsRunner():
 			cmd = [replacements.get(n, n) for n in hookArgs]
 			res = subprocess.run(cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL, universal_newlines=True, env=self.prepareEnvironment())
 			if res.returncode == 0:
-				print('Hook '+hookName+' successfully executed')
-				self.logger.debug(__title__+': Hook '+hookName+' successfully executed')
+				print('Hook "'+hookName+'" successfully executed')
+				self.logger.debug(__title__+': Hook "'+hookName+'" successfully executed')
 			else:
-				print('Error: hook '+hookName+' returned non-zero exit code '+str(res.returncode))
-				self.logger.debug(__title__+': '+'Error: hook '+hookName+' returned non-zero exit code '+str(res.returncode))
+				print('Error: hook "'+hookName+'" returned non-zero exit code '+str(res.returncode))
+				self.logger.debug(__title__+': '+'Error: hook "'+hookName+'" returned non-zero exit code '+str(res.returncode))
 
 	def updateLocalPassword(self, username, password_hash):
 		cmd = ['usermod', '-p', password_hash, username]
