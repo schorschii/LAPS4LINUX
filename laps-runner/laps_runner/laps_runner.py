@@ -171,22 +171,36 @@ class LapsRunner():
 		# check if usermod is in PATH
 		if(which('usermod') is None): raise Exception('usermod is not in PATH')
 
+		# cache old password hash
+		try:
+			oldPasswordHashed = getCurrentPasswordHash(self.cfgUsername)
+		except:
+			self.logger.error('Error occurred during creation of a failsafe backup. Passwords left untouched.')
+			raise
+
 		# generate new values
 		newPassword = self.generatePassword()
 		newPasswordHashed = CryptContext(schemes=["sha512_crypt"]).hash(newPassword)
 		newExpirationDate = datetime.now() + timedelta(days=self.cfgDaysValid)
 
-		# update in directory
-		self.setPasswordAndExpiry(newPassword, newExpirationDate)
-
 		# update password in local database
-		cmd = ['usermod', '-p', newPasswordHashed, self.cfgUsername]
-		res = subprocess.run(cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL, universal_newlines=True, env=self.prepareEnvironment())
-		if res.returncode == 0:
-			print('Password of user '+self.cfgUsername+' successfully changed in local database')
-			self.logger.debug(__title__+': Changed password of user '+self.cfgUsername+' in local database')
-		else:
-			raise Exception(' '.join(cmd)+' returned non-zero exit code '+str(res.returncode))
+		self.updateLocalPassword(self.cfgUsername, newPasswordHashed)
+
+		print('Password of user '+self.cfgUsername+' successfully changed in local database')
+		self.logger.debug(__title__+': Changed password of user '+self.cfgUsername+' in local database')
+
+		# update in directory
+		try:
+			self.setPasswordAndExpiry(newPassword, newExpirationDate)
+		except:
+			logging.error('Error occurred when attempting to change password on directory server.')
+
+			self.updateLocalPassword(self.cfgUsername, oldPasswordHashed)
+
+			print('Password of user '+self.cfgUsername+' successfully reverted in local database')
+			self.logger.debug(__title__+': Reverted password of user '+self.cfgUsername+' in local database')
+
+			raise
 
 		# execute hooks
 		if(not isinstance(self.cfgHooks, dict)): return
@@ -201,6 +215,12 @@ class LapsRunner():
 			else:
 				print('Error: hook '+hookName+' returned non-zero exit code '+str(res.returncode))
 				self.logger.debug(__title__+': '+'Error: hook '+hookName+' returned non-zero exit code '+str(res.returncode))
+
+	def updateLocalPassword(self, username, password_hash):
+		cmd = ['usermod', '-p', password_hash, username]
+		res = subprocess.run(cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL, universal_newlines=True, env=self.prepareEnvironment())
+		if res.returncode != 0:
+			raise Exception(' '.join(cmd)+' returned non-zero exit code '+str(res.returncode))
 
 	def setPasswordAndExpiry(self, newPassword, newExpirationDate):
 		# check if dn of target computer object is known
@@ -362,6 +382,20 @@ class LapsRunner():
 			self.cfgPamServices = cfgJson.get('pam-services', self.cfgPamServices)
 			self.cfgPamGracePeriod = int(cfgJson.get('pam-grace-period', self.cfgPamGracePeriod))
 			self.cfgHooks = cfgJson.get('hooks', self.cfgHooks)
+
+
+def getCurrentPasswordHash(user_name, shadow_file='/etc/shadow'):
+	with open(shadow_file, 'r') as file:
+		for line in file:
+			if line.startswith(f'{user_name}:'):
+				parts = line.strip().split(':')
+				if len(parts) > 1:
+					root_hash = parts[1]
+					return root_hash
+				else:
+					raise ValueError('Malformed entry for root user.')
+	raise ValueError(f'User {user_name} not found in shadow file.')
+
 
 def main():
 	runner = LapsRunner()
