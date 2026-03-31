@@ -1,7 +1,7 @@
 # LAPS4LINUX 💘 OpenLDAP
-This document describes how LAPS(4LINUX) can be used with OpenLDAP. This guide assumes that you already have an OpenLDAP server set up and running. A short overview / cookbook for a basic OpenLDAP setup can be found in my [OpenLDAP Cheat Sheet](https://gist.github.com/schorschii/0dcd19d4abb74bd3d52de12bff91657b).
+This document describes how LAPS(4LINUX) can be used with OpenLDAP. This guide assumes that you already have an OpenLDAP server set up and running. A short overview / cheat sheet for a basic OpenLDAP setup can be found in my [OpenLDAP Cookbook](https://github.com/schorschii/Guides4Linux/blob/main/OpenLDAP%20Cookbook.md).
 
-All LAPS4LINUX features can be used with OpenLDAP **except password encryption**, since the encryption relies on proprietary RPC calls only available on Windows Server.
+All LAPS4LINUX features can be used with OpenLDAP **except password encryption**, since the encryption relies on proprietary RPC calls which are only available on Windows Server.
 
 ## 1. Kerberos Setup
 The LAPS runner uses Kerberos for authentication, therefore you need to set up Kerberos authentication for your OpenLDAP. [This guide](https://ubuntu.com/server/docs/how-to-set-up-kerberos-with-openldap-backend) from Ubuntu describes how to configure a Kerberos server (can be run on the same server as known from Microsoft AD) by using your OpenLDAP as backend.
