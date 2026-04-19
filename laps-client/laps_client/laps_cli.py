@@ -534,7 +534,7 @@ def main():
 	print('')
 	print('Welcome to interactive shell. Please enter a computer name to search for.')
 	print('Parameter --help provides more information.')
-	while 1:
+	while True:
 		# get keyboard input
 		cmd = input('>> ')
 		if(cmd == 'exit' or cmd == 'quit'):
