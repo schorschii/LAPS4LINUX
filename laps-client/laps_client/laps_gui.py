@@ -611,7 +611,6 @@ class LapsMainWindow(QtWidgets.QMainWindow):
 							.replace('$$username$$', self.cfgConnectUsername)
 							.replace('$$password$$', password)
 					)
-					f.close()
 
 			elif(protocol == 'SSH'):
 				# default config
@@ -634,7 +633,6 @@ class LapsMainWindow(QtWidgets.QMainWindow):
 							.replace('$$username$$', self.cfgConnectUsername)
 							.replace('$$password$$', password)
 					)
-					f.close()
 
 			time.sleep(0.2)
 			subprocess.Popen(['remmina', '-c', self.cfgPathRemmina], env=self.prepareEnvironment())
