@@ -145,8 +145,6 @@ class LapsCli():
 
 	def queryAttributes(self):
 		if(not self.reconnectForAttributeQuery()):
-			self.btnSetExpirationTime.setEnabled(False)
-			self.btnSearchComputer.setEnabled(True)
 			return
 
 		# start LDAP search
@@ -233,7 +231,7 @@ class LapsCli():
 				return decrypted.decode('utf-8').replace("\x00", "")
 			except Exception as e:
 				if(lastDecryptionError != str(e)):
-					self.showInfoDialog('Decryption Error', str(e), icon=QMessageBox.Critical)
+					eprint('Decryption Error:', str(e))
 					lastDecryptionError = str(e)
 
 	def parseLapsValue(self, ldapValue):
@@ -293,7 +291,8 @@ class LapsCli():
 					}
 					print('DNS auto discovery found server: '+json.dumps(serverEntry))
 					self.cfgServer.append(serverEntry)
-			except Exception as e: print('DNS auto discovery failed: '+str(e))
+			except Exception as e:
+				eprint('DNS auto discovery failed:', str(e))
 			# ask user to enter server names if auto discovery was not successful
 			if(len(self.cfgServer) == 0):
 				item = input('💻 LDAP Server Address: ')
@@ -322,7 +321,7 @@ class LapsCli():
 					serverArray.append(ldap3.Server(server['address'], port=port, use_ssl=server['ssl'], tls=self.tlsSettings, get_info=ldap3.ALL))
 				self.server = ldap3.ServerPool(serverArray, ldap3.FIRST, active=2, exhaust=True)
 			except Exception as e:
-				print('Error connecting to LDAP server: ', str(e))
+				eprint('Error connecting to LDAP server:', str(e))
 				return False
 
 		# try to bind to server via Kerberos
@@ -338,7 +337,7 @@ class LapsCli():
 				if(self.cfgUseStartTls): self.connection.start_tls()
 				return True # return if connection created successfully
 		except Exception as e:
-			print('Unable to connect via Kerberos: '+str(e))
+			eprint('Unable to connect via Kerberos:', str(e))
 			if(isinstance(e, ldap3.core.exceptions.LDAPServerPoolExhaustedError)):
 				raise Exception('Unable to connect to any of your LDAP servers')
 
@@ -375,7 +374,7 @@ class LapsCli():
 				raise Exception('Unable to connect to any of your LDAP servers')
 			self.cfgUsername = ''
 			self.cfgPassword = ''
-			print('Error binding to LDAP server: ', str(e))
+			eprint('Error binding to LDAP server:', str(e))
 			return False
 
 		return True
@@ -402,7 +401,7 @@ class LapsCli():
 				if(self.cfgUseStartTls): self.connection.start_tls()
 				return True
 		except Exception as e:
-			print('Unable to connect via Kerberos: '+str(e))
+			eprint('Unable to connect via Kerberos:', str(e))
 		# try to bind to server with username and password
 		try:
 			self.connection = ldap3.Connection(server,
@@ -415,7 +414,7 @@ class LapsCli():
 			if(self.cfgUseStartTls): self.connection.start_tls()
 			return True
 		except Exception as e:
-			print('Error binding to LDAP server: '+str(e))
+			eprint('Error binding to LDAP server:', str(e))
 			return False
 
 	def createLdapBase(self, conn):
@@ -471,7 +470,7 @@ class LapsCli():
 			if(isinstance(tmpLdapAttributes, list) or isinstance(tmpLdapAttributes, dict)):
 				self.cfgLdapAttributes = tmpLdapAttributes
 		except Exception as e:
-			print('Error loading settings file: '+str(e))
+			eprint('Error loading settings file:', str(e))
 
 	def SaveSettings(self):
 		try:
@@ -496,7 +495,7 @@ class LapsCli():
 					'ldap-attributes': self.cfgLdapAttributes
 				}, json_file, indent=4)
 		except Exception as e:
-			print('Error saving settings file: '+str(e))
+			eprint('Error saving settings file:', str(e))
 
 def eprint(*args, **kwargs):
 	print(*args, file=sys.stderr, **kwargs)
