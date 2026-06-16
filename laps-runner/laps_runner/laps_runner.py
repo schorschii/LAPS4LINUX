@@ -220,7 +220,7 @@ class LapsRunner():
 		cmd = ['usermod', '-p', password_hash, username]
 		res = subprocess.run(cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL, universal_newlines=True, env=self.prepareEnvironment())
 		if res.returncode != 0:
-			raise Exception(' '.join(cmd)+' returned non-zero exit code '+str(res.returncode))
+			raise Exception('usermod returned non-zero exit code '+str(res.returncode))
 
 	def setPasswordAndExpiry(self, newPassword, newExpirationDate):
 		# check if dn of target computer object is known
