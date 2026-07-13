@@ -896,7 +896,7 @@ class LapsMainWindow(QtWidgets.QMainWindow):
 		if(self.cfgUsername == '' or self.cfgPassword == ''):
 			loginWindow = LapsLoginWindow(
 				username = proposeUsername(self.cfgDomain) if self.cfgUsername == '' else self.cfgUsername,
-				server = "\n".join(compileServerUris(self.cfgServer))
+				server = str(compileServerUris(self.cfgServer))
 			)
 			if(loginWindow.exec() != QtWidgets.QDialog.DialogCode.Accepted):
 				return False
