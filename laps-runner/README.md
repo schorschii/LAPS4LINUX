@@ -45,6 +45,8 @@ Please configure the runner by editing the configuration file `/etc/laps-runner.
   - `password-length`: Determines how long a generated password should be.
   - `password-alphabet`: Determines the chars to use for password generation. Can be either just a character string or a list of character strings. In the latter case, the password contains at least one character from each string.
   - `hooks`: Dict of commands to execute after password change. The dict key should be a string (displayed in log output) and the value should be an array of parameters. Parameter `$PASSWORD$` and `$USERNAME$` will be replaced accordingly. Have a look at the sample config file for example hooks. You can use this feature to align other passwords with the local admin/root, e.g. your BIOS/UEFI password or the password of local database admin accounts.
+  - `pam-services`: Array of PAM service names to trigger password rotation.
+  - `pam-grace-period`: Grace period in seconds after logout until password rotation.
 
 Important:
 - If `native-laps` is `false`, you should set `ldap-attribute-password` to `ms-Mcs-AdmPwd` and `ldap-attribute-password-expiry` to `ms-Mcs-AdmPwdExpirationTime`.
