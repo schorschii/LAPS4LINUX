@@ -88,7 +88,7 @@ class LapsLoginWindow(QtWidgets.QDialog):
 
 		self.layout = QtWidgets.QGridLayout(self)
 
-		self.lblDescription = QtWidgets.QLabel('Please enter the credentials which should be used to connect to:\n' + server)
+		self.lblDescription = QtWidgets.QLabel('Please enter the credentials which should be used to connect to:\n'+server)
 		self.layout.addWidget(self.lblDescription, 0, 0, 1, 2)
 
 		self.lblUsername = QtWidgets.QLabel('Username')
@@ -869,7 +869,7 @@ class LapsMainWindow(QtWidgets.QMainWindow):
 						port = server['gc-port']
 						self.gcModeOn = True
 					serverArray.append(ldap3.Server(server['address'], port=port, use_ssl=server['ssl'], tls=tlsSettings, get_info=ldap3.ALL))
-				self.server = ldap3.ServerPool(serverArray, ldap3.FIRST, active=True, exhaust=True)
+				self.server = ldap3.ServerPool(serverArray, ldap3.FIRST, active=2, exhaust=True)
 			except Exception as e:
 				self.showInfoDialog('Error connecting to LDAP server', str(e), icon=QtWidgets.QMessageBox.Icon.Critical)
 				return False

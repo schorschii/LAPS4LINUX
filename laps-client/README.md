@@ -81,19 +81,16 @@ The client (both GUI and CLI) supports Kerberos authentication which means you c
 If you did not automatically received a Kerberos ticket on login, you can manually aquire a ticket via `kinit <username>@<DOMAIN.TLD>`.
 
 ### SSL Connection
-By default, LAPS4LINUX (client and runner) will connect via LDAP on port 389 to your Active Directory and upgrade the 
-connection via STARTTLS to an encrypted one. This means that your server needs a valid certificate and STARTTLS enabled. 
-This behavior can be disabled by modifying the `use-starttls` in the config file, but it is strongly discouraged to disable 
-it since sensitive data is transferred.
+By default, LAPS4LINUX (client and runner) will connect via LDAP on port 389 to your Active Directory and upgrade the connection via STARTTLS to an encrypted one. This means that your server needs a valid certificate and STARTTLS enabled. This behavior can be disabled by modifying the `use-starttls` in the config file, but it is strongly discouraged to disable  it since sensitive data is transferred.
 
 If you use Kerberos authentication, your connection will be encrypted with SASL GSSAPI.
 
-If your AD is its own TLS root CA, you need to provide the CA root certificate in the config file (`ca-certs-file`) or 
-install it into your system's trusted root CA store. If you do not want to validate the server certificate, you can set 
-`tls-validate` to `0` (not recommended).
+If your AD is its own TLS root CA, you need to provide the CA root certificate in the config file (`ca-certs-file`) or install it into your system's trusted root CA store. If you do not want to validate the server certificate, you can set `tls-validate` to `0` (not recommended).
 
 Typically, your AD manager will provide the TLS root CA files, however if they don't, and you trust the connection:
-`echo "Q" | openssl s_client -connect ad.domain.tld:389 -starttls ldap -showcerts 2>/dev/null | awk '/-----BEGIN CERTIFICATE-----/,/-----END CERTIFICATE-----/' > my-ca.pem`
+```
+echo "Q" | openssl s_client -connect ad.domain.tld:389 -starttls ldap -showcerts 2>/dev/null | awk '/-----BEGIN CERTIFICATE-----/,/-----END CERTIFICATE-----/' > my-ca.pem
+```
 
 Alternatively, you can use LDAPS by editing the config file (`~/.config/laps-client/settings.json`): modify the server entry and set `ssl` to `true` and `port` to `636` (see example below). You can also configure multiple static LDAP servers in the config file.
 

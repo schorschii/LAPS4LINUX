@@ -54,6 +54,7 @@ class LapsCli():
 	cfgLdapAttributePasswordExpiry  = ['msLAPS-PasswordExpirationTime', 'ms-Mcs-AdmPwdExpirationTime']
 	cfgLdapAttributePasswordHistory = 'msLAPS-EncryptedPasswordHistory'
 
+
 	def __init__(self, useKerberos=None):
 		self.LoadSettings()
 		if(useKerberos != None): self.cfgUseKerberos = useKerberos
@@ -319,7 +320,7 @@ class LapsCli():
 						port = server['gc-port']
 						self.gcModeOn = True
 					serverArray.append(ldap3.Server(server['address'], port=port, use_ssl=server['ssl'], tls=tlsSettings, get_info=ldap3.ALL))
-				self.server = ldap3.ServerPool(serverArray, ldap3.FIRST, active=True, exhaust=True)
+				self.server = ldap3.ServerPool(serverArray, ldap3.FIRST, active=2, exhaust=True)
 			except Exception as e:
 				eprint('Error connecting to LDAP server:', str(e))
 				return False
