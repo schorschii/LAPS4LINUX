@@ -38,6 +38,8 @@ class LapsRunner():
 	cfgCredCacheFile    = '/tmp/laps.temp'
 	cfgClientKeytabFile = '/etc/krb5.keytab'
 	cfgUseStartTls      = True
+	cfgCACertsFile	    = None
+	cfgTlsValidate      = ssl.CERT_REQUIRED
 	cfgServer           = []
 	cfgDomain           = ''
 	cfgLdapQuery        = '(&(objectClass=computer)(cn=%1))'
@@ -105,7 +107,8 @@ class LapsRunner():
 
 		# set TLS options
 		tlssettings = ldap3.Tls(
-			validate=ssl.CERT_REQUIRED
+			validate=self.cfgTlsValidate,
+			ca_certs_file=self.cfgCACertsFile
 		)
 
 		# connect to server with kerberos ticket
@@ -126,11 +129,13 @@ class LapsRunner():
 			for server in self.cfgServer:
 				serverArray.append(ldap3.Server(server['address'], port=server['port'], use_ssl=server['ssl'], tls=tlssettings, get_info=ldap3.ALL))
 		self.server = ldap3.ServerPool(serverArray, ldap3.ROUND_ROBIN, active=2, exhaust=True)
-		if(self.cfgUseStartTls):
-			self.connection = ldap3.Connection(self.server, version=3, authentication=ldap3.SASL, sasl_mechanism=ldap3.GSSAPI, auto_bind=ldap3.AUTO_BIND_TLS_BEFORE_BIND)
-			self.connection.start_tls()
-		else:
-			self.connection = ldap3.Connection(self.server, version=3, authentication=ldap3.SASL, sasl_mechanism=ldap3.GSSAPI, auto_bind=True)
+		self.connection = ldap3.Connection(
+			self.server,
+			version=3,
+			authentication=ldap3.SASL,
+			sasl_mechanism=ldap3.GSSAPI,
+			auto_bind=(ldap3.AUTO_BIND_TLS_BEFORE_BIND if self.cfgUseStartTls else True)
+		)
 		print('Connected as: '+self.GetConnectionString())
 
 	def searchComputer(self):
@@ -364,6 +369,8 @@ class LapsRunner():
 					'port': int(server['port']),
 					'ssl': bool(server['ssl'])
 				})
+			self.cfgCACertsFile = cfgJson.get('ca-certs-file', self.cfgCACertsFile)
+			self.cfgTlsValidate = cfgJson.get('tls-validate', self.cfgTlsValidate)
 			self.cfgDomain = cfgJson.get('domain', self.cfgDomain)
 			self.cfgLdapQuery = cfgJson.get('ldap-query', self.cfgLdapQuery)
 			self.cfgCredCacheFile = cfgJson.get('cred-cache-file', self.cfgCredCacheFile)

@@ -246,8 +246,6 @@ class LapsMainWindow(QtWidgets.QMainWindow):
 	PRODUCT_ICON      = 'laps.png'
 	PRODUCT_ICON_PATH = '/usr/share/pixmaps'
 
-	tlsSettings = ldap3.Tls(validate=ssl.CERT_REQUIRED)
-
 	gcModeOn    = False
 	server      = None
 	connection  = None
@@ -279,6 +277,8 @@ class LapsMainWindow(QtWidgets.QMainWindow):
 	cfgLdapAttributePassword        = ['msLAPS-EncryptedPassword', 'msLAPS-Password', 'ms-Mcs-AdmPwd']
 	cfgLdapAttributePasswordExpiry  = ['msLAPS-PasswordExpirationTime', 'ms-Mcs-AdmPwdExpirationTime']
 	cfgLdapAttributePasswordHistory = 'msLAPS-EncryptedPasswordHistory'
+	cfgCACertsFile = None
+	cfgTlsValidate = ssl.CERT_REQUIRED
 	cfgConnectUsername              = 'administrator'
 	cfgUseAutotypeEnter             = False
 	refLdapAttributesTextBoxes      = {}
@@ -839,7 +839,7 @@ class LapsMainWindow(QtWidgets.QMainWindow):
 						'ssl': (srv.port == 636),
 						'auto-discovered': True
 					}
-					print('DNS auto discovery found server: '+json.dumps(serverEntry))
+					print('DNS auto discovery found server: '+json.dumps(serverEntry, indent=2))
 					self.cfgServer.append(serverEntry)
 			except Exception as e: print('DNS auto discovery failed: '+str(e))
 			# ask user to enter server names if auto discovery was not successful
@@ -861,13 +861,14 @@ class LapsMainWindow(QtWidgets.QMainWindow):
 		# establish server connection
 		if(self.server == None):
 			try:
+				tlsSettings = ldap3.Tls(validate=self.cfgTlsValidate, ca_certs_file=self.cfgCACertsFile)
 				serverArray = []
 				for server in self.cfgServer:
 					port = server['port']
 					if('gc-port' in server):
 						port = server['gc-port']
 						self.gcModeOn = True
-					serverArray.append(ldap3.Server(server['address'], port=port, use_ssl=server['ssl'], tls=self.tlsSettings, get_info=ldap3.ALL))
+					serverArray.append(ldap3.Server(server['address'], port=port, use_ssl=server['ssl'], tls=tlsSettings, get_info=ldap3.ALL))
 				self.server = ldap3.ServerPool(serverArray, ldap3.FIRST, active=2, exhaust=True)
 			except Exception as e:
 				self.showInfoDialog('Error connecting to LDAP server', str(e), icon=QtWidgets.QMessageBox.Icon.Critical)
@@ -931,9 +932,10 @@ class LapsMainWindow(QtWidgets.QMainWindow):
 		# global catalog was used for search (this buddy is read only and not all attributes are replicated into it)
 		# -> that's why we need to establish a new connection to the "normal" LDAP port
 		# LDAP referrals to the correct (sub)domain controller is handled automatically by ldap3
+		tlsSettings = ldap3.Tls(validate=self.cfgTlsValidate, ca_certs_file=self.cfgCACertsFile)
 		serverArray = []
 		for server in self.cfgServer:
-			serverArray.append(ldap3.Server(server['address'], port=server['port'], use_ssl=server['ssl'], tls=self.tlsSettings, get_info=ldap3.ALL))
+			serverArray.append(ldap3.Server(server['address'], port=server['port'], use_ssl=server['ssl'], tls=tlsSettings, get_info=ldap3.ALL))
 		server = ldap3.ServerPool(serverArray, ldap3.FIRST, active=True, exhaust=True)
 		# try to bind to server via Kerberos
 		try:
@@ -1009,6 +1011,8 @@ class LapsMainWindow(QtWidgets.QMainWindow):
 			self.cfgDomain = cfgJson.get('domain', self.cfgDomain)
 			self.cfgLdapQuery = cfgJson.get('ldap-query', self.cfgLdapQuery)
 			self.cfgUsername = cfgJson.get('username', self.cfgUsername)
+			self.cfgCACertsFile = cfgJson.get('ca-certs-file', self.cfgCACertsFile)
+			self.cfgTlsValidate = cfgJson.get('tls-validate', self.cfgTlsValidate)
 			self.cfgLdapAttributePassword = cfgJson.get('ldap-attribute-password', self.cfgLdapAttributePassword)
 			self.cfgLdapAttributePasswordExpiry = cfgJson.get('ldap-attribute-password-expiry', self.cfgLdapAttributePasswordExpiry)
 			self.cfgLdapAttributePasswordHistory = cfgJson.get('ldap-attribute-password-history', self.cfgLdapAttributePasswordHistory)
@@ -1037,6 +1041,8 @@ class LapsMainWindow(QtWidgets.QMainWindow):
 					'domain': self.cfgDomain,
 					'ldap-query': self.cfgLdapQuery,
 					'username': self.cfgUsername,
+					'ca-certs-file': self.cfgCACertsFile,
+					'tls-validate': self.cfgTlsValidate,
 					'ldap-attribute-password': self.cfgLdapAttributePassword,
 					'ldap-attribute-password-expiry': self.cfgLdapAttributePasswordExpiry,
 					'ldap-attribute-password-history': self.cfgLdapAttributePasswordHistory,

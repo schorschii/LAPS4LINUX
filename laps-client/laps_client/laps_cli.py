@@ -27,8 +27,6 @@ class LapsCli():
 	connection  = None
 	tmpDn       = ''
 
-	tlsSettings = ldap3.Tls(validate=ssl.CERT_REQUIRED)
-
 	cfgPresetDirWindows = sys.path[0]
 	cfgPresetDirUnix    = '/etc'
 	cfgPresetFile       = 'laps-client.json'
@@ -44,6 +42,8 @@ class LapsCli():
 	cfgLdapQuery   = '(&(objectClass=computer)(cn=%1))'
 	cfgUsername    = ''
 	cfgPassword    = ''
+	cfgCACertsFile = None
+	cfgTlsValidate = ssl.CERT_REQUIRED
 	cfgLdapAttributes = {
 		'Operating System':               'operatingSystem',
 		'Administrator Password':         ['msLAPS-EncryptedPassword', 'msLAPS-Password', 'ms-Mcs-AdmPwd'],
@@ -289,7 +289,7 @@ class LapsCli():
 						'ssl': (srv.port == 636),
 						'auto-discovered': True
 					}
-					print('DNS auto discovery found server: '+json.dumps(serverEntry))
+					print('DNS auto discovery found server: '+json.dumps(serverEntry, indent=2))
 					self.cfgServer.append(serverEntry)
 			except Exception as e:
 				eprint('DNS auto discovery failed:', str(e))
@@ -312,13 +312,14 @@ class LapsCli():
 		# establish server connection
 		if(self.server == None):
 			try:
+				tlsSettings = ldap3.Tls(validate=self.cfgTlsValidate, ca_certs_file=self.cfgCACertsFile)
 				serverArray = []
 				for server in self.cfgServer:
 					port = server['port']
 					if('gc-port' in server):
 						port = server['gc-port']
 						self.gcModeOn = True
-					serverArray.append(ldap3.Server(server['address'], port=port, use_ssl=server['ssl'], tls=self.tlsSettings, get_info=ldap3.ALL))
+					serverArray.append(ldap3.Server(server['address'], port=port, use_ssl=server['ssl'], tls=tlsSettings, get_info=ldap3.ALL))
 				self.server = ldap3.ServerPool(serverArray, ldap3.FIRST, active=2, exhaust=True)
 			except Exception as e:
 				eprint('Error connecting to LDAP server:', str(e))
@@ -385,9 +386,10 @@ class LapsCli():
 		# global catalog was used for search (this buddy is read only and not all attributes are replicated into it)
 		# -> that's why we need to establish a new connection to the "normal" LDAP port
 		# LDAP referrals to the correct (sub)domain controller is handled automatically by ldap3
+		tlsSettings = ldap3.Tls(validate=self.cfgTlsValidate, ca_certs_file=self.cfgCACertsFile)
 		serverArray = []
 		for server in self.cfgServer:
-			serverArray.append(ldap3.Server(server['address'], port=server['port'], use_ssl=server['ssl'], tls=self.tlsSettings, get_info=ldap3.ALL))
+			serverArray.append(ldap3.Server(server['address'], port=server['port'], use_ssl=server['ssl'], tls=tlsSettings, get_info=ldap3.ALL))
 		server = ldap3.ServerPool(serverArray, ldap3.FIRST, active=True, exhaust=True)
 		# try to bind to server via Kerberos
 		try:
@@ -463,6 +465,8 @@ class LapsCli():
 			self.cfgDomain = cfgJson.get('domain', self.cfgDomain)
 			self.cfgLdapQuery = cfgJson.get('ldap-query', self.cfgLdapQuery)
 			self.cfgUsername = cfgJson.get('username', self.cfgUsername)
+			self.cfgCACertsFile = cfgJson.get('ca-certs-file', self.cfgCACertsFile)
+			self.cfgTlsValidate = cfgJson.get('tls-validate', self.cfgTlsValidate)
 			self.cfgLdapAttributePassword = cfgJson.get('ldap-attribute-password', self.cfgLdapAttributePassword)
 			self.cfgLdapAttributePasswordExpiry = cfgJson.get('ldap-attribute-password-expiry', self.cfgLdapAttributePasswordExpiry)
 			self.cfgLdapAttributePasswordHistory = cfgJson.get('ldap-attribute-password-history', self.cfgLdapAttributePasswordHistory)
@@ -489,6 +493,8 @@ class LapsCli():
 					'domain': self.cfgDomain,
 					'ldap-query': self.cfgLdapQuery,
 					'username': self.cfgUsername,
+					'ca-certs-file': self.cfgCACertsFile,
+					'tls-validate': self.cfgTlsValidate,
 					'ldap-attribute-password': self.cfgLdapAttributePassword,
 					'ldap-attribute-password-expiry': self.cfgLdapAttributePasswordExpiry,
 					'ldap-attribute-password-history': self.cfgLdapAttributePasswordHistory,

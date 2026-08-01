@@ -31,6 +31,8 @@ Please configure the runner by editing the configuration file `/etc/laps-runner.
   - `domain`: Your domain name (e.g. `example.com`). Leave empty for DNS auto discovery.
   - `ldap-query`: LDAP filter for getting the computer object, default: `(&(objectClass=computer)(cn=%1))`. `%1` is replaced by the computer name.
   - `use-starttls`: Boolean which indicates wheter to use StartTLS on unencrypted LDAP connections (requires valid server certificate).
+  - `ca-certs-file`: Path to a CA root certificates file (for TLS validation).
+  - `tls-validate`: TLS validation mode (default: 2 (`ssl.CERT_REQUIRED`). Valid options are 1 (`ssl.CERT_OPTIONAL`) or 0 (`ssl.CERT_NONE`) ).
   - `client-keytab-file`: The Kerberos keytab file with the machine secret.
   - `cred-cache-file`: File where to store the kerberos ticket for the LDAP connection.
   - `native-laps`: `true` to store the password as JSON string in the LDAP attribute, as specified by Microsoft (Native LAPS). `false` to store it as plaintext (Legacy LAPS).
