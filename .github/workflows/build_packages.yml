@@ -172,7 +172,7 @@ jobs:
 
   create_pkg:
     name: Create macOS package
-    runs-on: macos-13
+    runs-on: macos-14-xlarge
     needs: create_release_deb
 
     permissions:
@@ -233,7 +233,7 @@ jobs:
         with:
           upload_url: ${{ needs.create_release_deb.outputs.upload_url }}
           asset_path: installer/macos/laps4linux-client.dmg
-          asset_name: laps4linux-client-${{ needs.create_release_deb.outputs.version }}.dmg
+          asset_name: laps4linux-client-${{ needs.create_release_deb.outputs.version }}-arm.dmg
           asset_content_type: application/octet-stream
 
   create_exe:
