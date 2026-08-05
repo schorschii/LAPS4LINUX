@@ -198,7 +198,7 @@ class LapsRunner():
 		try:
 			self.setPasswordAndExpiry(newPassword, newExpirationDate)
 		except:
-			logging.error('Error occurred when attempting to change password on directory server.')
+			self.logger.error('Error occurred when attempting to change password on directory server.')
 
 			self.updateLocalPassword(self.cfgUsername, oldPasswordHashed)
 
