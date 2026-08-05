@@ -7,9 +7,38 @@ on:
       - 'v*'
 
 jobs:
+  tests:
+    name: Run tests
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Install dependencies
+        run: |
+          sudo apt update && sudo apt install -y libkrb5-dev python3-venv python3-pip
+
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Test LAPS-Runner
+        run: |
+          cd laps-runner
+          python3 -m venv venv --system-site-packages
+          venv/bin/pip3 install --upgrade pip
+          venv/bin/pip3 install .
+          venv/bin/python3 -m unittest tests/*.py
+
+      - name: Test LAPS-Client
+        run: |
+          cd laps-client
+          python3 -m venv venv --system-site-packages
+          venv/bin/pip3 install --upgrade pip
+          venv/bin/pip3 install pyinstaller .[barcode]
+          venv/bin/python3 -m unittest tests/*.py
+
   create_release_deb: # used to identify the output in other jobs
     name: Create Release with Debian and RPM package
     runs-on: ubuntu-22.04
+    needs: tests
 
     permissions:
       contents: write

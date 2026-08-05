@@ -1,6 +1,6 @@
 .DS_Store
 
-test*.py
+.*.py
 
 __pycache__/
 
