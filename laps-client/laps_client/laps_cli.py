@@ -55,9 +55,10 @@ class LapsCli():
 	cfgLdapAttributePasswordHistory = 'msLAPS-EncryptedPasswordHistory'
 
 
-	def __init__(self, useKerberos=None):
+	def __init__(self, useKerberos=None, qrCode=True):
 		self.LoadSettings()
 		if(useKerberos != None): self.cfgUseKerberos = useKerberos
+		self.cfgQrCode = qrCode
 
 		# show version information
 		print(__title__ + ' CLI Client' +' v'+__version__)
@@ -185,6 +186,9 @@ class LapsCli():
 						else:
 							self.pushResult(str(title), password+'  ('+username+')  ('+timestamp+')')
 
+						if(self.cfgQrCode):
+							self.showCode(password)
+
 					# if this is the encrypted password history attribute -> try to parse Native LAPS format
 					elif(len(value) > 0 and
 						(str(attribute) == self.cfgLdapAttributePasswordHistory or (isinstance(self.cfgLdapAttributePasswordHistory, list) and str(attribute) in self.cfgLdapAttributePasswordHistory))
@@ -268,6 +272,15 @@ class LapsCli():
 			for attributeValue in self.dctResult:
 				print((attributeValue['title']+':').ljust(maxTitleLen+2)+str(attributeValue['value']))
 		self.dctResult = []
+
+	def showCode(self, code):
+		try:
+			import qrcode
+			qr = qrcode.QRCode()
+			qr.add_data(code)
+			qr.print_ascii()
+		except Exception as e:
+			eprint('Unable to print QR code:', e)
 
 	def checkCredentialsAndConnect(self):
 		# ask for server address and domain name if not already set via config file
@@ -511,10 +524,14 @@ def main():
 	parser.add_argument('search', default=None, nargs='*', metavar='COMPUTERNAME', help='Search for this computer(s) and display the admin password. Use "*" to display all computer passwords found in LDAP directory. If you omit this parameter, the interactive shell will be started, which allows you to do multiple queries in one session.')
 	parser.add_argument('-e', '--set-expiry', default=None, metavar='"2020-01-01 00:00:00"', help='Set new expiration date for computer found by search string.')
 	parser.add_argument('-K', '--no-kerberos', action='store_true', help='Do not use Kerberos authentication if available, ask for LDAP simple bind credentials.')
+	parser.add_argument('-QR', '--no-qr', action='store_true', help='Do not use Kerberos authentication if available, ask for LDAP simple bind credentials.')
 	parser.add_argument('--version', action='store_true', help='Print version and exit.')
 	args = parser.parse_args()
 
-	cli = LapsCli(False if args.no_kerberos==True else None)
+	cli = LapsCli(
+		False if args.no_kerberos==True else None,
+		not args.no_qr
+	)
 
 	if(args.version):
 		return

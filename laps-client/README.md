@@ -10,9 +10,19 @@ With a right click on the attribute text boxes, you can display the content as b
 ```
 $ laps-cli notebook01 --set-expiry "2021-04-28 01:01:01"
 LAPS4LINUX CLI v1.0.0
-https://github.com/schorschii/laps4linux
 
-🔑 Password for »ldapuser«:
+    █▀▀▀▀▀█ ▀ ██  █▀▀▀▀▀█    
+    █ ███ █ ▄█▀▀▄ █ ███ █    
+    █ ▀▀▀ █ █▀ ▀█ █ ▀▀▀ █    
+    ▀▀▀▀▀▀▀ █▄█ ▀ ▀▀▀▀▀▀▀    
+    █   ▀ ▀██ ▄ ███▀▀▀▄▄▀    
+    ▀▄▀ ▀ ▀▀█▀█▄█▀ ▄ ▀▀█     
+    ▀  ▀▀ ▀ ▄▄ █▄ ▀▀▀ ▄█▀    
+    █▀▀▀▀▀█ ▀ █▀ ▄█▀▀▄▀▀▄    
+    █ ███ █ ▀█▀ ███▄▄▀▄▄█    
+    █ ▀▀▀ █  ▀ ▄█▀ █▀▄       
+    ▀▀▀▀▀▀▀ ▀▀ ▀  ▀  ▀  ▀    
+
 Connection:     ldapserver01: user@example.com
 Found:          CN=NOTEBOOK01,OU=NOTEBOOKS,DC=example,DC=com
 Password:       abc123
@@ -23,9 +33,7 @@ Expiration Date Changed Successfully.
 
 $ laps-cli "*"
 LAPS4LINUX CLI v1.0.0
-https://github.com/schorschii/laps4linux
 
-🔑 Password for »ldapuser«:
 Connection: ldapserver01: user@example.com
 NOTEBOOK01$ : abc123
 NOTEBOOK02$ : 123abc
