@@ -62,7 +62,6 @@ class LapsCli():
 
 		# show version information
 		print(__title__ + ' CLI Client' +' v'+__version__)
-		print('If you like LAPS4LINUX please do not forget to give the repository a star ('+__website__+').')
 
 	def GetAttributesAsDict(self):
 		finalDict = {}
@@ -82,10 +81,9 @@ class LapsCli():
 			computerName = ldap3.utils.conv.escape_filter_chars(computerName)
 
 		# ask for credentials and print connection details
-		print('')
 		if not self.checkCredentialsAndConnect(): return
 		if not searchAllComputers:
-			self.pushResult('Connection', self.GetConnectionString()) #TODO
+			self.pushResult('Connection', self.GetConnectionString())
 
 		try:
 			# start LDAP search
@@ -99,7 +97,7 @@ class LapsCli():
 				count += 1
 				self.pushResult('Found', entry.entry_dn)
 				self.tmpDn = entry.entry_dn
-				self.queryAttributes()
+				self.queryAttributes(searchAllComputers)
 				self.printResult(searchAllComputers)
 
 			# no result found
@@ -114,6 +112,8 @@ class LapsCli():
 			# reset connection
 			self.server = None
 			self.connection = None
+		self.dctResult = []
+		print()
 
 	def SetExpiry(self, newExpirationDateTimeString):
 		# check if dn of target computer object is known
@@ -144,7 +144,7 @@ class LapsCli():
 			self.server = None
 			self.connection = None
 
-	def queryAttributes(self):
+	def queryAttributes(self, suppressQrCode=True):
 		if(not self.reconnectForAttributeQuery()):
 			return
 
@@ -186,7 +186,7 @@ class LapsCli():
 						else:
 							self.pushResult(str(title), password+'  ('+username+')  ('+timestamp+')')
 
-						if(self.cfgQrCode):
+						if(self.cfgQrCode and not suppressQrCode):
 							self.showCode(password)
 
 					# if this is the encrypted password history attribute -> try to parse Native LAPS format
@@ -446,7 +446,7 @@ class LapsCli():
 			raise Exception('Could not create LDAP search base: reading defaultNamingContext from LDAP directory failed and no domain given.')
 
 	def GetConnectionString(self):
-		return str(self.connection.server.host)+' '+str(self.connection.user)
+		return str(self.connection.server.host)+' User:'+str(self.connection.user)
 
 	def LoadSettings(self):
 		if(not path.isdir(self.cfgDir)):
@@ -520,7 +520,10 @@ def eprint(*args, **kwargs):
 	print(*args, file=sys.stderr, **kwargs)
 
 def main():
-	parser = argparse.ArgumentParser(epilog=__copyright__+' '+__author__+' - https://georg-sieber.de')
+	parser = argparse.ArgumentParser(
+		description='If you like LAPS4LINUX please do not forget to give the repository a star ('+__website__+').',
+		epilog=__copyright__+' '+__author__+' - https://georg-sieber.de'
+	)
 	parser.add_argument('search', default=None, nargs='*', metavar='COMPUTERNAME', help='Search for this computer(s) and display the admin password. Use "*" to display all computer passwords found in LDAP directory. If you omit this parameter, the interactive shell will be started, which allows you to do multiple queries in one session.')
 	parser.add_argument('-e', '--set-expiry', default=None, metavar='"2020-01-01 00:00:00"', help='Set new expiration date for computer found by search string.')
 	parser.add_argument('-K', '--no-kerberos', action='store_true', help='Do not use Kerberos authentication if available, ask for LDAP simple bind credentials.')
