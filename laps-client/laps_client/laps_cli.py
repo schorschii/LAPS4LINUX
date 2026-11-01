@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from .__init__ import __title__, __version__, __website__, __author__, __copyright__
-from .__init__ import propose_username
+from __future__ import annotations
+
+from . import __title__, __version__, __website__, __author__, __copyright__
+from . import propose_username
 from .filetime import dt_to_filetime, filetime_to_dt
 
 from pathlib import Path
+from typing import Any
 from os import path, makedirs, rename
 from datetime import datetime
 from dns import resolver, rdatatype
@@ -22,40 +25,40 @@ import os
 class LapsCli():
 	PLATFORM          = sys.platform.lower()
 
-	gc_mode_on = False
-	server     = None
-	connection = None
-	tmp_dn     = ''
+	gc_mode_on                          = False
+	server: ldap3.ServerPool | None     = None
+	connection: ldap3.Connection | None = None
+	tmp_dn                              = ''
 
 	cfg_preset_dir_windows = sys.path[0]
 	cfg_preset_dir_unix    = '/etc'
 	cfg_preset_file        = 'laps-client.json'
 	cfg_preset_path        = (cfg_preset_dir_windows if sys.platform.lower()=='win32' else cfg_preset_dir_unix)+'/'+cfg_preset_file 
 
-	cfg_dir             = str(Path.home())+'/.config/laps-client'
-	cfg_path            = cfg_dir+'/settings.json'
-	cfg_version         = 0
-	cfg_use_kerberos    = True
-	cfg_use_start_tls   = True
-	cfg_server          = []
-	cfg_domain          = None
-	cfg_ldap_query      = '(&(objectClass=computer)(cn=%1))'
-	cfg_username        = ''
-	cfg_password        = ''
-	cfg_ca_certs_file   = None
-	cfg_tls_validate    = ssl.CERT_REQUIRED
-	cfg_ldap_attributes = {
+	cfg_dir                          = str(Path.home())+'/.config/laps-client'
+	cfg_path                         = cfg_dir+'/settings.json'
+	cfg_version                      = 0
+	cfg_use_kerberos                 = True
+	cfg_use_start_tls                = True
+	cfg_server: list[dict[str, Any]] = []
+	cfg_domain: str | None           = None
+	cfg_ldap_query                   = '(&(objectClass=computer)(cn=%1))'
+	cfg_username                     = ''
+	cfg_password                     = ''
+	cfg_ca_certs_file: str | None    = None
+	cfg_tls_validate                 = ssl.CERT_REQUIRED
+	cfg_ldap_attributes: dict[str, str | list[str]] | list[str] = {
 		'Operating System':               'operatingSystem',
 		'Administrator Password':         ['msLAPS-EncryptedPassword', 'msLAPS-Password', 'ms-Mcs-AdmPwd'],
 		'Password Expiration Date':       ['msLAPS-PasswordExpirationTime', 'ms-Mcs-AdmPwdExpirationTime'],
 		'Administrator Password History': 'msLAPS-EncryptedPasswordHistory'
 	}
-	cfg_ldap_attribute_password         = ['msLAPS-EncryptedPassword', 'msLAPS-Password', 'ms-Mcs-AdmPwd']
-	cfg_ldap_attribute_password_expiry  = ['msLAPS-PasswordExpirationTime', 'ms-Mcs-AdmPwdExpirationTime']
-	cfg_ldap_attribute_password_history = 'msLAPS-EncryptedPasswordHistory'
+	cfg_ldap_attribute_password: str | list[str]         = ['msLAPS-EncryptedPassword', 'msLAPS-Password', 'ms-Mcs-AdmPwd']
+	cfg_ldap_attribute_password_expiry: str | list[str]  = ['msLAPS-PasswordExpirationTime', 'ms-Mcs-AdmPwdExpirationTime']
+	cfg_ldap_attribute_password_history: str | list[str] = 'msLAPS-EncryptedPasswordHistory'
 
 
-	def __init__(self, use_kerberos=None, qr_code=True):
+	def __init__(self, use_kerberos: bool | None = None, qr_code: bool = True) -> None:
 		self.load_settings()
 		if(use_kerberos != None): self.cfg_use_kerberos = use_kerberos
 		self.cfg_qr_code = qr_code
@@ -63,8 +66,9 @@ class LapsCli():
 		# show version information
 		print(__title__ + ' CLI Client' +' v'+__version__)
 
-	def get_attributes_as_dict(self):
-		final_dict = {}
+	def get_attributes_as_dict(self) -> dict[str, str | list[str]]:
+		final_dict: dict[str, str | list[str]] = {}
+		attribute: str | list[str]
 		if(isinstance(self.cfg_ldap_attributes, list)):
 			for attribute in self.cfg_ldap_attributes:
 				final_dict[attribute] = attribute
@@ -73,7 +77,7 @@ class LapsCli():
 				final_dict[str(title)] = attribute
 		return final_dict
 
-	def search_computer(self, computer_name):
+	def search_computer(self, computer_name: str) -> None:
 		# check and escape input
 		if computer_name.strip() == '': return
 		search_all_computers = (computer_name=='*')
@@ -86,6 +90,7 @@ class LapsCli():
 			self.push_result('Connection', self.get_connection_string())
 
 		try:
+			if self.connection == None: raise Exception('No connection established')
 			# start LDAP search
 			count = 0
 			self.connection.search(
@@ -115,11 +120,12 @@ class LapsCli():
 		self.dct_result = []
 		print()
 
-	def set_expiry(self, new_expiration_date_time_string):
+	def set_expiry(self, new_expiration_date_time_string: str) -> None:
 		# check if dn of target computer object is known
 		if self.tmp_dn.strip() == '': return
 
 		try:
+			if self.connection == None: raise Exception('No connection established')
 			if isinstance(self.cfg_ldap_attribute_password_expiry, list) and len(self.cfg_ldap_attribute_password_expiry) > 0:
 				attribute_expiration_date = self.cfg_ldap_attribute_password_expiry[0]
 			else:
@@ -144,9 +150,10 @@ class LapsCli():
 			self.server = None
 			self.connection = None
 
-	def query_attributes(self, suppress_qr_code=True):
+	def query_attributes(self, suppress_qr_code: bool = True) -> None:
 		if(not self.reconnect_for_attribute_query()):
 			return
+		if self.connection == None: raise Exception('No connection established')
 
 		# start LDAP search
 		self.connection.search(
@@ -221,7 +228,8 @@ class LapsCli():
 						self.push_result(str(title), str(entry[subattribute]))
 
 	dpapi_cache = dpapi_ng.KeyCache()
-	def decrypt_password(self, blob):
+	def decrypt_password(self, blob: bytes) -> str | None:
+		if self.server == None: raise Exception('No connection established')
 		last_decryption_error = ''
 		for server in self.server.servers:
 			try:
@@ -237,8 +245,9 @@ class LapsCli():
 				if(last_decryption_error != str(e)):
 					eprint('Decryption Error:', str(e))
 					last_decryption_error = str(e)
+		return None
 
-	def parse_laps_value(self, ldap_value):
+	def parse_laps_value(self, ldap_value: str | bytes) -> tuple[Any, Any, str | None]:
 		try:
 			# if type is bytes -> try to decrypt
 			if(type(ldap_value) is bytes):
@@ -255,11 +264,11 @@ class LapsCli():
 			# directly use LDAP value as password (Legacy LAPS)
 			return ldap_value, None, None
 
-	dct_result = []
-	def push_result(self, attribute, value):
+	dct_result: list[dict[str, Any]] = []
+	def push_result(self, attribute: str, value: Any) -> None:
 		self.dct_result.append({'title':attribute, 'value':value})
 
-	def print_result(self, tsv=False):
+	def print_result(self, tsv: bool = False) -> None:
 		if(tsv):
 			display_values = []
 			for attribute_value in self.dct_result:
@@ -273,7 +282,7 @@ class LapsCli():
 				print((attribute_value['title']+':').ljust(max_title_len+2)+str(attribute_value['value']))
 		self.dct_result = []
 
-	def show_code(self, code):
+	def show_code(self, code: str) -> None:
 		try:
 			import qrcode
 			qr = qrcode.QRCode()
@@ -282,7 +291,7 @@ class LapsCli():
 		except Exception as e:
 			eprint('Unable to print QR code:', e)
 
-	def check_credentials_and_connect(self):
+	def check_credentials_and_connect(self) -> bool:
 		# ask for server address and domain name if not already set via config file
 		if(self.cfg_domain == None):
 			item = input('♕ Domain Name (e.g. example.com, leave empty to try auto discovery): ')
@@ -291,10 +300,10 @@ class LapsCli():
 				self.server = None
 		if(len(self.cfg_server) == 0):
 			# query domain controllers by dns lookup
-			search_domain = '.'+self.cfg_domain if self.cfg_domain!='' else ''
+			search_domain = '.'+self.cfg_domain if self.cfg_domain else ''
 			try:
 				res = resolver.resolve(qname='_ldap._tcp'+search_domain, rdtype=rdatatype.SRV, lifetime=10, search=True)
-				for srv in res.rrset:
+				for srv in res:
 					server_entry = {
 						# strip the trailing . from the dns resolver for certificate verification reasons.
 						'address': str(srv.target).rstrip('.'),
@@ -326,7 +335,7 @@ class LapsCli():
 		if(self.server == None):
 			try:
 				tls_settings = ldap3.Tls(validate=self.cfg_tls_validate, ca_certs_file=self.cfg_ca_certs_file)
-				server_array = []
+				server_array: list[ldap3.Server] = []
 				for server in self.cfg_server:
 					port = server['port']
 					if('gc-port' in server):
@@ -393,14 +402,14 @@ class LapsCli():
 
 		return True
 
-	def reconnect_for_attribute_query(self):
+	def reconnect_for_attribute_query(self) -> bool:
 		# global catalog was not used for search - we can use the same connection for attribute query
 		if(not self.gc_mode_on): return True
 		# global catalog was used for search (this buddy is read only and not all attributes are replicated into it)
 		# -> that's why we need to establish a new connection to the "normal" LDAP port
 		# LDAP referrals to the correct (sub)domain controller is handled automatically by ldap3
 		tls_settings = ldap3.Tls(validate=self.cfg_tls_validate, ca_certs_file=self.cfg_ca_certs_file)
-		server_array = []
+		server_array: list[ldap3.Server] = []
 		for server in self.cfg_server:
 			server_array.append(ldap3.Server(server['address'], port=server['port'], use_ssl=server['ssl'], tls=tls_settings, get_info=ldap3.ALL))
 		server = ldap3.ServerPool(server_array, ldap3.FIRST, active=True, exhaust=True)
@@ -432,7 +441,7 @@ class LapsCli():
 			eprint('Error binding to LDAP server:', str(e))
 			return False
 
-	def create_ldap_base(self, conn):
+	def create_ldap_base(self, conn: ldap3.Connection) -> str:
 		if self.cfg_domain:
 			# convert FQDN "example.com" to LDAP path notation "DC=example,DC=com"
 			search_base = ''
@@ -445,18 +454,19 @@ class LapsCli():
 		else:
 			raise Exception('Could not create LDAP search base: reading defaultNamingContext from LDAP directory failed and no domain given.')
 
-	def get_connection_string(self):
+	def get_connection_string(self) -> str:
+		if self.connection == None: raise Exception('No connection established')
 		return str(self.connection.server.host)+' User:'+str(self.connection.user)
 
-	def load_settings(self):
+	def load_settings(self) -> None:
 		if(not path.isdir(self.cfg_dir)):
 			makedirs(self.cfg_dir, exist_ok=True)
 		# protect temporary .remmina file by limiting access to our config folder
 		if(self.PLATFORM == 'linux'): os.chmod(self.cfg_dir, 0o700)
 
-		dct_preset_settings = {}
-		dct_user_settings = {}
-		cfg_json = {}
+		dct_preset_settings: dict[str, Any] = {}
+		dct_user_settings: dict[str, Any] = {}
+		cfg_json: dict[str, Any] = {}
 
 		try:
 			if(path.isfile(self.cfg_path)):
@@ -489,10 +499,10 @@ class LapsCli():
 		except Exception as e:
 			eprint('Error loading settings file:', str(e))
 
-	def save_settings(self):
+	def save_settings(self) -> None:
 		try:
 			# do not save auto-discovered servers to config - should be queried every time
-			save_servers = []
+			save_servers: list[dict[str, Any]] = []
 			for server in self.cfg_server:
 				if not server.get('auto-discovered', False):
 					save_servers.append(server)
@@ -516,10 +526,10 @@ class LapsCli():
 		except Exception as e:
 			eprint('Error saving settings file:', str(e))
 
-def eprint(*args, **kwargs):
+def eprint(*args: Any, **kwargs: Any) -> None:
 	print(*args, file=sys.stderr, **kwargs)
 
-def main():
+def main() -> None:
 	parser = argparse.ArgumentParser(
 		description='If you like LAPS4LINUX please do not forget to give the repository a star ('+__website__+').',
 		epilog=__copyright__+' '+__author__+' - https://georg-sieber.de'

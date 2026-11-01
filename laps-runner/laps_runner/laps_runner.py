@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from .__init__ import __title__, __version__, __website__, __author__, __copyright__
+from __future__ import annotations
+
+from . import __title__, __version__, __website__, __author__, __copyright__
 from .filetime import dt_to_filetime, filetime_to_dt
 
 from pathlib import Path
+from typing import Any
 from os import path
 from datetime import datetime, timedelta, timezone
 from dns import resolver, rdatatype
@@ -29,45 +32,45 @@ import traceback
 
 
 class LapsRunner():
-	server     = None
-	connection = None
-	logger     = None
+	server: ldap3.ServerPool | None     = None
+	connection: ldap3.Connection | None = None
+	logger: logging.Logger
 
 	cfg_path             = '/etc/laps-runner.json'
 
-	cfg_cred_cache_file    = '/tmp/laps.temp'
-	cfg_client_keytab_file = '/etc/krb5.keytab'
-	cfg_use_start_tls      = True
-	cfg_ca_certs_file      = None
-	cfg_tls_validate       = ssl.CERT_REQUIRED
-	cfg_server             = []
-	cfg_domain             = ''
-	cfg_ldap_query         = '(&(objectClass=computer)(cn=%1))'
+	cfg_cred_cache_file              = '/tmp/laps.temp'
+	cfg_client_keytab_file           = '/etc/krb5.keytab'
+	cfg_use_start_tls                = True
+	cfg_ca_certs_file: str | None    = None
+	cfg_tls_validate                 = ssl.CERT_REQUIRED
+	cfg_server: list[dict[str, Any]] = []
+	cfg_domain                       = ''
+	cfg_ldap_query                   = '(&(objectClass=computer)(cn=%1))'
 
-	cfg_hostname   = None
-	cfg_username   = 'root' # the user, whose password should be changed
-	cfg_days_valid = 30 # how long the new password should be valid
-	cfg_length     = 15 # the generated password length
-	cfg_alphabet   = string.ascii_letters+string.digits+string.punctuation # allowed chars for the new password
+	cfg_hostname: str | None      = None
+	cfg_username                  = 'root' # the user, whose password should be changed
+	cfg_days_valid                = 30 # how long the new password should be valid
+	cfg_length                    = 15 # the generated password length
+	cfg_alphabet: str | list[str] = string.ascii_letters+string.digits+string.punctuation # allowed chars for the new password
 
 	cfg_use_native_laps_attribute_schema = True
-	cfg_security_descriptor              = None
+	cfg_security_descriptor: str | None  = None
 	cfg_history_size                     = 0 # disabled by default because encryption is disabled by default
 	cfg_ldap_attribute_password          = 'msLAPS-Password'
 	cfg_ldap_attribute_password_history  = 'msLAPS-EncryptedPasswordHistory'
 	cfg_ldap_attribute_password_expiry   = 'msLAPS-PasswordExpirationTime'
 
-	cfg_pam_services     = [] # PAM_SERVICE filter
+	cfg_pam_services: list[str] = [] # PAM_SERVICE filter
 	cfg_pam_grace_period = 0  # timeout in seconds to wait before changing the password after logout
 
-	cfg_hooks      = {}
+	cfg_hooks: object = {} # validated at use, comes straight from the config file
 
-	tmp_dn          = ''
-	tmp_password    = None
-	tmp_expiry      = ''
-	tmp_expiry_date = ''
+	tmp_dn                           = ''
+	tmp_password: str | bytes | None = None
+	tmp_expiry                       = ''
+	tmp_expiry_date: datetime        = datetime.fromtimestamp(0, timezone.utc)
 
-	def __init__(self, *args, **kwargs):
+	def __init__(self, *args: Any, **kwargs: Any) -> None:
 		# init logger
 		self.logger = logging.getLogger('LAPS4LINUX')
 		self.logger.setLevel(logging.DEBUG)
@@ -78,13 +81,13 @@ class LapsRunner():
 		print('If you like LAPS4LINUX please do not forget to give the repository a star ('+__website__+').')
 		print('')
 
-	def get_hostname(self):
+	def get_hostname(self) -> str:
 		if(self.cfg_hostname == None or self.cfg_hostname.strip() == ''):
 			return socket.gethostname().split('.', 1)[0].upper()
 		else:
 			return self.cfg_hostname.strip().upper()
 
-	def prepare_environment(self):
+	def prepare_environment(self) -> dict[str, str]:
 		# restore library search path for subprocess (modified by PyInstaller)
 		# see https://pyinstaller.org/en/v6.9.0/common-issues-and-pitfalls.html#launching-external-programs-from-the-frozen-application
 		sub_env = os.environ.copy()
@@ -94,13 +97,13 @@ class LapsRunner():
 			del sub_env['LD_LIBRARY_PATH']
 		return sub_env
 
-	def init_kerberos(self):
+	def init_kerberos(self) -> None:
 		# query new kerberos ticket
 		cmd = ['kinit', '-k', '-c', self.cfg_cred_cache_file, self.get_hostname()+'$']
 		res = subprocess.run(cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL, universal_newlines=True, env=self.prepare_environment())
 		if res.returncode != 0: raise Exception(' '.join(cmd)+' returned non-zero exit code '+str(res.returncode))
 
-	def connect_to_server(self):
+	def connect_to_server(self) -> None:
 		# set environment variables for kerberos operations
 		os.environ['KRB5CCNAME'] = self.cfg_cred_cache_file
 		os.environ['KRB5_CLIENT_KTNAME'] = self.cfg_client_keytab_file
@@ -112,13 +115,13 @@ class LapsRunner():
 		)
 
 		# connect to server with kerberos ticket
-		server_array = []
+		server_array: list[ldap3.Server] = []
 		if(len(self.cfg_server) == 0):
 			# query domain controllers by dns lookup
 			search_domain = '.'+self.cfg_domain if self.cfg_domain!='' else ''
 			res = resolver.resolve(qname=f'_ldap._tcp'+search_domain, rdtype=rdatatype.SRV, lifetime=10, search=True)
 
-			for srv in res.rrset:
+			for srv in res:
 				if(self.cfg_use_start_tls):
 					# strip the trailing . from the dns resolver for certificate verification reasons.
 					server_array.append(ldap3.Server(host=str(srv.target).rstrip('.'), port=389, tls=tlssettings, get_info=ldap3.ALL))
@@ -138,7 +141,7 @@ class LapsRunner():
 		)
 		print('Connected as: '+self.get_connection_string())
 
-	def search_computer(self):
+	def search_computer(self) -> bool:
 		if self.connection == None: raise Exception('No connection established')
 
 		# check and escape input
@@ -172,7 +175,7 @@ class LapsRunner():
 		# no result found
 		raise Exception('No Result For: '+computer_name)
 
-	def update_password(self):
+	def update_password(self) -> None:
 		# check if usermod is in PATH
 		if(which('usermod') is None): raise Exception('usermod is not in PATH')
 
@@ -212,7 +215,7 @@ class LapsRunner():
 		for hook_name, hook_args in self.cfg_hooks.items():
 			if(not isinstance(hook_args, list)): continue
 			replacements = {'$PASSWORD$':new_password, '$USERNAME$':self.cfg_username}
-			cmd = [replacements.get(n, n) for n in hook_args]
+			cmd: list[str] = [replacements[n] if n in replacements else n for n in hook_args]
 			res = subprocess.run(cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL, universal_newlines=True, env=self.prepare_environment())
 			if res.returncode == 0:
 				print('Hook "'+hook_name+'" successfully executed')
@@ -221,15 +224,16 @@ class LapsRunner():
 				print('Error: hook "'+hook_name+'" returned non-zero exit code '+str(res.returncode))
 				self.logger.debug(__title__+': '+'Error: hook "'+hook_name+'" returned non-zero exit code '+str(res.returncode))
 
-	def update_local_password(self, username, password_hash):
+	def update_local_password(self, username: str, password_hash: str) -> None:
 		cmd = ['usermod', '-p', password_hash, username]
 		res = subprocess.run(cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL, universal_newlines=True, env=self.prepare_environment())
 		if res.returncode != 0:
 			raise Exception('usermod returned non-zero exit code '+str(res.returncode))
 
-	def set_password_and_expiry(self, new_password, new_expiration_date):
+	def set_password_and_expiry(self, new_password: str, new_expiration_date: datetime) -> None:
 		# check if dn of target computer object is known
 		if self.tmp_dn.strip() == '': return
+		if self.connection == None: raise Exception('No connection established')
 
 		# apply Native LAPS JSON format
 		if(self.cfg_use_native_laps_attribute_schema):
@@ -241,14 +245,15 @@ class LapsRunner():
 			})
 
 		# encrypt Native LAPS content
+		ldap_password: str | bytes = new_password
 		if(self.cfg_use_native_laps_attribute_schema and self.cfg_security_descriptor):
 			print('Encrypting password to SID', self.cfg_security_descriptor)
-			new_password = self.encrypt_password(new_password)
+			ldap_password = self.encrypt_password(new_password)
 
 		# start query
 		self.connection.modify(self.tmp_dn, {
 			self.cfg_ldap_attribute_password_expiry: [(ldap3.MODIFY_REPLACE, [str( dt_to_filetime(new_expiration_date) )])],
-			self.cfg_ldap_attribute_password: [(ldap3.MODIFY_REPLACE, [new_password])],
+			self.cfg_ldap_attribute_password: [(ldap3.MODIFY_REPLACE, [ldap_password])],
 		})
 		if self.connection.result['result'] == 0:
 			print('Password and expiration date changed successfully in LDAP directory (attribute '+self.cfg_ldap_attribute_password+', new expiration '+str(new_expiration_date)+')')
@@ -285,14 +290,16 @@ class LapsRunner():
 						raise Exception('Could not remove old password from history in LDAP directory: '+str(self.connection.result))
 				break
 
-	def set_expiry(self, new_expiration_date):
+	def set_expiry(self, new_expiration_date: datetime) -> None:
+		if self.connection == None: raise Exception('No connection established')
 		self.connection.modify(self.tmp_dn, {
 			self.cfg_ldap_attribute_password_expiry: [(ldap3.MODIFY_REPLACE, [str( dt_to_filetime(new_expiration_date) )])],
 		})
 
-	def encrypt_password(self, content):
+	def encrypt_password(self, content: str) -> bytes:
 		import dpapi_ng
-		encrypted = None
+		if self.server == None: raise Exception('No connection established')
+		encrypted: bytes | None = None
 		for server in self.server.servers:
 			try: # one server could be unavailable, simply try the next one
 				encrypted = dpapi_ng.ncrypt_protect_secret(
@@ -317,14 +324,14 @@ class LapsRunner():
 
 		return pre_magic + encrypted
 
-	def rotate_and_pack_msdatetime(self, dt):
+	def rotate_and_pack_msdatetime(self, dt: int) -> bytes:
 		# MS AD uses upper time and lower time. The current ordering is backwards, which this fixes
 		# this can be seen by using dnSpy to trace attempts to get-lapsadpassword, which fail on validating the datetime.
 		left,right = struct.unpack('<LL',struct.pack('Q',dt))
 		packed = struct.pack('<LL',right,left)
 		return packed
 
-	def generate_password(self):
+	def generate_password(self) -> str:
 		if isinstance(self.cfg_alphabet, str):
 			return ''.join(secrets.choice(self.cfg_alphabet) for i in range(self.cfg_length))
 		else:
@@ -341,7 +348,7 @@ class LapsRunner():
 			password = ''.join(password_list)
 			return password
 
-	def create_ldap_base(self, conn):
+	def create_ldap_base(self, conn: ldap3.Connection) -> str:
 		if self.cfg_domain:
 			# convert FQDN "example.com" to LDAP path notation "DC=example,DC=com"
 			search_base = ''
@@ -354,10 +361,11 @@ class LapsRunner():
 		else:
 			raise Exception('Could not create LDAP search base: reading defaultNamingContext from LDAP directory failed and no domain given.')
 
-	def get_connection_string(self):
+	def get_connection_string(self) -> str:
+		if self.connection == None: raise Exception('No connection established')
 		return str(self.connection.server.host)+' '+str(self.connection.user)
 
-	def load_settings(self):
+	def load_settings(self) -> None:
 		if(not path.isfile(self.cfg_path)):
 			raise Exception('Config file not found: '+self.cfg_path)
 		with open(self.cfg_path) as f:
@@ -391,7 +399,7 @@ class LapsRunner():
 			self.cfg_hooks = cfg_json.get('hooks', self.cfg_hooks)
 
 
-def get_current_password_hash(user_name, shadow_file='/etc/shadow'):
+def get_current_password_hash(user_name: str, shadow_file: str = '/etc/shadow') -> str:
 	with open(shadow_file, 'r') as file:
 		for line in file:
 			if line.startswith(f'{user_name}:'):
@@ -404,7 +412,7 @@ def get_current_password_hash(user_name, shadow_file='/etc/shadow'):
 	raise ValueError(f'User {user_name} not found in shadow file.')
 
 
-def main():
+def main() -> None:
 	runner = LapsRunner()
 
 	# parse arguments

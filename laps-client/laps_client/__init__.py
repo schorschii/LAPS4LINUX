@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 __title__     = 'LAPS4LINUX'
 __author__    = 'Georg Sieber'
 __copyright__ = '© 2021-2026'
@@ -11,6 +13,7 @@ __all__ = [__author__, __license__, __version__]
 
 import os, sys
 import getpass
+from typing import Any
 
 
 if 'darwin' in sys.platform.lower():
@@ -22,11 +25,11 @@ if 'darwin' in sys.platform.lower():
 	#import ssl; print(ssl.get_default_verify_paths())
 	#ctx = ssl.SSLContext(); ctx.load_default_certs(); print(ctx.get_ca_certs())
 
-def propose_username(domain):
+def propose_username(domain: str | None) -> str:
 	return getpass.getuser() + ('@'+domain if domain else '')
 
-def compile_server_uris(servers):
-	uris = []
+def compile_server_uris(servers: list[dict[str, Any]]) -> list[str]:
+	uris: list[str] = []
 	for server in servers:
 		uris.append(
 			('ldaps://' if server['ssl'] else 'ldap://')
