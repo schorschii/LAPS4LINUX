@@ -361,7 +361,7 @@ class TestGetConnectionString(unittest.TestCase):
         self.cli.connection = MagicMock()
         self.cli.connection.server.host = 'dc.example.com'
         self.cli.connection.user = 'EXAMPLE\\admin'
-        self.assertEqual(self.cli.GetConnectionString(), 'dc.example.com EXAMPLE\\admin')
+        self.assertEqual(self.cli.GetConnectionString(), 'dc.example.com User:EXAMPLE\\admin')
 
 
 # ---------------------------------------------------------------------------
