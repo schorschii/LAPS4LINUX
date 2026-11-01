@@ -22,10 +22,10 @@ if 'darwin' in sys.platform.lower():
 	#import ssl; print(ssl.get_default_verify_paths())
 	#ctx = ssl.SSLContext(); ctx.load_default_certs(); print(ctx.get_ca_certs())
 
-def proposeUsername(domain):
+def propose_username(domain):
 	return getpass.getuser() + ('@'+domain if domain else '')
 
-def compileServerUris(servers):
+def compile_server_uris(servers):
 	uris = []
 	for server in servers:
 		uris.append(

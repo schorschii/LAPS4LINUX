@@ -13,7 +13,7 @@ from unittest.mock import MagicMock, patch
 
 # Suppress stdout noise and syslog during import
 with patch('builtins.print'), patch('logging.handlers.SysLogHandler.__init__', return_value=None):
-    from laps_runner.laps_runner import LapsRunner, getCurrentPasswordHash
+    from laps_runner.laps_runner import LapsRunner, get_current_password_hash
 
 
 def make_runner():
@@ -29,85 +29,85 @@ class TestGetHostname(unittest.TestCase):
 
     def test_returns_socket_hostname_when_none(self):
         runner = make_runner()
-        runner.cfgHostname = None
+        runner.cfg_hostname = None
         with patch('socket.gethostname', return_value='myhost.example.com'):
-            self.assertEqual(runner.getHostname(), 'MYHOST')
+            self.assertEqual(runner.get_hostname(), 'MYHOST')
 
     def test_returns_socket_hostname_when_empty(self):
         runner = make_runner()
-        runner.cfgHostname = '   '
+        runner.cfg_hostname = '   '
         with patch('socket.gethostname', return_value='myhost.example.com'):
-            self.assertEqual(runner.getHostname(), 'MYHOST')
+            self.assertEqual(runner.get_hostname(), 'MYHOST')
 
     def test_returns_configured_hostname_uppercased(self):
         runner = make_runner()
-        runner.cfgHostname = 'workstation01'
-        self.assertEqual(runner.getHostname(), 'WORKSTATION01')
+        runner.cfg_hostname = 'workstation01'
+        self.assertEqual(runner.get_hostname(), 'WORKSTATION01')
 
     def test_strips_whitespace_from_configured_hostname(self):
         runner = make_runner()
-        runner.cfgHostname = '  PC01  '
-        self.assertEqual(runner.getHostname(), 'PC01')
+        runner.cfg_hostname = '  PC01  '
+        self.assertEqual(runner.get_hostname(), 'PC01')
 
 
 class TestCreateLdapBase(unittest.TestCase):
 
     def test_simple_domain(self):
         runner = make_runner()
-        runner.cfgDomain = 'example.com'
+        runner.cfg_domain = 'example.com'
         conn = MagicMock()
-        self.assertEqual(runner.createLdapBase(conn), 'DC=example,DC=com')
+        self.assertEqual(runner.create_ldap_base(conn), 'DC=example,DC=com')
 
     def test_subdomain(self):
         runner = make_runner()
-        runner.cfgDomain = 'sub.example.com'
+        runner.cfg_domain = 'sub.example.com'
         conn = MagicMock()
-        self.assertEqual(runner.createLdapBase(conn), 'DC=sub,DC=example,DC=com')
+        self.assertEqual(runner.create_ldap_base(conn), 'DC=sub,DC=example,DC=com')
 
     def test_single_label_domain(self):
         runner = make_runner()
-        runner.cfgDomain = 'local'
+        runner.cfg_domain = 'local'
         conn = MagicMock()
-        self.assertEqual(runner.createLdapBase(conn), 'DC=local')
+        self.assertEqual(runner.create_ldap_base(conn), 'DC=local')
 
     def test_falls_back_to_default_naming_context(self):
         runner = make_runner()
-        runner.cfgDomain = ''
+        runner.cfg_domain = ''
         conn = MagicMock()
         conn.server.info.raw = {'defaultNamingContext': [b'DC=corp,DC=local']}
-        self.assertEqual(runner.createLdapBase(conn), 'DC=corp,DC=local')
+        self.assertEqual(runner.create_ldap_base(conn), 'DC=corp,DC=local')
 
     def test_raises_when_no_domain_and_no_naming_context(self):
         runner = make_runner()
-        runner.cfgDomain = ''
+        runner.cfg_domain = ''
         conn = MagicMock()
         conn.server.info = None
         with self.assertRaises(Exception):
-            runner.createLdapBase(conn)
+            runner.create_ldap_base(conn)
 
 
 class TestGeneratePassword(unittest.TestCase):
 
     def test_string_alphabet_correct_length(self):
         runner = make_runner()
-        runner.cfgLength = 15
-        runner.cfgAlphabet = string.ascii_letters + string.digits
-        pw = runner.generatePassword()
+        runner.cfg_length = 15
+        runner.cfg_alphabet = string.ascii_letters + string.digits
+        pw = runner.generate_password()
         self.assertEqual(len(pw), 15)
 
     def test_string_alphabet_chars_in_set(self):
         runner = make_runner()
-        runner.cfgLength = 20
-        runner.cfgAlphabet = string.ascii_lowercase
-        pw = runner.generatePassword()
+        runner.cfg_length = 20
+        runner.cfg_alphabet = string.ascii_lowercase
+        pw = runner.generate_password()
         for ch in pw:
             self.assertIn(ch, string.ascii_lowercase)
 
     def test_list_alphabet_contains_char_from_each_group(self):
         runner = make_runner()
-        runner.cfgLength = 10
-        runner.cfgAlphabet = [string.ascii_uppercase, string.digits, string.ascii_lowercase]
-        pw = runner.generatePassword()
+        runner.cfg_length = 10
+        runner.cfg_alphabet = [string.ascii_uppercase, string.digits, string.ascii_lowercase]
+        pw = runner.generate_password()
         self.assertEqual(len(pw), 10)
         # At least one character from each group must be present
         self.assertTrue(any(c in string.ascii_uppercase for c in pw))
@@ -116,17 +116,17 @@ class TestGeneratePassword(unittest.TestCase):
 
     def test_list_alphabet_total_length(self):
         runner = make_runner()
-        runner.cfgLength = 12
-        runner.cfgAlphabet = ['ABC', '123']
-        pw = runner.generatePassword()
+        runner.cfg_length = 12
+        runner.cfg_alphabet = ['ABC', '123']
+        pw = runner.generate_password()
         self.assertEqual(len(pw), 12)
 
     def test_passwords_are_random(self):
         runner = make_runner()
-        runner.cfgLength = 20
-        runner.cfgAlphabet = string.ascii_letters + string.digits
+        runner.cfg_length = 20
+        runner.cfg_alphabet = string.ascii_letters + string.digits
         # Generating 10 passwords of 20 chars each: collision probability is negligible
-        passwords = {runner.generatePassword() for _ in range(10)}
+        passwords = {runner.generate_password() for _ in range(10)}
         self.assertGreater(len(passwords), 1)
 
 
@@ -152,13 +152,13 @@ class TestPrepareEnvironment(unittest.TestCase):
 
     def test_returns_dict(self):
         runner = make_runner()
-        env = runner.prepareEnvironment()
+        env = runner.prepare_environment()
         self.assertIsInstance(env, dict)
 
     def test_uses_orig_ld_library_path_when_present(self):
         runner = make_runner()
         with patch.dict(os.environ, {'LD_LIBRARY_PATH': 'pyinstaller_path', 'LD_LIBRARY_PATH_ORIG': '/usr/lib'}, clear=False):
-            env = runner.prepareEnvironment()
+            env = runner.prepare_environment()
         self.assertEqual(env.get('LD_LIBRARY_PATH'), '/usr/lib')
 
     def test_removes_ld_library_path_when_no_orig(self):
@@ -166,7 +166,7 @@ class TestPrepareEnvironment(unittest.TestCase):
         base = {k: v for k, v in os.environ.items() if k not in ('LD_LIBRARY_PATH_ORIG', 'LD_LIBRARY_PATH')}
         base['LD_LIBRARY_PATH'] = 'some_value'
         with patch.dict(os.environ, base, clear=True):
-            env = runner.prepareEnvironment()
+            env = runner.prepare_environment()
         self.assertNotIn('LD_LIBRARY_PATH', env)
 
 
@@ -185,7 +185,7 @@ class TestGetCurrentPasswordHash(unittest.TestCase):
             'nobody:*:19000:0:99999:7:::\n'
         )
         try:
-            result = getCurrentPasswordHash('root', shadow_file=path)
+            result = get_current_password_hash('root', shadow_file=path)
             self.assertEqual(result, '$6$abc123$hashedvalue')
         finally:
             os.unlink(path)
@@ -194,7 +194,7 @@ class TestGetCurrentPasswordHash(unittest.TestCase):
         path = self._write_shadow('daemon:*:19000:0:99999:7:::\n')
         try:
             with self.assertRaises(ValueError):
-                getCurrentPasswordHash('root', shadow_file=path)
+                get_current_password_hash('root', shadow_file=path)
         finally:
             os.unlink(path)
 
@@ -202,7 +202,7 @@ class TestGetCurrentPasswordHash(unittest.TestCase):
         path = self._write_shadow('root\n')
         try:
             with self.assertRaises(ValueError):
-                getCurrentPasswordHash('root', shadow_file=path)
+                get_current_password_hash('root', shadow_file=path)
         finally:
             os.unlink(path)
 
@@ -212,7 +212,7 @@ class TestGetCurrentPasswordHash(unittest.TestCase):
             'admin:$6$admin_hash:19000:0:99999:7:::\n'
         )
         try:
-            result = getCurrentPasswordHash('admin', shadow_file=path)
+            result = get_current_password_hash('admin', shadow_file=path)
             self.assertEqual(result, '$6$admin_hash')
         finally:
             os.unlink(path)
@@ -230,9 +230,9 @@ class TestLoadSettings(unittest.TestCase):
         path = self._write_config({'domain': 'corp.example.com'})
         try:
             runner = make_runner()
-            runner.cfgPath = path
-            runner.LoadSettings()
-            self.assertEqual(runner.cfgDomain, 'corp.example.com')
+            runner.cfg_path = path
+            runner.load_settings()
+            self.assertEqual(runner.cfg_domain, 'corp.example.com')
         finally:
             os.unlink(path)
 
@@ -242,12 +242,12 @@ class TestLoadSettings(unittest.TestCase):
         })
         try:
             runner = make_runner()
-            runner.cfgPath = path
-            runner.LoadSettings()
-            self.assertEqual(len(runner.cfgServer), 1)
-            self.assertEqual(runner.cfgServer[0]['address'], 'dc1.corp.com')
-            self.assertEqual(runner.cfgServer[0]['port'], 389)
-            self.assertFalse(runner.cfgServer[0]['ssl'])
+            runner.cfg_path = path
+            runner.load_settings()
+            self.assertEqual(len(runner.cfg_server), 1)
+            self.assertEqual(runner.cfg_server[0]['address'], 'dc1.corp.com')
+            self.assertEqual(runner.cfg_server[0]['port'], 389)
+            self.assertFalse(runner.cfg_server[0]['ssl'])
         finally:
             os.unlink(path)
 
@@ -260,12 +260,12 @@ class TestLoadSettings(unittest.TestCase):
         })
         try:
             runner = make_runner()
-            runner.cfgPath = path
-            runner.LoadSettings()
-            self.assertEqual(runner.cfgUsername, 'localadmin')
-            self.assertEqual(runner.cfgDaysValid, 14)
-            self.assertEqual(runner.cfgLength, 20)
-            self.assertEqual(runner.cfgAlphabet, 'abc123')
+            runner.cfg_path = path
+            runner.load_settings()
+            self.assertEqual(runner.cfg_username, 'localadmin')
+            self.assertEqual(runner.cfg_days_valid, 14)
+            self.assertEqual(runner.cfg_length, 20)
+            self.assertEqual(runner.cfg_alphabet, 'abc123')
         finally:
             os.unlink(path)
 
@@ -273,11 +273,11 @@ class TestLoadSettings(unittest.TestCase):
         path = self._write_config({})
         try:
             runner = make_runner()
-            runner.cfgPath = path
-            runner.LoadSettings()
-            self.assertEqual(runner.cfgDaysValid, 30)
-            self.assertEqual(runner.cfgLength, 15)
-            self.assertEqual(runner.cfgUsername, 'root')
+            runner.cfg_path = path
+            runner.load_settings()
+            self.assertEqual(runner.cfg_days_valid, 30)
+            self.assertEqual(runner.cfg_length, 15)
+            self.assertEqual(runner.cfg_username, 'root')
         finally:
             os.unlink(path)
 
@@ -289,11 +289,11 @@ class TestLoadSettings(unittest.TestCase):
         })
         try:
             runner = make_runner()
-            runner.cfgPath = path
-            runner.LoadSettings()
-            self.assertEqual(runner.cfgLdapAttributePassword, 'ms-MCS-AdmPwd')
-            self.assertEqual(runner.cfgLdapAttributePasswordHistory, 'ms-MCS-AdmPwdHistory')
-            self.assertEqual(runner.cfgLdapAttributePasswordExpiry, 'ms-MCS-AdmPwdExpirationTime')
+            runner.cfg_path = path
+            runner.load_settings()
+            self.assertEqual(runner.cfg_ldap_attribute_password, 'ms-MCS-AdmPwd')
+            self.assertEqual(runner.cfg_ldap_attribute_password_history, 'ms-MCS-AdmPwdHistory')
+            self.assertEqual(runner.cfg_ldap_attribute_password_expiry, 'ms-MCS-AdmPwdExpirationTime')
         finally:
             os.unlink(path)
 
@@ -301,9 +301,9 @@ class TestLoadSettings(unittest.TestCase):
         path = self._write_config({'native-laps': False})
         try:
             runner = make_runner()
-            runner.cfgPath = path
-            runner.LoadSettings()
-            self.assertFalse(runner.cfgUseNativeLapsAttributeSchema)
+            runner.cfg_path = path
+            runner.load_settings()
+            self.assertFalse(runner.cfg_use_native_laps_attribute_schema)
         finally:
             os.unlink(path)
 
@@ -312,17 +312,17 @@ class TestLoadSettings(unittest.TestCase):
         path = self._write_config({'hooks': hooks})
         try:
             runner = make_runner()
-            runner.cfgPath = path
-            runner.LoadSettings()
-            self.assertEqual(runner.cfgHooks, hooks)
+            runner.cfg_path = path
+            runner.load_settings()
+            self.assertEqual(runner.cfg_hooks, hooks)
         finally:
             os.unlink(path)
 
     def test_raises_when_config_file_missing(self):
         runner = make_runner()
-        runner.cfgPath = '/nonexistent/path/laps.json'
+        runner.cfg_path = '/nonexistent/path/laps.json'
         with self.assertRaises(Exception):
-            runner.LoadSettings()
+            runner.load_settings()
 
     def test_loads_pam_settings(self):
         path = self._write_config({
@@ -331,10 +331,10 @@ class TestLoadSettings(unittest.TestCase):
         })
         try:
             runner = make_runner()
-            runner.cfgPath = path
-            runner.LoadSettings()
-            self.assertEqual(runner.cfgPamServices, ['login', 'sshd'])
-            self.assertEqual(runner.cfgPamGracePeriod, 60)
+            runner.cfg_path = path
+            runner.load_settings()
+            self.assertEqual(runner.cfg_pam_services, ['login', 'sshd'])
+            self.assertEqual(runner.cfg_pam_grace_period, 60)
         finally:
             os.unlink(path)
 
@@ -342,9 +342,9 @@ class TestLoadSettings(unittest.TestCase):
         path = self._write_config({'security-descriptor': 'S-1-5-21-123-456-789-1000'})
         try:
             runner = make_runner()
-            runner.cfgPath = path
-            runner.LoadSettings()
-            self.assertEqual(runner.cfgSecurityDescriptor, 'S-1-5-21-123-456-789-1000')
+            runner.cfg_path = path
+            runner.load_settings()
+            self.assertEqual(runner.cfg_security_descriptor, 'S-1-5-21-123-456-789-1000')
         finally:
             os.unlink(path)
 
@@ -352,9 +352,9 @@ class TestLoadSettings(unittest.TestCase):
         path = self._write_config({'history-size': 5})
         try:
             runner = make_runner()
-            runner.cfgPath = path
-            runner.LoadSettings()
-            self.assertEqual(runner.cfgHistorySize, 5)
+            runner.cfg_path = path
+            runner.load_settings()
+            self.assertEqual(runner.cfg_history_size, 5)
         finally:
             os.unlink(path)
 
