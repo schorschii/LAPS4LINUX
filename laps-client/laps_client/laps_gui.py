@@ -798,7 +798,7 @@ class LapsMainWindow(QtWidgets.QMainWindow):
 				return decrypted.decode('utf-8').replace("\x00", "")
 			except Exception as e:
 				if(lastDecryptionError != str(e)):
-					self.showInfoDialog('Decryption Error', str(e), icon=QtWidgets.QMessageBox.Icons.Critical)
+					self.showInfoDialog('Decryption Error', str(e), icon=QtWidgets.QMessageBox.Icon.Critical)
 					lastDecryptionError = str(e)
 
 	def parseLapsValue(self, ldapValue):
