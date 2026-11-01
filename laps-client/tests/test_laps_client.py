@@ -10,34 +10,34 @@ from datetime import datetime
 from unittest.mock import MagicMock, patch
 
 from laps_client.filetime import dt_to_filetime, filetime_to_dt
-from laps_client import proposeUsername, compileServerUris
+from laps_client import propose_username, compile_server_uris
 from laps_client.laps_cli import LapsCli
 
 
 def _make_cli():
     c = LapsCli.__new__(LapsCli)
-    c.gcModeOn = False
+    c.gc_mode_on = False
     c.server = None
     c.connection = None
-    c.tmpDn = ''
-    c.cfgVersion = 0
-    c.cfgUseKerberos = True
-    c.cfgUseStartTls = True
-    c.cfgServer = []
-    c.cfgDomain = 'example.com'
-    c.cfgLdapQuery = '(&(objectClass=computer)(cn=%1))'
-    c.cfgUsername = ''
-    c.cfgPassword = ''
-    c.cfgLdapAttributes = {
+    c.tmp_dn = ''
+    c.cfg_version = 0
+    c.cfg_use_kerberos = True
+    c.cfg_use_start_tls = True
+    c.cfg_server = []
+    c.cfg_domain = 'example.com'
+    c.cfg_ldap_query = '(&(objectClass=computer)(cn=%1))'
+    c.cfg_username = ''
+    c.cfg_password = ''
+    c.cfg_ldap_attributes = {
         'Operating System': 'operatingSystem',
         'Administrator Password': ['msLAPS-EncryptedPassword', 'msLAPS-Password', 'ms-Mcs-AdmPwd'],
         'Password Expiration Date': ['msLAPS-PasswordExpirationTime', 'ms-Mcs-AdmPwdExpirationTime'],
         'Administrator Password History': 'msLAPS-EncryptedPasswordHistory',
     }
-    c.cfgLdapAttributePassword = ['msLAPS-EncryptedPassword', 'msLAPS-Password', 'ms-Mcs-AdmPwd']
-    c.cfgLdapAttributePasswordExpiry = ['msLAPS-PasswordExpirationTime', 'ms-Mcs-AdmPwdExpirationTime']
-    c.cfgLdapAttributePasswordHistory = 'msLAPS-EncryptedPasswordHistory'
-    c.dctResult = []
+    c.cfg_ldap_attribute_password = ['msLAPS-EncryptedPassword', 'msLAPS-Password', 'ms-Mcs-AdmPwd']
+    c.cfg_ldap_attribute_password_expiry = ['msLAPS-PasswordExpirationTime', 'ms-Mcs-AdmPwdExpirationTime']
+    c.cfg_ldap_attribute_password_history = 'msLAPS-EncryptedPasswordHistory'
+    c.dct_result = []
     return c
 
 
@@ -71,35 +71,35 @@ class TestInitHelpers(unittest.TestCase):
 
     def test_propose_username_with_domain(self):
         with patch('laps_client.getpass.getuser', return_value='testuser'):
-            self.assertEqual(proposeUsername('example.com'), 'testuser@example.com')
+            self.assertEqual(propose_username('example.com'), 'testuser@example.com')
 
     def test_propose_username_no_domain(self):
         with patch('laps_client.getpass.getuser', return_value='testuser'):
-            self.assertEqual(proposeUsername(None), 'testuser')
+            self.assertEqual(propose_username(None), 'testuser')
 
     def test_compile_server_uris_ldap(self):
         servers = [{'address': 'dc.example.com', 'port': 389, 'ssl': False}]
-        self.assertEqual(compileServerUris(servers), ['ldap://dc.example.com:389'])
+        self.assertEqual(compile_server_uris(servers), ['ldap://dc.example.com:389'])
 
     def test_compile_server_uris_ldaps(self):
         servers = [{'address': 'dc.example.com', 'port': 636, 'ssl': True}]
-        self.assertEqual(compileServerUris(servers), ['ldaps://dc.example.com:636'])
+        self.assertEqual(compile_server_uris(servers), ['ldaps://dc.example.com:636'])
 
     def test_compile_server_uris_multiple(self):
         servers = [
             {'address': 'dc1.example.com', 'port': 389, 'ssl': False},
             {'address': 'dc2.example.com', 'port': 636, 'ssl': True},
         ]
-        uris = compileServerUris(servers)
+        uris = compile_server_uris(servers)
         self.assertIn('ldap://dc1.example.com:389', uris)
         self.assertIn('ldaps://dc2.example.com:636', uris)
 
     def test_compile_server_uris_empty(self):
-        self.assertEqual(compileServerUris([]), [])
+        self.assertEqual(compile_server_uris([]), [])
 
 
 # ---------------------------------------------------------------------------
-# GetAttributesAsDict
+# get_attributes_as_dict
 # ---------------------------------------------------------------------------
 
 class TestGetAttributesAsDict(unittest.TestCase):
@@ -108,27 +108,27 @@ class TestGetAttributesAsDict(unittest.TestCase):
         self.cli = _make_cli()
 
     def test_dict_input(self):
-        self.cli.cfgLdapAttributes = {'OS': 'operatingSystem', 'Password': 'ms-Mcs-AdmPwd'}
-        self.assertEqual(self.cli.GetAttributesAsDict(), {'OS': 'operatingSystem', 'Password': 'ms-Mcs-AdmPwd'})
+        self.cli.cfg_ldap_attributes = {'OS': 'operatingSystem', 'Password': 'ms-Mcs-AdmPwd'}
+        self.assertEqual(self.cli.get_attributes_as_dict(), {'OS': 'operatingSystem', 'Password': 'ms-Mcs-AdmPwd'})
 
     def test_list_input(self):
-        self.cli.cfgLdapAttributes = ['operatingSystem', 'ms-Mcs-AdmPwd']
-        self.assertEqual(self.cli.GetAttributesAsDict(), {
+        self.cli.cfg_ldap_attributes = ['operatingSystem', 'ms-Mcs-AdmPwd']
+        self.assertEqual(self.cli.get_attributes_as_dict(), {
             'operatingSystem': 'operatingSystem',
             'ms-Mcs-AdmPwd': 'ms-Mcs-AdmPwd',
         })
 
     def test_empty_dict(self):
-        self.cli.cfgLdapAttributes = {}
-        self.assertEqual(self.cli.GetAttributesAsDict(), {})
+        self.cli.cfg_ldap_attributes = {}
+        self.assertEqual(self.cli.get_attributes_as_dict(), {})
 
     def test_empty_list(self):
-        self.cli.cfgLdapAttributes = []
-        self.assertEqual(self.cli.GetAttributesAsDict(), {})
+        self.cli.cfg_ldap_attributes = []
+        self.assertEqual(self.cli.get_attributes_as_dict(), {})
 
 
 # ---------------------------------------------------------------------------
-# createLdapBase
+# create_ldap_base
 # ---------------------------------------------------------------------------
 
 class TestCreateLdapBase(unittest.TestCase):
@@ -137,29 +137,29 @@ class TestCreateLdapBase(unittest.TestCase):
         self.cli = _make_cli()
 
     def test_simple_domain(self):
-        self.cli.cfgDomain = 'example.com'
-        self.assertEqual(self.cli.createLdapBase(MagicMock()), 'DC=example,DC=com')
+        self.cli.cfg_domain = 'example.com'
+        self.assertEqual(self.cli.create_ldap_base(MagicMock()), 'DC=example,DC=com')
 
     def test_subdomain(self):
-        self.cli.cfgDomain = 'sub.example.com'
-        self.assertEqual(self.cli.createLdapBase(MagicMock()), 'DC=sub,DC=example,DC=com')
+        self.cli.cfg_domain = 'sub.example.com'
+        self.assertEqual(self.cli.create_ldap_base(MagicMock()), 'DC=sub,DC=example,DC=com')
 
     def test_fallback_to_ldap_info(self):
-        self.cli.cfgDomain = None
+        self.cli.cfg_domain = None
         conn = MagicMock()
         conn.server.info.raw = {'defaultNamingContext': [b'DC=example,DC=com']}
-        self.assertEqual(self.cli.createLdapBase(conn), 'DC=example,DC=com')
+        self.assertEqual(self.cli.create_ldap_base(conn), 'DC=example,DC=com')
 
     def test_no_domain_no_info_raises(self):
-        self.cli.cfgDomain = None
+        self.cli.cfg_domain = None
         conn = MagicMock()
         conn.server.info.raw = {}
         with self.assertRaisesRegex(Exception, 'Could not create LDAP search base'):
-            self.cli.createLdapBase(conn)
+            self.cli.create_ldap_base(conn)
 
 
 # ---------------------------------------------------------------------------
-# parseLapsValue
+# parse_laps_value
 # ---------------------------------------------------------------------------
 
 class TestParseLapsValue(unittest.TestCase):
@@ -170,31 +170,31 @@ class TestParseLapsValue(unittest.TestCase):
     def test_native_laps_json(self):
         ft_hex = hex(132539136000000000)  # 2021-01-01 UTC
         laps_json = json.dumps({'n': 'Administrator', 'p': 'SecretPass!', 't': ft_hex})
-        password, username, timestamp = self.cli.parseLapsValue(laps_json)
+        password, username, timestamp = self.cli.parse_laps_value(laps_json)
         self.assertEqual(password, 'SecretPass!')
         self.assertEqual(username, 'Administrator')
         self.assertIsNotNone(timestamp)
 
     def test_legacy_laps_plain_password(self):
-        password, username, timestamp = self.cli.parseLapsValue('PlainPassword123')
+        password, username, timestamp = self.cli.parse_laps_value('PlainPassword123')
         self.assertEqual(password, 'PlainPassword123')
         self.assertIsNone(username)
         self.assertIsNone(timestamp)
 
     def test_invalid_json_falls_back_to_plain(self):
-        password, username, timestamp = self.cli.parseLapsValue('not-json-at-all')
+        password, username, timestamp = self.cli.parse_laps_value('not-json-at-all')
         self.assertEqual(password, 'not-json-at-all')
         self.assertIsNone(username)
 
     def test_json_missing_keys_falls_back(self):
         raw = '{"p": "test"}'
-        password, username, timestamp = self.cli.parseLapsValue(raw)
+        password, username, timestamp = self.cli.parse_laps_value(raw)
         self.assertEqual(password, raw)
         self.assertIsNone(username)
 
 
 # ---------------------------------------------------------------------------
-# pushResult / printResult
+# push_result / print_result
 # ---------------------------------------------------------------------------
 
 class TestPushAndPrintResult(unittest.TestCase):
@@ -203,25 +203,25 @@ class TestPushAndPrintResult(unittest.TestCase):
         self.cli = _make_cli()
 
     def test_push_result_appends(self):
-        self.cli.pushResult('Password', 'abc123')
-        self.assertEqual(self.cli.dctResult, [{'title': 'Password', 'value': 'abc123'}])
+        self.cli.push_result('Password', 'abc123')
+        self.assertEqual(self.cli.dct_result, [{'title': 'Password', 'value': 'abc123'}])
 
     def test_push_result_multiple(self):
-        self.cli.pushResult('OS', 'Windows')
-        self.cli.pushResult('Password', 'abc123')
-        self.assertEqual(len(self.cli.dctResult), 2)
+        self.cli.push_result('OS', 'Windows')
+        self.cli.push_result('Password', 'abc123')
+        self.assertEqual(len(self.cli.dct_result), 2)
 
     def test_print_result_clears(self):
-        self.cli.pushResult('Password', 'abc123')
+        self.cli.push_result('Password', 'abc123')
         with patch('sys.stdout', new_callable=io.StringIO):
-            self.cli.printResult()
-        self.assertEqual(self.cli.dctResult, [])
+            self.cli.print_result()
+        self.assertEqual(self.cli.dct_result, [])
 
     def test_print_result_formatted_output(self):
-        self.cli.pushResult('OS', 'Windows')
-        self.cli.pushResult('Password', 'abc123')
+        self.cli.push_result('OS', 'Windows')
+        self.cli.push_result('Password', 'abc123')
         with patch('sys.stdout', new_callable=io.StringIO) as mock_out:
-            self.cli.printResult()
+            self.cli.print_result()
             out = mock_out.getvalue()
         self.assertIn('OS', out)
         self.assertIn('Windows', out)
@@ -229,25 +229,25 @@ class TestPushAndPrintResult(unittest.TestCase):
         self.assertIn('abc123', out)
 
     def test_print_result_tsv(self):
-        self.cli.pushResult('OS', 'Windows')
-        self.cli.pushResult('Password', 'abc123')
+        self.cli.push_result('OS', 'Windows')
+        self.cli.push_result('Password', 'abc123')
         with patch('sys.stdout', new_callable=io.StringIO) as mock_out:
-            self.cli.printResult(tsv=True)
+            self.cli.print_result(tsv=True)
             out = mock_out.getvalue().strip()
         self.assertEqual(out, 'Windows\tabc123')
 
     def test_print_result_aligns_columns(self):
-        self.cli.pushResult('OS', 'Windows')
-        self.cli.pushResult('Administrator Password', 'abc123')
+        self.cli.push_result('OS', 'Windows')
+        self.cli.push_result('Administrator Password', 'abc123')
         with patch('sys.stdout', new_callable=io.StringIO) as mock_out:
-            self.cli.printResult()
+            self.cli.print_result()
             lines = [l for l in mock_out.getvalue().splitlines() if l.strip()]
         col_positions = [l.index(l.split(':')[1].lstrip()) for l in lines]
         self.assertEqual(col_positions[0], col_positions[1])
 
 
 # ---------------------------------------------------------------------------
-# SaveSettings / LoadSettings
+# save_settings / load_settings
 # ---------------------------------------------------------------------------
 
 class TestSaveAndLoadSettings(unittest.TestCase):
@@ -262,42 +262,42 @@ class TestSaveAndLoadSettings(unittest.TestCase):
     def _make_cli(self, **overrides):
         c = LapsCli.__new__(LapsCli)
         c.PLATFORM = 'linux'
-        c.cfgDir = str(self.tmp_path)
-        c.cfgPath = str(self.tmp_path / 'settings.json')
-        c.cfgPresetPath = str(self.tmp_path / 'nonexistent.json')
-        c.cfgVersion = 0
-        c.cfgUseKerberos = True
-        c.cfgUseStartTls = True
-        c.cfgServer = []
-        c.cfgDomain = None
-        c.cfgLdapQuery = '(&(objectClass=computer)(cn=%1))'
-        c.cfgUsername = ''
-        c.cfgPassword = ''
-        c.cfgLdapAttributePassword = ['msLAPS-EncryptedPassword', 'msLAPS-Password', 'ms-Mcs-AdmPwd']
-        c.cfgLdapAttributePasswordExpiry = ['msLAPS-PasswordExpirationTime', 'ms-Mcs-AdmPwdExpirationTime']
-        c.cfgLdapAttributePasswordHistory = 'msLAPS-EncryptedPasswordHistory'
-        c.cfgLdapAttributes = {}
+        c.cfg_dir = str(self.tmp_path)
+        c.cfg_path = str(self.tmp_path / 'settings.json')
+        c.cfg_preset_path = str(self.tmp_path / 'nonexistent.json')
+        c.cfg_version = 0
+        c.cfg_use_kerberos = True
+        c.cfg_use_start_tls = True
+        c.cfg_server = []
+        c.cfg_domain = None
+        c.cfg_ldap_query = '(&(objectClass=computer)(cn=%1))'
+        c.cfg_username = ''
+        c.cfg_password = ''
+        c.cfg_ldap_attribute_password = ['msLAPS-EncryptedPassword', 'msLAPS-Password', 'ms-Mcs-AdmPwd']
+        c.cfg_ldap_attribute_password_expiry = ['msLAPS-PasswordExpirationTime', 'ms-Mcs-AdmPwdExpirationTime']
+        c.cfg_ldap_attribute_password_history = 'msLAPS-EncryptedPasswordHistory'
+        c.cfg_ldap_attributes = {}
         for k, v in overrides.items():
             setattr(c, k, v)
         return c
 
     def test_save_and_load_roundtrip(self):
-        c1 = self._make_cli(cfgDomain='example.com', cfgUsername='admin', cfgVersion=2)
-        c1.SaveSettings()
+        c1 = self._make_cli(cfg_domain='example.com', cfg_username='admin', cfg_version=2)
+        c1.save_settings()
 
         c2 = self._make_cli()
-        c2.LoadSettings()
+        c2.load_settings()
 
-        self.assertEqual(c2.cfgDomain, 'example.com')
-        self.assertEqual(c2.cfgUsername, 'admin')
-        self.assertEqual(c2.cfgVersion, 2)
+        self.assertEqual(c2.cfg_domain, 'example.com')
+        self.assertEqual(c2.cfg_username, 'admin')
+        self.assertEqual(c2.cfg_version, 2)
 
     def test_auto_discovered_servers_not_saved(self):
-        c = self._make_cli(cfgDomain='example.com', cfgServer=[
+        c = self._make_cli(cfg_domain='example.com', cfg_server=[
             {'address': 'dc1.example.com', 'port': 389, 'ssl': False, 'auto-discovered': True},
             {'address': 'dc2.example.com', 'port': 389, 'ssl': False},
         ])
-        c.SaveSettings()
+        c.save_settings()
 
         with open(str(self.tmp_path / 'settings.json')) as f:
             saved = json.load(f)
@@ -322,19 +322,19 @@ class TestSaveAndLoadSettings(unittest.TestCase):
         }))
 
         c = self._make_cli()
-        c.cfgPresetPath = str(preset_path)
-        c.LoadSettings()
+        c.cfg_preset_path = str(preset_path)
+        c.load_settings()
 
-        self.assertEqual(c.cfgDomain, 'preset.example.com')
-        self.assertFalse(c.cfgUseKerberos)
-        self.assertEqual(c.cfgVersion, 5)
+        self.assertEqual(c.cfg_domain, 'preset.example.com')
+        self.assertFalse(c.cfg_use_kerberos)
+        self.assertEqual(c.cfg_version, 5)
 
     def test_list_ldap_attributes_loaded(self):
         attrs = ['operatingSystem', 'ms-Mcs-AdmPwd']
         c = self._make_cli()
         (self.tmp_path / 'settings.json').write_text(json.dumps({'ldap-attributes': attrs}))
-        c.LoadSettings()
-        self.assertEqual(c.cfgLdapAttributes, attrs)
+        c.load_settings()
+        self.assertEqual(c.cfg_ldap_attributes, attrs)
 
     def test_user_settings_preferred_when_version_equal(self):
         preset_path = self.tmp_path / 'preset.json'
@@ -342,14 +342,14 @@ class TestSaveAndLoadSettings(unittest.TestCase):
         (self.tmp_path / 'settings.json').write_text(json.dumps({'version': 1, 'domain': 'user.example.com'}))
 
         c = self._make_cli()
-        c.cfgPresetPath = str(preset_path)
-        c.LoadSettings()
+        c.cfg_preset_path = str(preset_path)
+        c.load_settings()
 
-        self.assertEqual(c.cfgDomain, 'user.example.com')
+        self.assertEqual(c.cfg_domain, 'user.example.com')
 
 
 # ---------------------------------------------------------------------------
-# GetConnectionString
+# get_connection_string
 # ---------------------------------------------------------------------------
 
 class TestGetConnectionString(unittest.TestCase):
@@ -361,11 +361,11 @@ class TestGetConnectionString(unittest.TestCase):
         self.cli.connection = MagicMock()
         self.cli.connection.server.host = 'dc.example.com'
         self.cli.connection.user = 'EXAMPLE\\admin'
-        self.assertEqual(self.cli.GetConnectionString(), 'dc.example.com EXAMPLE\\admin')
+        self.assertEqual(self.cli.get_connection_string(), 'dc.example.com User:EXAMPLE\\admin')
 
 
 # ---------------------------------------------------------------------------
-# SetExpiry
+# set_expiry
 # ---------------------------------------------------------------------------
 
 class TestSetExpiry(unittest.TestCase):
@@ -374,54 +374,54 @@ class TestSetExpiry(unittest.TestCase):
         self.cli = _make_cli()
 
     def test_returns_early_when_tmpdn_empty(self):
-        self.cli.tmpDn = ''
+        self.cli.tmp_dn = ''
         self.cli.connection = MagicMock()
-        self.cli.SetExpiry('2025-01-01 00:00:00')
+        self.cli.set_expiry('2025-01-01 00:00:00')
         self.cli.connection.modify.assert_not_called()
 
     def test_returns_early_when_tmpdn_whitespace(self):
-        self.cli.tmpDn = '   '
+        self.cli.tmp_dn = '   '
         self.cli.connection = MagicMock()
-        self.cli.SetExpiry('2025-01-01 00:00:00')
+        self.cli.set_expiry('2025-01-01 00:00:00')
         self.cli.connection.modify.assert_not_called()
 
     def test_calls_modify_with_list_attribute(self):
-        self.cli.tmpDn = 'CN=PC01,DC=example,DC=com'
-        self.cli.cfgLdapAttributePasswordExpiry = ['msLAPS-PasswordExpirationTime', 'ms-Mcs-AdmPwdExpirationTime']
+        self.cli.tmp_dn = 'CN=PC01,DC=example,DC=com'
+        self.cli.cfg_ldap_attribute_password_expiry = ['msLAPS-PasswordExpirationTime', 'ms-Mcs-AdmPwdExpirationTime']
         self.cli.connection = MagicMock()
         self.cli.connection.result = {'result': 0, 'message': ''}
         with patch('sys.stdout', new_callable=io.StringIO) as mock_out:
-            self.cli.SetExpiry('2025-06-01 12:00:00')
+            self.cli.set_expiry('2025-06-01 12:00:00')
             out = mock_out.getvalue()
         self.cli.connection.modify.assert_called_once()
         call_args = self.cli.connection.modify.call_args
-        self.assertEqual(call_args[0][0], self.cli.tmpDn)
+        self.assertEqual(call_args[0][0], self.cli.tmp_dn)
         self.assertIn('msLAPS-PasswordExpirationTime', call_args[0][1])
         self.assertIn('Expiration Date Changed Successfully', out)
 
     def test_calls_modify_with_string_attribute(self):
-        self.cli.tmpDn = 'CN=PC01,DC=example,DC=com'
-        self.cli.cfgLdapAttributePasswordExpiry = 'ms-Mcs-AdmPwdExpirationTime'
+        self.cli.tmp_dn = 'CN=PC01,DC=example,DC=com'
+        self.cli.cfg_ldap_attribute_password_expiry = 'ms-Mcs-AdmPwdExpirationTime'
         self.cli.connection = MagicMock()
         self.cli.connection.result = {'result': 0, 'message': ''}
         with patch('sys.stdout', new_callable=io.StringIO):
-            self.cli.SetExpiry('2025-06-01 12:00:00')
+            self.cli.set_expiry('2025-06-01 12:00:00')
         self.cli.connection.modify.assert_called_once()
         self.assertIn('ms-Mcs-AdmPwdExpirationTime', self.cli.connection.modify.call_args[0][1])
 
     def test_modify_failure_prints_message(self):
-        self.cli.tmpDn = 'CN=PC01,DC=example,DC=com'
-        self.cli.cfgLdapAttributePasswordExpiry = ['msLAPS-PasswordExpirationTime']
+        self.cli.tmp_dn = 'CN=PC01,DC=example,DC=com'
+        self.cli.cfg_ldap_attribute_password_expiry = ['msLAPS-PasswordExpirationTime']
         self.cli.connection = MagicMock()
         self.cli.connection.result = {'result': 50, 'message': 'Insufficient access rights'}
         with patch('sys.stdout', new_callable=io.StringIO) as mock_out:
-            self.cli.SetExpiry('2025-06-01 12:00:00')
+            self.cli.set_expiry('2025-06-01 12:00:00')
             out = mock_out.getvalue()
         self.assertIn('Unable to change expiration date', out)
 
 
 # ---------------------------------------------------------------------------
-# SearchComputer early-return guard
+# search_computer early-return guard
 # ---------------------------------------------------------------------------
 
 class TestSearchComputerGuard(unittest.TestCase):
@@ -431,12 +431,12 @@ class TestSearchComputerGuard(unittest.TestCase):
 
     def test_empty_string_returns_without_connecting(self):
         self.cli.connection = MagicMock()
-        self.cli.SearchComputer('')
+        self.cli.search_computer('')
         self.cli.connection.search.assert_not_called()
 
     def test_whitespace_only_returns_without_connecting(self):
         self.cli.connection = MagicMock()
-        self.cli.SearchComputer('   ')
+        self.cli.search_computer('   ')
         self.cli.connection.search.assert_not_called()
 
 
